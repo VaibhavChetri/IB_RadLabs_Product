@@ -6,31 +6,48 @@ import { loginSuccess } from '../store/slices/authSlice';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
+import { AuthApiService } from '../services/authApi';
+import { useFormApi } from '../hooks/useApi';
 
 export const Login: React.FC = () => {
 	const dispatch = useDispatch<AppDispatch>();
 	const navigate = useNavigate();
-	const [email, setEmail] = useState('admin@example.com');
-	const [password, setPassword] = useState('password123');
+	const [username, setUsername] = useState('ch-mumbai');
+	const [password, setPassword] = useState('ch-mumbai');
 	const [error, setError] = useState('');
 
-	const handleLogin = (e: React.FormEvent) => {
+	// Use the form API hook for login
+	const loginApi = useFormApi('login', AuthApiService.login);
+
+	const handleLogin = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setError('');
 
-		// Demo credentials
-		if (email === 'admin@example.com' && password === 'password123') {
-			dispatch(
-				loginSuccess({
-					id: '1',
-					name: 'John Doe',
-					email: 'admin@example.com',
-					role: 'Administrator',
-				}),
-			);
-			navigate('/');
-		} else {
-			setError('Invalid credentials. Use admin@example.com / password123');
+		try {
+			const result = await loginApi.submit({
+				username,
+				password,
+			});
+
+			// Handle successful login
+			if (result.data && result.data.access_token) {
+				// Store tokens in localStorage (handled by the API service)
+				// Dispatch login success with user data
+				dispatch(
+					loginSuccess({
+						id: result.data.user_id?.toString() || '1',
+						name: result.data.user_name || username,
+						email: result.data.user_email || `${username}@example.com`,
+						role: result.data.user_role || 'User',
+					}),
+				);
+				navigate('/');
+			} else {
+				setError('Login failed: No access token received');
+			}
+		} catch (error: any) {
+			console.error('Login error:', error);
+			setError(error.message || 'Login failed. Please check your credentials.');
 		}
 	};
 
@@ -54,10 +71,10 @@ export const Login: React.FC = () => {
 							<strong>Demo Credentials:</strong>
 						</p>
 						<p className='text-sm text-foreground-muted'>
-							Email: admin@example.com
+							Username: ch-mumbai
 						</p>
 						<p className='text-sm text-foreground-muted'>
-							Password: password123
+							Password: ch-mumbai
 						</p>
 					</div>
 				</div>
@@ -71,11 +88,11 @@ export const Login: React.FC = () => {
 						)}
 
 						<Input
-							label='Email address'
-							type='email'
-							placeholder='Enter your email'
-							value={email}
-							onChange={(e) => setEmail(e.target.value)}
+							label='Username'
+							type='text'
+							placeholder='Enter your username'
+							value={username}
+							onChange={(e) => setUsername(e.target.value)}
 							required
 						/>
 						<Input
@@ -113,8 +130,8 @@ export const Login: React.FC = () => {
 							</div>
 						</div>
 
-						<Button type='submit' className='w-full'>
-							Sign in
+						<Button type='submit' className='w-full' disabled={loginApi.isSubmitting}>
+							{loginApi.isSubmitting ? 'Signing in...' : 'Sign in'}
 						</Button>
 					</form>
 				</Card>

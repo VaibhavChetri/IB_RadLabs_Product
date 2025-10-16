@@ -99,7 +99,7 @@ export const FileUploadComponent = () => {
 					clearInterval(interval);
 					resolve({
 						data: { id: '123', url: '/files/123' },
-						status: 200,
+						statusCode: 200,
 						success: true,
 					});
 				}

@@ -21,8 +21,8 @@ const REFRESH_TOKEN_KEY = import.meta.env.VITE_REFRESH_TOKEN_KEY || 'refresh_tok
 export interface ApiResponse<T = any> {
 	data: T;
 	message?: string;
-	status: number;
-	success: boolean;
+	statusCode?: number;
+	success?: boolean;
 }
 
 export interface ApiError {
@@ -172,7 +172,12 @@ export class ApiService {
 	// Generic HTTP methods
 	public async get<T = any>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
 		const response = await this.client.get(url, config);
-		return response.data;
+		return {
+			data: response.data,
+			message: response.data.message,
+			statusCode: response.status,
+			success: true,
+		};
 	}
 
 	public async post<T = any>(
@@ -181,7 +186,12 @@ export class ApiService {
 		config?: AxiosRequestConfig
 	): Promise<ApiResponse<T>> {
 		const response = await this.client.post(url, data, config);
-		return response.data;
+		return {
+			data: response.data,
+			message: response.data.message,
+			statusCode: response.status,
+			success: true,
+		};
 	}
 
 	public async put<T = any>(
@@ -190,7 +200,12 @@ export class ApiService {
 		config?: AxiosRequestConfig
 	): Promise<ApiResponse<T>> {
 		const response = await this.client.put(url, data, config);
-		return response.data;
+		return {
+			data: response.data,
+			message: response.data.message,
+			statusCode: response.status,
+			success: true,
+		};
 	}
 
 	public async patch<T = any>(
@@ -199,12 +214,22 @@ export class ApiService {
 		config?: AxiosRequestConfig
 	): Promise<ApiResponse<T>> {
 		const response = await this.client.patch(url, data, config);
-		return response.data;
+		return {
+			data: response.data,
+			message: response.data.message,
+			statusCode: response.status,
+			success: true,
+		};
 	}
 
 	public async delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
 		const response = await this.client.delete(url, config);
-		return response.data;
+		return {
+			data: response.data,
+			message: response.data.message,
+			statusCode: response.status,
+			success: true,
+		};
 	}
 
 	// Form data methods

@@ -13,15 +13,16 @@ export interface LoginCredentials {
 
 export interface LoginResponse {
 	access_token: string;
-	refresh_token: string;
-	token_type: string;
-	expires_in: number;
-	user: {
-		id: number;
-		username: string;
-		email: string;
-		role: string;
-	};
+	refresh_token?: string;
+	token_type?: string;
+	expires_in?: number;
+	user_id?: number;
+	user_name?: string;
+	user_email?: string;
+	user_role?: string;
+	// Additional fields that might be returned
+	scope?: string;
+	created_at?: string;
 }
 
 export interface RefreshTokenResponse {
@@ -49,10 +50,21 @@ export class AuthApiService {
 	 * Login with username and password
 	 */
 	static async login(credentials: LoginCredentials): Promise<ApiResponse<LoginResponse>> {
-		return apiService.postUrlEncoded('/oauth/access_token', {
+		const response = await apiService.postUrlEncoded('/oauth/access_token', {
 			username: credentials.username,
 			password: credentials.password,
 		});
+
+		// Store tokens if login is successful
+		if (response.data && response.data.access_token) {
+			localStorage.setItem(import.meta.env.VITE_AUTH_TOKEN_KEY || 'auth_token', response.data.access_token);
+			
+			if (response.data.refresh_token) {
+				localStorage.setItem(import.meta.env.VITE_REFRESH_TOKEN_KEY || 'refresh_token', response.data.refresh_token);
+			}
+		}
+
+		return response;
 	}
 
 	/**

@@ -92,7 +92,7 @@ export const Alert: React.FC<AlertProps> = ({
 				'rounded-lg border transition-all duration-200',
 				variantStyles.container,
 				sizeStyles.container,
-				className,
+				className
 			)}
 			role='alert'
 		>
@@ -101,27 +101,22 @@ export const Alert: React.FC<AlertProps> = ({
 					<div className='flex-shrink-0 mr-3'>
 						{React.isValidElement(IconComponent)
 							? IconComponent
-							: React.createElement(IconComponent as React.ComponentType<any>, {
-									className: cn(variantStyles.icon, sizeStyles.icon),
-							  })}
+							: React.createElement(
+									IconComponent as React.ComponentType<React.SVGProps<SVGSVGElement>>,
+									{
+										className: cn(variantStyles.icon, sizeStyles.icon),
+									}
+								)}
 					</div>
 				)}
 
 				<div className='flex-1 min-w-0'>
-					{title && (
-						<h3 className={cn(sizeStyles.title, variantStyles.icon)}>
-							{title}
-						</h3>
-					)}
+					{title && <h3 className={cn(sizeStyles.title, variantStyles.icon)}>{title}</h3>}
 					{description && (
-						<p className={cn(sizeStyles.description, variantStyles.icon)}>
-							{description}
-						</p>
+						<p className={cn(sizeStyles.description, variantStyles.icon)}>{description}</p>
 					)}
 					{children && (
-						<div className={cn(sizeStyles.description, variantStyles.icon)}>
-							{children}
-						</div>
+						<div className={cn(sizeStyles.description, variantStyles.icon)}>{children}</div>
 					)}
 				</div>
 
@@ -131,7 +126,7 @@ export const Alert: React.FC<AlertProps> = ({
 						className={cn(
 							'flex-shrink-0 ml-3 p-1 rounded-md transition-colors',
 							'hover:bg-black/10 focus:outline-none focus:ring-2 focus:ring-offset-2',
-							variantStyles.icon,
+							variantStyles.icon
 						)}
 						aria-label='Close alert'
 					>
@@ -150,14 +145,10 @@ export interface AlertContainerProps {
 	className?: string;
 }
 
-export const AlertContainer: React.FC<AlertContainerProps> = ({
-	alerts,
-	onRemove,
-	className,
-}) => {
+export const AlertContainer: React.FC<AlertContainerProps> = ({ alerts, onRemove, className }) => {
 	return (
 		<div className={cn('space-y-3', className)}>
-			{alerts.map((alert) => (
+			{alerts.map(alert => (
 				<Alert
 					key={alert.id}
 					{...alert}
@@ -209,9 +200,7 @@ export const Toast: React.FC<ToastProps> = ({
 	};
 
 	return (
-		<div
-			className={cn('fixed z-50 max-w-sm w-full', positionClasses[position])}
-		>
+		<div className={cn('fixed z-50 max-w-sm w-full', positionClasses[position])}>
 			<Alert {...props} size='md' />
 		</div>
 	);

@@ -38,7 +38,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
 			interactive = false,
 			...props
 		},
-		ref,
+		ref
 	) => {
 		return (
 			<div
@@ -57,12 +57,12 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
 					interactive && 'cursor-pointer hover:shadow-z8 active:scale-98',
 					hover && 'hover:shadow-z8',
 
-					className,
+					className
 				)}
 				{...props}
 			/>
 		);
-	},
+	}
 );
 
 Card.displayName = 'Card';
@@ -77,22 +77,12 @@ export interface CardHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
 export const CardHeader = React.forwardRef<HTMLDivElement, CardHeaderProps>(
 	({ className, title, subtitle, action, children, ...props }, ref) => {
 		return (
-			<div
-				ref={ref}
-				className={cn('flex flex-col space-y-1.5 pb-4', className)}
-				{...props}
-			>
+			<div ref={ref} className={cn('flex flex-col space-y-1.5 pb-4', className)} {...props}>
 				{(title || subtitle || action) && (
 					<div className='flex items-center justify-between'>
 						<div className='space-y-1'>
-							{title && (
-								<h3 className='text-lg font-semibold text-foreground'>
-									{title}
-								</h3>
-							)}
-							{subtitle && (
-								<p className='text-sm text-foreground-muted'>{subtitle}</p>
-							)}
+							{title && <h3 className='text-lg font-semibold text-foreground'>{title}</h3>}
+							{subtitle && <p className='text-sm text-foreground-muted'>{subtitle}</p>}
 						</div>
 						{action && <div>{action}</div>}
 					</div>
@@ -100,7 +90,7 @@ export const CardHeader = React.forwardRef<HTMLDivElement, CardHeaderProps>(
 				{children}
 			</div>
 		);
-	},
+	}
 );
 
 CardHeader.displayName = 'CardHeader';
@@ -112,14 +102,8 @@ export interface CardContentProps extends React.HTMLAttributes<HTMLDivElement> {
 
 export const CardContent = React.forwardRef<HTMLDivElement, CardContentProps>(
 	({ className, noPadding = false, ...props }, ref) => {
-		return (
-			<div
-				ref={ref}
-				className={cn(!noPadding && 'pt-0', className)}
-				{...props}
-			/>
-		);
-	},
+		return <div ref={ref} className={cn(!noPadding && 'pt-0', className)} {...props} />;
+	}
 );
 
 CardContent.displayName = 'CardContent';
@@ -145,14 +129,13 @@ export const CardFooter = React.forwardRef<HTMLDivElement, CardFooterProps>(
 				{...props}
 			/>
 		);
-	},
+	}
 );
 
 CardFooter.displayName = 'CardFooter';
 
 // Card Title Component
-export interface CardTitleProps
-	extends React.HTMLAttributes<HTMLHeadingElement> {
+export interface CardTitleProps extends React.HTMLAttributes<HTMLHeadingElement> {
 	as?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
 }
 
@@ -165,27 +148,21 @@ export const CardTitle = React.forwardRef<HTMLHeadingElement, CardTitleProps>(
 				{...props}
 			/>
 		);
-	},
+	}
 );
 
 CardTitle.displayName = 'CardTitle';
 
 // Card Description Component
-export interface CardDescriptionProps
-	extends React.HTMLAttributes<HTMLParagraphElement> {}
+export interface CardDescriptionProps extends React.HTMLAttributes<HTMLParagraphElement> {
+	children?: React.ReactNode;
+}
 
-export const CardDescription = React.forwardRef<
-	HTMLParagraphElement,
-	CardDescriptionProps
->(({ className, ...props }, ref) => {
-	return (
-		<p
-			ref={ref}
-			className={cn('text-sm text-foreground-muted', className)}
-			{...props}
-		/>
-	);
-});
+export const CardDescription = React.forwardRef<HTMLParagraphElement, CardDescriptionProps>(
+	({ className, ...props }, ref) => {
+		return <p ref={ref} className={cn('text-sm text-foreground-muted', className)} {...props} />;
+	}
+);
 
 CardDescription.displayName = 'CardDescription';
 
@@ -234,11 +211,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
 						</p>
 					)}
 				</div>
-				{icon && (
-					<div className={cn('p-2 rounded-lg', trendColors[trend || 'stable'])}>
-						{icon}
-					</div>
-				)}
+				{icon && <div className={cn('p-2 rounded-lg', trendColors[trend || 'stable'])}>{icon}</div>}
 			</div>
 		</Card>
 	);

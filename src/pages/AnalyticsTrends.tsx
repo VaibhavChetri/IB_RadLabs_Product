@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
 import {
-	Search,
 	Filter,
 	Calendar,
 	TrendingUp,
@@ -180,7 +178,7 @@ export const AnalyticsTrends: React.FC = () => {
 
 			{/* Metric Selector */}
 			<div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
-				{metrics.map((metric) => (
+				{metrics.map(metric => (
 					<Card
 						key={metric.id}
 						className={`p-4 cursor-pointer transition-all ${
@@ -193,16 +191,12 @@ export const AnalyticsTrends: React.FC = () => {
 						<div className='flex items-center justify-between mb-2'>
 							<metric.icon
 								className={`w-5 h-5 ${
-									metric.changeType === 'positive'
-										? 'text-success'
-										: 'text-error'
+									metric.changeType === 'positive' ? 'text-success' : 'text-error'
 								}`}
 							/>
 							<span
 								className={`text-sm font-medium ${
-									metric.changeType === 'positive'
-										? 'text-success'
-										: 'text-error'
+									metric.changeType === 'positive' ? 'text-success' : 'text-error'
 								}`}
 							>
 								{metric.change}
@@ -221,25 +215,25 @@ export const AnalyticsTrends: React.FC = () => {
 					<Card className='p-6'>
 						<div className='flex items-center justify-between mb-6'>
 							<h3 className='text-h5 text-foreground'>
-								{metrics.find((m) => m.id === selectedMetric)?.name} Trend
+								{metrics.find(m => m.id === selectedMetric)?.name} Trend
 							</h3>
 							<div className='flex space-x-2'>
 								<Button
-									variant={timeRange === '7d' ? 'default' : 'outline'}
+									variant={timeRange === '7d' ? 'primary' : 'outline'}
 									size='sm'
 									onClick={() => setTimeRange('7d')}
 								>
 									7D
 								</Button>
 								<Button
-									variant={timeRange === '30d' ? 'default' : 'outline'}
+									variant={timeRange === '30d' ? 'primary' : 'outline'}
 									size='sm'
 									onClick={() => setTimeRange('30d')}
 								>
 									30D
 								</Button>
 								<Button
-									variant={timeRange === '90d' ? 'default' : 'outline'}
+									variant={timeRange === '90d' ? 'primary' : 'outline'}
 									size='sm'
 									onClick={() => setTimeRange('90d')}
 								>
@@ -250,9 +244,7 @@ export const AnalyticsTrends: React.FC = () => {
 						<div className='h-80 bg-background-secondary rounded-lg flex items-center justify-center'>
 							<div className='text-center'>
 								<LineChart className='w-12 h-12 text-primary mx-auto mb-4' />
-								<p className='text-foreground-secondary'>
-									Interactive chart would be here
-								</p>
+								<p className='text-foreground-secondary'>Interactive chart would be here</p>
 								<p className='text-sm text-foreground-muted mt-1'>
 									Integration with Chart.js or D3.js
 								</p>
@@ -268,21 +260,15 @@ export const AnalyticsTrends: React.FC = () => {
 						<div className='space-y-3'>
 							<button className='w-full flex items-center p-3 rounded-lg hover:bg-background-secondary transition-colors'>
 								<LineChart className='w-5 h-5 text-primary mr-3' />
-								<span className='text-sm font-medium text-foreground'>
-									Line Chart
-								</span>
+								<span className='text-sm font-medium text-foreground'>Line Chart</span>
 							</button>
 							<button className='w-full flex items-center p-3 rounded-lg hover:bg-background-secondary transition-colors'>
 								<BarChart3 className='w-5 h-5 text-primary mr-3' />
-								<span className='text-sm font-medium text-foreground'>
-									Bar Chart
-								</span>
+								<span className='text-sm font-medium text-foreground'>Bar Chart</span>
 							</button>
 							<button className='w-full flex items-center p-3 rounded-lg hover:bg-background-secondary transition-colors'>
 								<PieChart className='w-5 h-5 text-primary mr-3' />
-								<span className='text-sm font-medium text-foreground'>
-									Pie Chart
-								</span>
+								<span className='text-sm font-medium text-foreground'>Pie Chart</span>
 							</button>
 						</div>
 					</Card>
@@ -294,32 +280,17 @@ export const AnalyticsTrends: React.FC = () => {
 				<h3 className='text-h5 text-foreground mb-6'>Key Insights</h3>
 				<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
 					{insights.map((insight, index) => (
-						<div
-							key={index}
-							className={`p-4 rounded-lg border ${getInsightColor(
-								insight.type,
-							)}`}
-						>
+						<div key={index} className={`p-4 rounded-lg border ${getInsightColor(insight.type)}`}>
 							<div className='flex items-start space-x-3'>
 								<div className='p-2 bg-background rounded-lg'>
 									<insight.icon className='w-5 h-5' />
 								</div>
 								<div className='flex-1'>
-									<h4 className='font-medium text-foreground mb-1'>
-										{insight.title}
-									</h4>
-									<p className='text-sm text-foreground-secondary mb-2'>
-										{insight.description}
-									</p>
+									<h4 className='font-medium text-foreground mb-1'>{insight.title}</h4>
+									<p className='text-sm text-foreground-secondary mb-2'>{insight.description}</p>
 									<div className='flex items-center justify-between'>
-										<span className='text-xs text-foreground-muted'>
-											Impact Level
-										</span>
-										<span
-											className={`text-xs font-medium ${getImpactColor(
-												insight.impact,
-											)}`}
-										>
+										<span className='text-xs text-foreground-muted'>Impact Level</span>
+										<span className={`text-xs font-medium ${getImpactColor(insight.impact)}`}>
 											{insight.impact}
 										</span>
 									</div>
@@ -355,14 +326,12 @@ export const AnalyticsTrends: React.FC = () => {
 							</tr>
 						</thead>
 						<tbody>
-							{trendData.map((data, index) => (
+							{trendData.map((data, _index) => (
 								<tr
 									key={data.period}
 									className='border-b border-border hover:bg-background-secondary'
 								>
-									<td className='py-3 px-4 text-sm font-medium text-foreground'>
-										{data.period}
-									</td>
+									<td className='py-3 px-4 text-sm font-medium text-foreground'>{data.period}</td>
 									<td className='py-3 px-4 text-sm text-foreground text-right'>
 										${data.revenue.toLocaleString()}
 									</td>

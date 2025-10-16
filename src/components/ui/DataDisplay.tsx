@@ -4,28 +4,22 @@
  */
 
 import React from 'react';
-import {
-	ChevronDown,
-	ChevronUp,
-	ArrowUpDown,
-	ArrowUp,
-	ArrowDown,
-} from 'lucide-react';
+import { ChevronDown, ChevronUp, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 // Table Component
-export interface TableColumn<T = any> {
+export interface TableColumn<T = Record<string, unknown>> {
 	key: string;
 	title: string;
 	dataIndex?: keyof T;
-	render?: (value: any, record: T, index: number) => React.ReactNode;
+	render?: (value: unknown, record: T, index: number) => React.ReactNode;
 	sortable?: boolean;
 	width?: string | number;
 	align?: 'left' | 'center' | 'right';
 	fixed?: 'left' | 'right';
 }
 
-export interface TableProps<T = any> {
+export interface TableProps<T = Record<string, unknown>> {
 	columns: TableColumn<T>[];
 	data: T[];
 	loading?: boolean;
@@ -40,7 +34,7 @@ export interface TableProps<T = any> {
 	className?: string;
 }
 
-export const Table = <T extends Record<string, any>>({
+export const Table = <T extends Record<string, unknown>>({
 	columns,
 	data,
 	loading = false,
@@ -68,8 +62,7 @@ export const Table = <T extends Record<string, any>>({
 	};
 
 	const getSortIcon = (key: string) => {
-		if (sortBy !== key)
-			return <ArrowUpDown className='h-4 w-4 text-foreground-muted' />;
+		if (sortBy !== key) return <ArrowUpDown className='h-4 w-4 text-foreground-muted' />;
 		return sortOrder === 'asc' ? (
 			<ArrowUp className='h-4 w-4 text-primary' />
 		) : (
@@ -96,15 +89,10 @@ export const Table = <T extends Record<string, any>>({
 	return (
 		<div className={cn('w-full overflow-hidden', className)}>
 			<div className='overflow-x-auto'>
-				<table
-					className={cn(
-						'w-full border-collapse',
-						bordered && 'border border-border',
-					)}
-				>
+				<table className={cn('w-full border-collapse', bordered && 'border border-border')}>
 					<thead>
 						<tr className='border-b border-border'>
-							{columns.map((column) => (
+							{columns.map(column => (
 								<th
 									key={column.key}
 									className={cn(
@@ -112,12 +100,9 @@ export const Table = <T extends Record<string, any>>({
 										sizeClasses[size],
 										column.align === 'center' && 'text-center',
 										column.align === 'right' && 'text-right',
-										column.sortable &&
-											'cursor-pointer hover:text-foreground select-none',
-										column.fixed === 'left' &&
-											'sticky left-0 bg-background z-10',
-										column.fixed === 'right' &&
-											'sticky right-0 bg-background z-10',
+										column.sortable && 'cursor-pointer hover:text-foreground select-none',
+										column.fixed === 'left' && 'sticky left-0 bg-background z-10',
+										column.fixed === 'right' && 'sticky right-0 bg-background z-10'
 									)}
 									style={{ width: column.width }}
 									onClick={() => column.sortable && handleSort(column.key)}
@@ -125,9 +110,7 @@ export const Table = <T extends Record<string, any>>({
 									<div className='flex items-center space-x-1'>
 										<span>{column.title}</span>
 										{column.sortable && (
-											<span className='flex-shrink-0'>
-												{getSortIcon(column.key)}
-											</span>
+											<span className='flex-shrink-0'>{getSortIcon(column.key)}</span>
 										)}
 									</div>
 								</th>
@@ -151,13 +134,11 @@ export const Table = <T extends Record<string, any>>({
 									className={cn(
 										'border-b border-border transition-colors',
 										striped && index % 2 === 1 && 'bg-background-secondary',
-										hoverable && 'hover:bg-background-secondary',
+										hoverable && 'hover:bg-background-secondary'
 									)}
 								>
-									{columns.map((column) => {
-										const value = column.dataIndex
-											? record[column.dataIndex]
-											: record[column.key];
+									{columns.map(column => {
+										const value = column.dataIndex ? record[column.dataIndex] : record[column.key];
 										const renderedValue = column.render
 											? column.render(value, record, index)
 											: value;
@@ -170,13 +151,11 @@ export const Table = <T extends Record<string, any>>({
 													sizeClasses[size],
 													column.align === 'center' && 'text-center',
 													column.align === 'right' && 'text-right',
-													column.fixed === 'left' &&
-														'sticky left-0 bg-background z-10',
-													column.fixed === 'right' &&
-														'sticky right-0 bg-background z-10',
+													column.fixed === 'left' && 'sticky left-0 bg-background z-10',
+													column.fixed === 'right' && 'sticky right-0 bg-background z-10'
 												)}
 											>
-												{renderedValue}
+												{renderedValue as React.ReactNode}
 											</td>
 										);
 									})}
@@ -237,13 +216,9 @@ export const List: React.FC<ListProps> = ({
 					className={cn(
 						'flex items-center space-x-3 transition-colors',
 						sizeClasses[size],
-						variant === 'striped' &&
-							index % 2 === 1 &&
-							'bg-background-secondary',
+						variant === 'striped' && index % 2 === 1 && 'bg-background-secondary',
 						hoverable && 'hover:bg-background-secondary cursor-pointer',
-						index < items.length - 1 &&
-							variant !== 'bordered' &&
-							'border-b border-border',
+						index < items.length - 1 && variant !== 'bordered' && 'border-b border-border'
 					)}
 					onClick={item.onClick}
 				>
@@ -267,9 +242,7 @@ export const List: React.FC<ListProps> = ({
 					{/* Content */}
 					<div className='flex-1 min-w-0'>
 						<div className='flex items-center justify-between'>
-							<h3 className='text-sm font-medium text-foreground truncate'>
-								{item.title}
-							</h3>
+							<h3 className='text-sm font-medium text-foreground truncate'>{item.title}</h3>
 							{item.badge && (
 								<span className='ml-2 px-2 py-0.5 text-xs bg-primary/10 text-primary rounded-full'>
 									{item.badge}
@@ -277,9 +250,7 @@ export const List: React.FC<ListProps> = ({
 							)}
 						</div>
 						{item.description && (
-							<p className='text-sm text-foreground-muted truncate'>
-								{item.description}
-							</p>
+							<p className='text-sm text-foreground-muted truncate'>{item.description}</p>
 						)}
 					</div>
 
@@ -332,11 +303,9 @@ export const Accordion: React.FC<AccordionProps> = ({
 	};
 
 	const toggleItem = (itemId: string) => {
-		setOpenItems((prev) => {
+		setOpenItems(prev => {
 			if (allowMultiple) {
-				return prev.includes(itemId)
-					? prev.filter((id) => id !== itemId)
-					: [...prev, itemId];
+				return prev.includes(itemId) ? prev.filter(id => id !== itemId) : [...prev, itemId];
 			} else {
 				return prev.includes(itemId) ? [] : [itemId];
 			}
@@ -345,16 +314,13 @@ export const Accordion: React.FC<AccordionProps> = ({
 
 	return (
 		<div className={cn('space-y-2', className)}>
-			{items.map((item) => {
+			{items.map(item => {
 				const isOpen = openItems.includes(item.id);
 
 				return (
 					<div
 						key={item.id}
-						className={cn(
-							'rounded-lg transition-all duration-200',
-							variantClasses[variant],
-						)}
+						className={cn('rounded-lg transition-all duration-200', variantClasses[variant])}
 					>
 						<button
 							onClick={() => !item.disabled && toggleItem(item.id)}
@@ -364,13 +330,11 @@ export const Accordion: React.FC<AccordionProps> = ({
 								'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
 								'disabled:opacity-50 disabled:pointer-events-none',
 								sizeClasses[size],
-								isOpen && 'text-primary',
+								isOpen && 'text-primary'
 							)}
 						>
 							<div className='flex items-center space-x-3'>
-								{item.icon && (
-									<span className='text-foreground-muted'>{item.icon}</span>
-								)}
+								{item.icon && <span className='text-foreground-muted'>{item.icon}</span>}
 								<span className='font-medium text-left'>{item.title}</span>
 							</div>
 
@@ -387,7 +351,7 @@ export const Accordion: React.FC<AccordionProps> = ({
 							<div
 								className={cn(
 									'px-4 pb-4 text-foreground-secondary',
-									size === 'sm' ? 'pt-2' : size === 'md' ? 'pt-3' : 'pt-4',
+									size === 'sm' ? 'pt-2' : size === 'md' ? 'pt-3' : 'pt-4'
 								)}
 							>
 								{item.content}

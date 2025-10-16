@@ -8,11 +8,7 @@ import {
 	Plus,
 	MoreHorizontal,
 	Edit,
-	Trash2,
 	Mail,
-	Phone,
-	MapPin,
-	Calendar,
 	UserCheck,
 	UserX,
 	Crown,
@@ -105,13 +101,12 @@ export const UsersManagement: React.FC = () => {
 		},
 	];
 
-	const filteredUsers = users.filter((user) => {
+	const filteredUsers = users.filter(user => {
 		const matchesSearch =
 			user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
 			user.email.toLowerCase().includes(searchTerm.toLowerCase());
 		const matchesRole = selectedRole === 'all' || user.role === selectedRole;
-		const matchesStatus =
-			selectedStatus === 'all' || user.status === selectedStatus;
+		const matchesStatus = selectedStatus === 'all' || user.status === selectedStatus;
 
 		return matchesSearch && matchesRole && matchesStatus;
 	});
@@ -179,12 +174,8 @@ export const UsersManagement: React.FC = () => {
 					<Card key={index} className='p-6'>
 						<div className='flex items-center justify-between'>
 							<div>
-								<p className='text-sm font-medium text-foreground-secondary'>
-									{stat.label}
-								</p>
-								<p className='text-2xl font-bold text-foreground mt-1'>
-									{stat.value}
-								</p>
+								<p className='text-sm font-medium text-foreground-secondary'>{stat.label}</p>
+								<p className='text-2xl font-bold text-foreground mt-1'>{stat.value}</p>
 								<p className='text-sm text-success mt-1'>{stat.change}</p>
 							</div>
 							<div className='p-3 bg-primary/10 rounded-lg'>
@@ -202,7 +193,7 @@ export const UsersManagement: React.FC = () => {
 						<Input
 							placeholder='Search users...'
 							value={searchTerm}
-							onChange={(e) => setSearchTerm(e.target.value)}
+							onChange={e => setSearchTerm(e.target.value)}
 							className='pl-10'
 						/>
 						<Search className='absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-foreground-muted' />
@@ -210,7 +201,7 @@ export const UsersManagement: React.FC = () => {
 					<div className='flex space-x-3'>
 						<select
 							value={selectedRole}
-							onChange={(e) => setSelectedRole(e.target.value)}
+							onChange={e => setSelectedRole(e.target.value)}
 							className='px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent'
 						>
 							<option value='all'>All Roles</option>
@@ -221,7 +212,7 @@ export const UsersManagement: React.FC = () => {
 						</select>
 						<select
 							value={selectedStatus}
-							onChange={(e) => setSelectedStatus(e.target.value)}
+							onChange={e => setSelectedStatus(e.target.value)}
 							className='px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent'
 						>
 							<option value='all'>All Status</option>
@@ -260,11 +251,8 @@ export const UsersManagement: React.FC = () => {
 							</tr>
 						</thead>
 						<tbody>
-							{filteredUsers.map((user) => (
-								<tr
-									key={user.id}
-									className='border-b border-border hover:bg-background-secondary'
-								>
+							{filteredUsers.map(user => (
+								<tr key={user.id} className='border-b border-border hover:bg-background-secondary'>
 									<td className='py-4 px-4'>
 										<div className='flex items-center space-x-3'>
 											<div className='w-10 h-10 bg-primary rounded-full flex items-center justify-center'>
@@ -273,41 +261,31 @@ export const UsersManagement: React.FC = () => {
 												</span>
 											</div>
 											<div>
-												<p className='text-sm font-medium text-foreground'>
-													{user.name}
-												</p>
-												<p className='text-sm text-foreground-secondary'>
-													{user.email}
-												</p>
+												<p className='text-sm font-medium text-foreground'>{user.name}</p>
+												<p className='text-sm text-foreground-secondary'>{user.email}</p>
 											</div>
 										</div>
 									</td>
 									<td className='py-4 px-4'>
 										<div className='flex items-center space-x-2'>
 											{getRoleIcon(user.role)}
-											<span className='text-sm text-foreground'>
-												{user.role}
-											</span>
+											<span className='text-sm text-foreground'>{user.role}</span>
 										</div>
 									</td>
 									<td className='py-4 px-4'>
 										<span
 											className={`text-xs font-medium px-2 py-1 rounded-full ${getStatusColor(
-												user.status,
+												user.status
 											)}`}
 										>
 											{user.status}
 										</span>
 									</td>
 									<td className='py-4 px-4'>
-										<span className='text-sm text-foreground-secondary'>
-											{user.lastLogin}
-										</span>
+										<span className='text-sm text-foreground-secondary'>{user.lastLogin}</span>
 									</td>
 									<td className='py-4 px-4'>
-										<span className='text-sm text-foreground-secondary'>
-											{user.joinDate}
-										</span>
+										<span className='text-sm text-foreground-secondary'>{user.joinDate}</span>
 									</td>
 									<td className='py-4 px-4'>
 										<div className='flex items-center justify-end space-x-2'>
@@ -359,13 +337,9 @@ export const UsersManagement: React.FC = () => {
 								<div className='w-2 h-2 bg-primary rounded-full' />
 								<div className='flex-1'>
 									<p className='text-sm text-foreground'>{activity.action}</p>
-									<p className='text-xs text-foreground-muted'>
-										{activity.user}
-									</p>
+									<p className='text-xs text-foreground-muted'>{activity.user}</p>
 								</div>
-								<span className='text-xs text-foreground-muted'>
-									{activity.time}
-								</span>
+								<span className='text-xs text-foreground-muted'>{activity.time}</span>
 							</div>
 						))}
 					</div>

@@ -61,7 +61,7 @@ export const Dashboard: React.FC = () => {
 			<div>
 				<h1 className='text-h4 text-foreground'>Dashboard</h1>
 				<p className='text-body2 text-foreground-secondary mt-1'>
-					Welcome back! Here's what's happening with your business today.
+					Welcome back! Here&apos;s what&apos;s happening with your business today.
 				</p>
 			</div>
 
@@ -71,15 +71,11 @@ export const Dashboard: React.FC = () => {
 					<Card key={index} className='p-4 sm:p-6'>
 						<div className='flex items-center justify-between'>
 							<div className='flex-1 min-w-0'>
-								<p className='text-sm font-medium text-foreground-muted'>
-									{stat.title}
-								</p>
+								<p className='text-sm font-medium text-foreground-muted'>{stat.title}</p>
 								<p className='text-h4 text-foreground mt-1'>{stat.value}</p>
 								<p
 									className={`text-sm mt-1 ${
-										stat.changeType === 'positive'
-											? 'text-success'
-											: 'text-error'
+										stat.changeType === 'positive' ? 'text-success' : 'text-error'
 									}`}
 								>
 									{stat.change} from last month

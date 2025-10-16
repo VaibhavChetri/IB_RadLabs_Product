@@ -6,7 +6,6 @@
 import React, { useState } from 'react';
 import {
 	Alert,
-	AlertContainer,
 	Button,
 	ButtonGroup,
 	IconButton,
@@ -33,33 +32,24 @@ import {
 	Accordion,
 	Badge,
 	Tooltip,
-	Snackbar,
 	SnackbarProvider,
 	useSnackbar,
 	Container,
 	Grid,
 	Flex,
 	Stack,
-	Spacer,
-	Divider,
-	AspectRatio,
 	ResponsiveVisibility,
 } from '../components/ui';
 import {
 	Home,
 	User,
 	Settings,
-	Mail,
 	Bell,
-	Search,
 	Plus,
 	Edit,
 	Trash2,
 	Download,
-	Upload,
 	Star,
-	Heart,
-	Share,
 	MoreHorizontal,
 } from 'lucide-react';
 
@@ -115,8 +105,7 @@ const sampleAccordionData = [
 	{
 		id: '1',
 		title: 'Getting Started',
-		content:
-			'Learn the basics of using our platform with this comprehensive guide.',
+		content: 'Learn the basics of using our platform with this comprehensive guide.',
 		icon: <Home className='h-5 w-5' />,
 	},
 	{
@@ -213,13 +202,11 @@ const DesignSystemShowcase: React.FC = () => {
 					<div className='space-y-12'>
 						{/* Header */}
 						<div className='text-center'>
-							<h1 className='text-h2 text-foreground mb-4'>
-								Design System Showcase
-							</h1>
+							<h1 className='text-h2 text-foreground mb-4'>Design System Showcase</h1>
 							<p className='text-body1 text-foreground-secondary max-w-2xl mx-auto'>
-								A comprehensive collection of reusable UI components built with
-								React, TypeScript, and TailwindCSS. All components are fully
-								customizable and follow industry standards.
+								A comprehensive collection of reusable UI components built with React, TypeScript,
+								and TailwindCSS. All components are fully customizable and follow industry
+								standards.
 							</p>
 						</div>
 
@@ -289,24 +276,16 @@ const DesignSystemShowcase: React.FC = () => {
 										</div>
 
 										<div>
-											<h3 className='text-h6 text-foreground mb-3'>
-												With Icons
-											</h3>
+											<h3 className='text-h6 text-foreground mb-3'>With Icons</h3>
 											<Flex gap='md'>
-												<Button leftIcon={<Plus className='h-4 w-4' />}>
-													Add Item
-												</Button>
-												<Button rightIcon={<Download className='h-4 w-4' />}>
-													Download
-												</Button>
+												<Button leftIcon={<Plus className='h-4 w-4' />}>Add Item</Button>
+												<Button rightIcon={<Download className='h-4 w-4' />}>Download</Button>
 												<Button loading>Loading...</Button>
 											</Flex>
 										</div>
 
 										<div>
-											<h3 className='text-h6 text-foreground mb-3'>
-												Button Group
-											</h3>
+											<h3 className='text-h6 text-foreground mb-3'>Button Group</h3>
 											<ButtonGroup>
 												<Button variant='outline'>Previous</Button>
 												<Button variant='outline'>Next</Button>
@@ -314,14 +293,9 @@ const DesignSystemShowcase: React.FC = () => {
 										</div>
 
 										<div>
-											<h3 className='text-h6 text-foreground mb-3'>
-												Icon Buttons
-											</h3>
+											<h3 className='text-h6 text-foreground mb-3'>Icon Buttons</h3>
 											<Flex gap='md'>
-												<IconButton
-													icon={<Edit className='h-4 w-4' />}
-													aria-label='Edit'
-												/>
+												<IconButton icon={<Edit className='h-4 w-4' />} aria-label='Edit' />
 												<IconButton
 													icon={<Trash2 className='h-4 w-4' />}
 													variant='destructive'
@@ -346,9 +320,7 @@ const DesignSystemShowcase: React.FC = () => {
 								<Card>
 									<CardHeader>
 										<CardTitle>Input Fields</CardTitle>
-										<CardDescription>
-											Various input field configurations
-										</CardDescription>
+										<CardDescription>Various input field configurations</CardDescription>
 									</CardHeader>
 									<CardContent>
 										<Stack spacing='md'>
@@ -358,16 +330,8 @@ const DesignSystemShowcase: React.FC = () => {
 												helperText="We'll never share your email"
 											/>
 											<SearchInput placeholder='Search...' />
-											<Input
-												label='Password'
-												type='password'
-												placeholder='Enter your password'
-											/>
-											<Textarea
-												label='Message'
-												placeholder='Enter your message'
-												rows={4}
-											/>
+											<Input label='Password' type='password' placeholder='Enter your password' />
+											<Textarea label='Message' placeholder='Enter your message' rows={4} />
 										</Stack>
 									</CardContent>
 								</Card>
@@ -375,16 +339,14 @@ const DesignSystemShowcase: React.FC = () => {
 								<Card>
 									<CardHeader>
 										<CardTitle>Form Controls</CardTitle>
-										<CardDescription>
-											Checkboxes, radios, and switches
-										</CardDescription>
+										<CardDescription>Checkboxes, radios, and switches</CardDescription>
 									</CardHeader>
 									<CardContent>
 										<Stack spacing='md'>
 											<Checkbox
 												label='I agree to the terms and conditions'
 												checked={checkboxChecked}
-												onChange={(e) => setCheckboxChecked(e.target.checked)}
+												onChange={e => setCheckboxChecked(e.target.checked)}
 											/>
 											<div>
 												<p className='text-sm font-medium text-foreground mb-2'>
@@ -396,21 +358,21 @@ const DesignSystemShowcase: React.FC = () => {
 														name='radio-group'
 														value='option1'
 														checked={radioValue === 'option1'}
-														onChange={(e) => setRadioValue(e.target.value)}
+														onChange={e => setRadioValue(e.target.value)}
 													/>
 													<Radio
 														label='Option 2'
 														name='radio-group'
 														value='option2'
 														checked={radioValue === 'option2'}
-														onChange={(e) => setRadioValue(e.target.value)}
+														onChange={e => setRadioValue(e.target.value)}
 													/>
 												</Stack>
 											</div>
 											<Switch
 												label='Enable notifications'
 												checked={switchChecked}
-												onChange={(e) => setSwitchChecked(e.target.checked)}
+												onChange={e => setSwitchChecked(e.target.checked)}
 											/>
 											<Dropdown
 												label='Select an option'
@@ -432,9 +394,7 @@ const DesignSystemShowcase: React.FC = () => {
 								<Card>
 									<CardHeader>
 										<CardTitle>Simple Card</CardTitle>
-										<CardDescription>
-											This is a simple card with basic content
-										</CardDescription>
+										<CardDescription>This is a simple card with basic content</CardDescription>
 									</CardHeader>
 									<CardContent>
 										<p className='text-body2 text-foreground-secondary'>
@@ -460,9 +420,7 @@ const DesignSystemShowcase: React.FC = () => {
 											<div className='w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4'>
 												<Star className='h-6 w-6 text-primary' />
 											</div>
-											<h3 className='text-h6 text-foreground mb-2'>
-												Premium Feature
-											</h3>
+											<h3 className='text-h6 text-foreground mb-2'>Premium Feature</h3>
 											<p className='text-body2 text-foreground-secondary mb-4'>
 												Unlock advanced features with our premium plan
 											</p>
@@ -497,9 +455,7 @@ const DesignSystemShowcase: React.FC = () => {
 								<Card>
 									<CardHeader>
 										<CardTitle>Data Table</CardTitle>
-										<CardDescription>
-											Sortable table with sample data
-										</CardDescription>
+										<CardDescription>Sortable table with sample data</CardDescription>
 									</CardHeader>
 									<CardContent>
 										<Table
@@ -517,9 +473,7 @@ const DesignSystemShowcase: React.FC = () => {
 								<Card>
 									<CardHeader>
 										<CardTitle>List</CardTitle>
-										<CardDescription>
-											Interactive list with icons and badges
-										</CardDescription>
+										<CardDescription>Interactive list with icons and badges</CardDescription>
 									</CardHeader>
 									<CardContent>
 										<List items={sampleListData} hoverable />
@@ -540,16 +494,12 @@ const DesignSystemShowcase: React.FC = () => {
 
 						{/* Feedback Components */}
 						<div>
-							<h2 className='text-h4 text-foreground mb-4'>
-								Feedback Components
-							</h2>
+							<h2 className='text-h4 text-foreground mb-4'>Feedback Components</h2>
 							<Grid cols={2} gap='lg'>
 								<Card>
 									<CardHeader>
 										<CardTitle>Badges</CardTitle>
-										<CardDescription>
-											Status indicators and labels
-										</CardDescription>
+										<CardDescription>Status indicators and labels</CardDescription>
 									</CardHeader>
 									<CardContent>
 										<Flex gap='md' wrap='wrap'>
@@ -566,9 +516,7 @@ const DesignSystemShowcase: React.FC = () => {
 								<Card>
 									<CardHeader>
 										<CardTitle>Tooltips</CardTitle>
-										<CardDescription>
-											Hover for more information
-										</CardDescription>
+										<CardDescription>Hover for more information</CardDescription>
 									</CardHeader>
 									<CardContent>
 										<Flex gap='md'>
@@ -586,18 +534,14 @@ const DesignSystemShowcase: React.FC = () => {
 
 						{/* Layout Components */}
 						<div>
-							<h2 className='text-h4 text-foreground mb-4'>
-								Layout Components
-							</h2>
+							<h2 className='text-h4 text-foreground mb-4'>Layout Components</h2>
 							<Card>
 								<CardContent className='p-6'>
 									<Stack spacing='lg'>
 										<div>
-											<h3 className='text-h6 text-foreground mb-3'>
-												Grid System
-											</h3>
+											<h3 className='text-h6 text-foreground mb-3'>Grid System</h3>
 											<Grid cols={4} gap='md'>
-												{[1, 2, 3, 4].map((i) => (
+												{[1, 2, 3, 4].map(i => (
 													<div
 														key={i}
 														className='p-4 bg-background-secondary rounded-lg text-center'
@@ -609,9 +553,7 @@ const DesignSystemShowcase: React.FC = () => {
 										</div>
 
 										<div>
-											<h3 className='text-h6 text-foreground mb-3'>
-												Flex Layout
-											</h3>
+											<h3 className='text-h6 text-foreground mb-3'>Flex Layout</h3>
 											<Flex
 												justify='between'
 												align='center'
@@ -624,9 +566,7 @@ const DesignSystemShowcase: React.FC = () => {
 										</div>
 
 										<div>
-											<h3 className='text-h6 text-foreground mb-3'>
-												Responsive Visibility
-											</h3>
+											<h3 className='text-h6 text-foreground mb-3'>Responsive Visibility</h3>
 											<Flex gap='md'>
 												<ResponsiveVisibility show={{ sm: true, md: false }}>
 													<Badge variant='primary'>Mobile Only</Badge>
@@ -669,10 +609,7 @@ const DesignSystemShowcase: React.FC = () => {
 											Try these interactive components:
 										</p>
 										<Flex gap='md' wrap='wrap'>
-											<Button
-												onClick={showSnackbar}
-												leftIcon={<Bell className='h-4 w-4' />}
-											>
+											<Button onClick={showSnackbar} leftIcon={<Bell className='h-4 w-4' />}>
 												Show Snackbar
 											</Button>
 											<Button
@@ -681,10 +618,7 @@ const DesignSystemShowcase: React.FC = () => {
 											>
 												Toggle Checkbox
 											</Button>
-											<Button
-												variant='outline'
-												onClick={() => setSwitchChecked(!switchChecked)}
-											>
+											<Button variant='outline' onClick={() => setSwitchChecked(!switchChecked)}>
 												Toggle Switch
 											</Button>
 										</Flex>
@@ -695,12 +629,11 @@ const DesignSystemShowcase: React.FC = () => {
 
 						{/* Floating Action Button */}
 						<FAB
-							icon={<Plus className='h-6 w-6' />}
-							onClick={() =>
-								addSnackbar({ message: 'FAB clicked!', variant: 'info' })
-							}
+							onClick={() => addSnackbar({ message: 'FAB clicked!', variant: 'info' })}
 							aria-label='Add new item'
-						/>
+						>
+							<Plus className='h-6 w-6' />
+						</FAB>
 					</div>
 				</Container>
 			</div>

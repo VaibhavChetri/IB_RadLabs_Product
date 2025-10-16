@@ -7,8 +7,7 @@ import React from 'react';
 import { Eye, EyeOff, Search, X } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
-export interface InputProps
-	extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
+export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
 	label?: string;
 	helperText?: string;
 	error?: string;
@@ -52,7 +51,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
 			onChange,
 			...props
 		},
-		ref,
+		ref
 	) => {
 		const [showPassword, setShowPassword] = React.useState(false);
 		const [internalValue, setInternalValue] = React.useState(value || '');
@@ -110,7 +109,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
 							// Error state
 							hasError && 'border-error focus:border-error focus:ring-error',
 
-							className,
+							className
 						)}
 						value={value !== undefined ? value : internalValue}
 						onChange={handleChange}
@@ -135,11 +134,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
 								onClick={() => setShowPassword(!showPassword)}
 								className='text-foreground-muted hover:text-foreground transition-colors'
 							>
-								{showPassword ? (
-									<EyeOff className='h-4 w-4' />
-								) : (
-									<Eye className='h-4 w-4' />
-								)}
+								{showPassword ? <EyeOff className='h-4 w-4' /> : <Eye className='h-4 w-4' />}
 							</button>
 						)}
 
@@ -150,30 +145,24 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
 				</div>
 
 				{(helperText || error) && (
-					<p
-						className={cn(
-							'text-sm',
-							hasError ? 'text-error' : 'text-foreground-muted',
-						)}
-					>
+					<p className={cn('text-sm', hasError ? 'text-error' : 'text-foreground-muted')}>
 						{error || helperText}
 					</p>
 				)}
 			</div>
 		);
-	},
+	}
 );
 
 Input.displayName = 'Input';
 
 // Search Input Component
-export interface SearchInputProps
-	extends Omit<InputProps, 'leftIcon' | 'type'> {
+export interface SearchInputProps extends Omit<InputProps, 'leftIcon' | 'type'> {
 	onSearch?: (value: string) => void;
 }
 
 export const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
-	({ onSearch, onChange, ...props }, ref) => {
+	({ onSearch, onChange: _onChange, ...props }, ref) => {
 		const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
 			if (e.key === 'Enter') {
 				onSearch?.(e.currentTarget.value);
@@ -189,14 +178,13 @@ export const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
 				{...props}
 			/>
 		);
-	},
+	}
 );
 
 SearchInput.displayName = 'SearchInput';
 
 // Textarea Component
-export interface TextareaProps
-	extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
 	label?: string;
 	helperText?: string;
 	error?: string;
@@ -219,7 +207,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
 			resize = 'vertical',
 			...props
 		},
-		ref,
+		ref
 	) => {
 		const hasError = !!error;
 
@@ -272,24 +260,19 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
 						// Error state
 						hasError && 'border-error focus:border-error focus:ring-error',
 
-						className,
+						className
 					)}
 					{...props}
 				/>
 
 				{(helperText || error) && (
-					<p
-						className={cn(
-							'text-sm',
-							hasError ? 'text-error' : 'text-foreground-muted',
-						)}
-					>
+					<p className={cn('text-sm', hasError ? 'text-error' : 'text-foreground-muted')}>
 						{error || helperText}
 					</p>
 				)}
 			</div>
 		);
-	},
+	}
 );
 
 Textarea.displayName = 'Textarea';

@@ -1,0 +1,185 @@
+@import "tailwindcss";
+
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&family=Barlow:wght@300;400;500;600;700;800&display=swap');
+
+/* TailwindCSS v4 Theme Configuration */
+@theme {
+  /* Colors */
+  --color-primary-50: #f0fdf4;
+  --color-primary-100: #dcfce7;
+  --color-primary-200: #bbf7d0;
+  --color-primary-300: #86efac;
+  --color-primary-400: #4ade80;
+  --color-primary-500: #00a76f;
+  --color-primary-600: #007867;
+  --color-primary-700: #065f46;
+  --color-primary-800: #064e3b;
+  --color-primary-900: #064e3b;
+  --color-primary: #00a76f;
+  --color-primary-foreground: #ffffff;
+
+  --color-secondary-50: #faf5ff;
+  --color-secondary-100: #f3e8ff;
+  --color-secondary-200: #e9d5ff;
+  --color-secondary-300: #d8b4fe;
+  --color-secondary-400: #c084fc;
+  --color-secondary-500: #8e33ff;
+  --color-secondary-600: #7c3aed;
+  --color-secondary-700: #6d28d9;
+  --color-secondary-800: #5b21b6;
+  --color-secondary-900: #4c1d95;
+  --color-secondary: #8e33ff;
+  --color-secondary-foreground: #ffffff;
+
+  --color-success-50: #f0fdf4;
+  --color-success-100: #dcfce7;
+  --color-success-200: #bbf7d0;
+  --color-success-300: #86efac;
+  --color-success-400: #4ade80;
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+  --color-success-700: #15803d;
+  --color-success-800: #166534;
+  --color-success-900: #14532d;
+  --color-success: #22c55e;
+  --color-success-foreground: #ffffff;
+
+  --color-error-50: #fef2f2;
+  --color-error-100: #fee2e2;
+  --color-error-200: #fecaca;
+  --color-error-300: #fca5a5;
+  --color-error-400: #f87171;
+  --color-error-500: #ff5630;
+  --color-error-600: #dc2626;
+  --color-error-700: #b91c1c;
+  --color-error-800: #991b1b;
+  --color-error-900: #7f1d1d;
+  --color-error: #ff5630;
+  --color-error-foreground: #ffffff;
+
+  --color-warning-50: #fffbeb;
+  --color-warning-100: #fef3c7;
+  --color-warning-200: #fde68a;
+  --color-warning-300: #fcd34d;
+  --color-warning-400: #fbbf24;
+  --color-warning-500: #ffab00;
+  --color-warning-600: #d97706;
+  --color-warning-700: #b45309;
+  --color-warning-800: #92400e;
+  --color-warning-900: #78350f;
+  --color-warning: #ffab00;
+  --color-warning-foreground: #ffffff;
+
+  --color-info-50: #f0f9ff;
+  --color-info-100: #e0f2fe;
+  --color-info-200: #bae6fd;
+  --color-info-300: #7dd3fc;
+  --color-info-400: #38bdf8;
+  --color-info-500: #00b8d9;
+  --color-info-600: #0284c7;
+  --color-info-700: #0369a1;
+  --color-info-800: #075985;
+  --color-info-900: #0c4a6e;
+  --color-info: #00b8d9;
+  --color-info-foreground: #ffffff;
+
+  /* Semantic Colors */
+  --color-background: #ffffff;
+  --color-background-secondary: #f9fafb;
+  --color-background-muted: #f4f6f8;
+  --color-background-accent: #f0f9ff;
+
+  --color-foreground: #1c252e;
+  --color-foreground-secondary: #637381;
+  --color-foreground-muted: #919eab;
+  --color-foreground-accent: #00a76f;
+
+  --color-border: #e5e7eb;
+  --color-border-secondary: #d1d5db;
+  --color-border-muted: #f3f4f6;
+
+  /* Typography */
+  --font-family-primary: 'Public Sans', sans-serif;
+  --font-family-secondary: 'Barlow', sans-serif;
+
+  --font-size-h1: 64px;
+  --line-height-h1: 80px;
+  --font-weight-h1: 800;
+
+  --font-size-h2: 48px;
+  --line-height-h2: 64px;
+  --font-weight-h2: 800;
+
+  --font-size-h3: 32px;
+  --line-height-h3: 48px;
+  --font-weight-h3: 700;
+
+  --font-size-h4: 24px;
+  --line-height-h4: 36px;
+  --font-weight-h4: 700;
+
+  --font-size-h5: 20px;
+  --line-height-h5: 30px;
+  --font-weight-h5: 700;
+
+  --font-size-h6: 18px;
+  --line-height-h6: 28px;
+  --font-weight-h6: 600;
+
+  --font-size-body1: 16px;
+  --line-height-body1: 24px;
+  --font-weight-body1: 400;
+
+  --font-size-body2: 14px;
+  --line-height-body2: 22px;
+  --font-weight-body2: 400;
+
+  /* Spacing */
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-10: 40px;
+  --spacing-12: 48px;
+  --spacing-16: 64px;
+  --spacing-20: 80px;
+  --spacing-24: 96px;
+  --spacing-32: 128px;
+
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-3xl: 32px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-z1: 0px 1px 2px 0px rgba(0, 0, 0, 0.12);
+  --shadow-z4: 0px 4px 8px 0px rgba(0, 0, 0, 0.12);
+  --shadow-z8: 0px 8px 16px 0px rgba(0, 0, 0, 0.12);
+  --shadow-z12: 0px 12px 24px 0px rgba(0, 0, 0, 0.12);
+  --shadow-z16: 0px 16px 32px 0px rgba(0, 0, 0, 0.12);
+  --shadow-z20: 0px 20px 40px 0px rgba(0, 0, 0, 0.12);
+  --shadow-z24: 0px 24px 48px 0px rgba(0, 0, 0, 0.12);
+}
+
+/* Base styles */
+@layer base {
+  html {
+    font-family: var(--font-family-primary);
+  }
+  
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-feature-settings: 'cv11', 'ss01';
+    font-variation-settings: 'opsz' 32;
+  }
+}

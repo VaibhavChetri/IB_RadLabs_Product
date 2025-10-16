@@ -30,20 +30,19 @@ export const Login: React.FC = () => {
 			});
 
 			// Handle successful login
-			if (result.data && result.data.access_token) {
-				// Store tokens in localStorage (handled by the API service)
-				// Dispatch login success with user data
+			if (result.status_code === 200 && result.data && result.data.access_token) {
+				// Dispatch login success with user data from the response
 				dispatch(
 					loginSuccess({
-						id: result.data.user_id?.toString() || '1',
-						name: result.data.user_name || username,
-						email: result.data.user_email || `${username}@example.com`,
-						role: result.data.user_role || 'User',
-					}),
+						id: result.data.user.id.toString(),
+						name: `${result.data.user.first_name} ${result.data.user.last_name}`.trim(),
+						email: result.data.user.email,
+						role: `User Type ${result.data.user.user_type_id}`,
+					})
 				);
 				navigate('/');
 			} else {
-				setError('Login failed: No access token received');
+				setError('Login failed: Invalid response from server');
 			}
 		} catch (error: any) {
 			console.error('Login error:', error);
@@ -56,13 +55,9 @@ export const Login: React.FC = () => {
 			<div className='max-w-md w-full space-y-8'>
 				<div className='text-center'>
 					<div className='mx-auto w-12 h-12 bg-primary rounded-lg flex items-center justify-center'>
-						<span className='text-primary-foreground font-bold text-lg'>
-							IB
-						</span>
+						<span className='text-primary-foreground font-bold text-lg'>IB</span>
 					</div>
-					<h2 className='mt-6 text-h3 text-foreground'>
-						Sign in to your account
-					</h2>
+					<h2 className='mt-6 text-h3 text-foreground'>Sign in to your account</h2>
 					<p className='mt-2 text-body2 text-foreground-secondary'>
 						Welcome back! Please sign in to continue.
 					</p>
@@ -70,12 +65,8 @@ export const Login: React.FC = () => {
 						<p className='text-sm text-foreground-muted'>
 							<strong>Demo Credentials:</strong>
 						</p>
-						<p className='text-sm text-foreground-muted'>
-							Username: ch-mumbai
-						</p>
-						<p className='text-sm text-foreground-muted'>
-							Password: ch-mumbai
-						</p>
+						<p className='text-sm text-foreground-muted'>Username: ch-mumbai</p>
+						<p className='text-sm text-foreground-muted'>Password: ch-mumbai</p>
 					</div>
 				</div>
 
@@ -92,7 +83,7 @@ export const Login: React.FC = () => {
 							type='text'
 							placeholder='Enter your username'
 							value={username}
-							onChange={(e) => setUsername(e.target.value)}
+							onChange={e => setUsername(e.target.value)}
 							required
 						/>
 						<Input
@@ -100,7 +91,7 @@ export const Login: React.FC = () => {
 							type='password'
 							placeholder='Enter your password'
 							value={password}
-							onChange={(e) => setPassword(e.target.value)}
+							onChange={e => setPassword(e.target.value)}
 							required
 						/>
 
@@ -121,10 +112,7 @@ export const Login: React.FC = () => {
 							</div>
 
 							<div className='text-sm'>
-								<a
-									href='#'
-									className='font-medium text-primary hover:text-primary/80'
-								>
+								<a href='#' className='font-medium text-primary hover:text-primary/80'>
 									Forgot your password?
 								</a>
 							</div>

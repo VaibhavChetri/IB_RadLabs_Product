@@ -4,6 +4,7 @@
  */
 
 import { apiService, ApiResponse } from './api';
+import TokenManager from '../utils/tokenManager';
 
 // Types
 export interface LoginCredentials {
@@ -13,16 +14,27 @@ export interface LoginCredentials {
 
 export interface LoginResponse {
 	access_token: string;
-	refresh_token?: string;
-	token_type?: string;
-	expires_in?: number;
-	user_id?: number;
-	user_name?: string;
-	user_email?: string;
-	user_role?: string;
-	// Additional fields that might be returned
-	scope?: string;
-	created_at?: string;
+	access_expires: string;
+	refresh_token: string;
+	refresh_expires: string;
+	token_type: string;
+	expires_in: number;
+	user: {
+		id: number;
+		username: string;
+		email: string;
+		first_name: string;
+		last_name: string;
+		gender: number;
+		contact: string;
+		avatar: string;
+		status: number;
+		user_type_id: number;
+		city_id: number;
+		facility_id: number;
+		created_at: string | null;
+		updated_at: string | null;
+	};
 }
 
 export interface RefreshTokenResponse {
@@ -56,12 +68,18 @@ export class AuthApiService {
 		});
 
 		// Store tokens if login is successful
-		if (response.data && response.data.access_token) {
-			localStorage.setItem(import.meta.env.VITE_AUTH_TOKEN_KEY || 'auth_token', response.data.access_token);
+		if (response.status_code === 200 && response.data && response.data.access_token) {
+			TokenManager.setTokenData({
+				access_token: response.data.access_token,
+				refresh_token: response.data.refresh_token,
+				access_expires: response.data.access_expires,
+				refresh_expires: response.data.refresh_expires,
+				token_type: response.data.token_type,
+				expires_in: response.data.expires_in,
+			});
 			
-			if (response.data.refresh_token) {
-				localStorage.setItem(import.meta.env.VITE_REFRESH_TOKEN_KEY || 'refresh_token', response.data.refresh_token);
-			}
+			// Initialize token monitoring
+			TokenManager.initialize();
 		}
 
 		return response;

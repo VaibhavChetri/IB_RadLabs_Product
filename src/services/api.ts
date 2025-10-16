@@ -10,19 +10,18 @@ import axios, {
 	AxiosError,
 	InternalAxiosRequestConfig,
 } from 'axios';
+import TokenManager from '../utils/tokenManager';
 
 // Environment variables
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3099/v1/api';
 const API_TIMEOUT = Number(import.meta.env.VITE_API_TIMEOUT) || 10000;
-const AUTH_TOKEN_KEY = import.meta.env.VITE_AUTH_TOKEN_KEY || 'auth_token';
-const REFRESH_TOKEN_KEY = import.meta.env.VITE_REFRESH_TOKEN_KEY || 'refresh_token';
 
 // API Response Types
 export interface ApiResponse<T = any> {
+	status_code: number;
+	status: string;
+	message: string | null;
 	data: T;
-	message?: string;
-	statusCode?: number;
-	success?: boolean;
 }
 
 export interface ApiError {
@@ -30,38 +29,6 @@ export interface ApiError {
 	status: number;
 	code?: string;
 	details?: any;
-}
-
-// Token Management
-export class TokenManager {
-	static getToken(): string | null {
-		return localStorage.getItem(AUTH_TOKEN_KEY);
-	}
-
-	static setToken(token: string): void {
-		localStorage.setItem(AUTH_TOKEN_KEY, token);
-	}
-
-	static removeToken(): void {
-		localStorage.removeItem(AUTH_TOKEN_KEY);
-	}
-
-	static getRefreshToken(): string | null {
-		return localStorage.getItem(REFRESH_TOKEN_KEY);
-	}
-
-	static setRefreshToken(token: string): void {
-		localStorage.setItem(REFRESH_TOKEN_KEY, token);
-	}
-
-	static removeRefreshToken(): void {
-		localStorage.removeItem(REFRESH_TOKEN_KEY);
-	}
-
-	static clearTokens(): void {
-		this.removeToken();
-		this.removeRefreshToken();
-	}
 }
 
 // Create Axios instance
@@ -76,11 +43,14 @@ const apiClient: AxiosInstance = axios.create({
 // Request interceptor
 apiClient.interceptors.request.use(
 	(config: InternalAxiosRequestConfig) => {
-		// Add auth token to requests
-		const token = TokenManager.getToken();
-		if (token && config.headers) {
-			config.headers.Authorization = `Bearer ${token}`;
+		// Add Bearer token to requests
+		const bearerToken = TokenManager.getBearerToken();
+		if (bearerToken && config.headers) {
+			config.headers.Authorization = bearerToken;
 		}
+
+		// Update user activity on each request
+		TokenManager.updateUserActivity();
 
 		// Add request timestamp for debugging
 		(config as any).metadata = { startTime: new Date() };
@@ -121,9 +91,14 @@ apiClient.interceptors.response.use(
 
 					const { access_token, refresh_token: newRefreshToken } = refreshResponse.data;
 
-					TokenManager.setToken(access_token);
-					if (newRefreshToken) {
-						TokenManager.setRefreshToken(newRefreshToken);
+					// Update token data in TokenManager
+					const currentTokenData = TokenManager.getTokenData();
+					if (currentTokenData) {
+						TokenManager.setTokenData({
+							...currentTokenData,
+							access_token,
+							refresh_token: newRefreshToken || currentTokenData.refresh_token,
+						});
 					}
 
 					// Retry original request with new token
@@ -172,12 +147,7 @@ export class ApiService {
 	// Generic HTTP methods
 	public async get<T = any>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
 		const response = await this.client.get(url, config);
-		return {
-			data: response.data,
-			message: response.data.message,
-			statusCode: response.status,
-			success: true,
-		};
+		return response.data;
 	}
 
 	public async post<T = any>(
@@ -186,12 +156,7 @@ export class ApiService {
 		config?: AxiosRequestConfig
 	): Promise<ApiResponse<T>> {
 		const response = await this.client.post(url, data, config);
-		return {
-			data: response.data,
-			message: response.data.message,
-			statusCode: response.status,
-			success: true,
-		};
+		return response.data;
 	}
 
 	public async put<T = any>(
@@ -200,12 +165,7 @@ export class ApiService {
 		config?: AxiosRequestConfig
 	): Promise<ApiResponse<T>> {
 		const response = await this.client.put(url, data, config);
-		return {
-			data: response.data,
-			message: response.data.message,
-			statusCode: response.status,
-			success: true,
-		};
+		return response.data;
 	}
 
 	public async patch<T = any>(
@@ -214,22 +174,12 @@ export class ApiService {
 		config?: AxiosRequestConfig
 	): Promise<ApiResponse<T>> {
 		const response = await this.client.patch(url, data, config);
-		return {
-			data: response.data,
-			message: response.data.message,
-			statusCode: response.status,
-			success: true,
-		};
+		return response.data;
 	}
 
 	public async delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
 		const response = await this.client.delete(url, config);
-		return {
-			data: response.data,
-			message: response.data.message,
-			statusCode: response.status,
-			success: true,
-		};
+		return response.data;
 	}
 
 	// Form data methods

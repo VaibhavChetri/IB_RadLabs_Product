@@ -4,8 +4,11 @@
  */
 
 // Core API
-export { apiService, apiClient, TokenManager } from './api';
+export { apiService, apiClient } from './api';
 export type { ApiResponse, ApiError } from './api';
+
+// Token Management
+export { default as TokenManager } from '../utils/tokenManager';
 
 // Domain-specific services
 export { AuthApiService } from './authApi';

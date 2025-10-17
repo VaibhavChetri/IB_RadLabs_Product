@@ -22,3 +22,4 @@ docs/generated/
 # Ignore specific files
 CHANGELOG.md
 LICENSE
+test-api.js

@@ -5,6 +5,7 @@
 
 import { store } from '../store';
 import { logout } from '../store/slices/authSlice';
+import { MenuPermission } from '../types/menu';
 
 export interface TokenData {
 	access_token: string;
@@ -37,10 +38,10 @@ class TokenManager {
 		localStorage.setItem(this.TOKEN_DATA_KEY, JSON.stringify(tokenData));
 		localStorage.setItem(this.AUTH_TOKEN_KEY, tokenData.access_token);
 		localStorage.setItem(this.REFRESH_TOKEN_KEY, tokenData.refresh_token);
-		
+
 		// Update user activity
 		this.updateUserActivity();
-		
+
 		// Start inactivity monitoring
 		this.startInactivityMonitoring();
 	}
@@ -76,7 +77,7 @@ class TokenManager {
 
 		const now = new Date().getTime();
 		const expiresAt = new Date(tokenData.access_expires).getTime();
-		
+
 		return now >= expiresAt;
 	}
 
@@ -89,7 +90,7 @@ class TokenManager {
 
 		const now = new Date().getTime();
 		const expiresAt = new Date(tokenData.refresh_expires).getTime();
-		
+
 		return now >= expiresAt;
 	}
 
@@ -121,7 +122,7 @@ class TokenManager {
 
 		const now = Date.now();
 		const timeSinceLastActivity = now - activity.lastActivity;
-		
+
 		return timeSinceLastActivity > this.INACTIVITY_TIMEOUT;
 	}
 
@@ -179,7 +180,18 @@ class TokenManager {
 	/**
 	 * Clear all tokens and logout
 	 */
-	static logout(): void {
+	static async logout(): Promise<void> {
+		try {
+			// Call API logout endpoint (optional - for server-side session cleanup)
+			// Note: This is fire-and-forget, we don't wait for it to complete
+			this.callApiLogout().catch(error => {
+				console.warn('API logout failed:', error);
+				// Continue with local logout even if API call fails
+			});
+		} catch (error) {
+			console.warn('Logout error:', error);
+		}
+
 		// Clear timers
 		if (this.inactivityTimer) {
 			clearInterval(this.inactivityTimer);
@@ -195,12 +207,88 @@ class TokenManager {
 		localStorage.removeItem(this.REFRESH_TOKEN_KEY);
 		localStorage.removeItem(this.TOKEN_DATA_KEY);
 		localStorage.removeItem(this.USER_ACTIVITY_KEY);
+		this.clearMenuPermissions(); // Clear menu permissions
+		this.clearUserData(); // Clear user data
 
 		// Dispatch logout action
 		store.dispatch(logout());
 
 		// Redirect to login
 		window.location.href = '/login';
+	}
+
+	/**
+	 * Call API logout endpoint
+	 */
+	private static async callApiLogout(): Promise<void> {
+		const token = this.getAccessToken();
+		if (!token) return;
+
+		try {
+			// Import here to avoid circular dependency
+			const { apiService } = await import('../services/api');
+			await apiService.post(
+				'/oauth/logout',
+				{},
+				{
+					headers: {
+						Authorization: `Bearer ${token}`,
+					},
+				}
+			);
+		} catch (error) {
+			// Ignore API errors during logout
+			console.warn('API logout call failed:', error);
+		}
+	}
+
+	/**
+	 * Store menu permissions (received from login response)
+	 */
+	static setMenuPermissions(permissions: Record<string, MenuPermission>): void {
+		localStorage.setItem('menu_permissions', JSON.stringify(permissions));
+	}
+
+	/**
+	 * Get stored menu permissions
+	 */
+	static getMenuPermissions(): Record<string, MenuPermission> | null {
+		const permissions = localStorage.getItem('menu_permissions');
+		return permissions ? JSON.parse(permissions) : null;
+	}
+
+	/**
+	 * Clear menu permissions (for logout)
+	 */
+	static clearMenuPermissions(): void {
+		localStorage.removeItem('menu_permissions');
+	}
+
+	/**
+	 * Store user data (for auth restoration)
+	 */
+	static setUserData(userData: any): void {
+		localStorage.setItem('user_data', JSON.stringify(userData));
+	}
+
+	/**
+	 * Get user data (for auth restoration)
+	 */
+	static getUserData(): any | null {
+		try {
+			const userData = localStorage.getItem('user_data');
+			return userData ? JSON.parse(userData) : null;
+		} catch (error) {
+			console.error('Failed to parse user data:', error);
+			return null;
+		}
+	}
+
+	/**
+	 * Clear user data (for logout)
+	 */
+	static clearUserData(): void {
+		localStorage.removeItem('user_data');
 	}
 
 	/**
@@ -235,8 +323,20 @@ class TokenManager {
 	static isAuthenticated(): boolean {
 		const token = this.getAccessToken();
 		const tokenData = this.getTokenData();
-		
-		return !!(token && tokenData && !this.isTokenExpired() && !this.isUserInactive());
+
+		// Basic checks: token exists and not expired
+		if (!token || !tokenData || this.isTokenExpired()) {
+			return false;
+		}
+
+		// For page refresh, be more lenient with inactivity check
+		// Only check inactivity if we have a valid activity record
+		const activity = this.getUserActivity();
+		if (activity && this.isUserInactive()) {
+			return false;
+		}
+
+		return true;
 	}
 }
 

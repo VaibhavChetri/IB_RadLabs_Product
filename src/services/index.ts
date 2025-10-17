@@ -17,5 +17,7 @@ export type { LoginCredentials, LoginResponse, UserProfile } from './authApi';
 export { DashboardApiService } from './dashboardApi';
 export type { DashboardStats, ChartData, RecentActivity } from './dashboardApi';
 
+export { MenuApiService } from './menuApi';
+
 // Factory services
 export { ApiServiceFactory, userService, fileService, analyticsService } from './apiFactory';

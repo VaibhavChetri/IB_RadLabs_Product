@@ -1,12 +1,49 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useEffect } from 'react';
+import { useDispatch } from 'react-redux';
 import { Layout } from './components/Layout';
 import { Dashboard } from './pages/Dashboard';
 import { Login } from './pages/Login';
+import { MenuManagement } from './pages/MenuManagement';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import TokenManager from './utils/tokenManager';
+import { restoreAuth, initializeAuth } from './store/slices/authSlice';
 
 function App() {
+	const dispatch = useDispatch();
+
+	// Restore auth state on page load
+	useEffect(() => {
+		console.log('App.tsx: Checking auth restoration...');
+		const tokenData = TokenManager.getTokenData();
+		console.log('Token data:', tokenData);
+		console.log('Is authenticated:', TokenManager.isAuthenticated());
+
+		if (tokenData && TokenManager.isAuthenticated()) {
+			console.log('Restoring auth state...');
+			// Restore user data from localStorage (stored during login)
+			const userData = TokenManager.getUserData();
+			const menuPermissions = TokenManager.getMenuPermissions();
+
+			console.log('Retrieved userData:', userData);
+			console.log('Retrieved menuPermissions:', menuPermissions);
+
+			const user = {
+				id: userData?.id || 'Unknown',
+				name: userData?.name || 'Unknown User',
+				email: userData?.email || 'unknown@example.com',
+				role: userData?.role || 'Unknown Role',
+				userTypeId: userData?.userTypeId || 0,
+				menuPermissions: menuPermissions || {},
+			};
+			console.log('Restoring user with menu permissions:', user);
+			dispatch(restoreAuth(user));
+		} else {
+			console.log('No valid auth found, marking as initialized');
+			dispatch(initializeAuth());
+		}
+	}, [dispatch]);
+
 	// Track user activity
 	useEffect(() => {
 		const handleUserActivity = () => {
@@ -42,6 +79,7 @@ function App() {
 								<Layout>
 									<Routes>
 										<Route path='/' element={<Dashboard />} />
+										<Route path='/menu-management' element={<MenuManagement />} />
 									</Routes>
 								</Layout>
 							</ProtectedRoute>

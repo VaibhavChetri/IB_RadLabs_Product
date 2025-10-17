@@ -1,24 +1,24 @@
 import React from 'react';
-import { Menu, Search, Bell, User } from 'lucide-react';
+import { Menu, Search, Bell, User, LogOut } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
+import TokenManager from '../utils/tokenManager';
 
 interface HeaderProps {
 	onMenuClick: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
+	const handleLogout = async () => {
+		await TokenManager.logout();
+	};
+
 	return (
 		<header className='bg-background border-b border-border px-4 sm:px-6 py-4'>
 			<div className='flex items-center justify-between'>
 				{/* Left side */}
 				<div className='flex items-center space-x-2 sm:space-x-4'>
-					<Button
-						variant='ghost'
-						size='sm'
-						onClick={onMenuClick}
-						className='lg:hidden'
-					>
+					<Button variant='ghost' size='sm' onClick={onMenuClick} className='lg:hidden'>
 						<Menu className='w-5 h-5' />
 					</Button>
 
@@ -43,6 +43,9 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
 						</div>
 						<Button variant='ghost' size='sm'>
 							<User className='w-5 h-5' />
+						</Button>
+						<Button variant='ghost' size='sm' onClick={handleLogout} title='Logout'>
+							<LogOut className='w-5 h-5' />
 						</Button>
 					</div>
 				</div>

@@ -5,6 +5,7 @@
 
 import { apiService, ApiResponse } from './api';
 import TokenManager from '../utils/tokenManager';
+import { MenuPermission } from '../types/menu';
 
 // Types
 export interface LoginCredentials {
@@ -35,6 +36,7 @@ export interface LoginResponse {
 		created_at: string | null;
 		updated_at: string | null;
 	};
+	menu_permissions: Record<string, MenuPermission>; // NEW: Menu permissions from login
 }
 
 export interface RefreshTokenResponse {
@@ -62,27 +64,50 @@ export class AuthApiService {
 	 * Login with username and password
 	 */
 	static async login(credentials: LoginCredentials): Promise<ApiResponse<LoginResponse>> {
-		const response = await apiService.postUrlEncoded('/oauth/access_token', {
-			username: credentials.username,
-			password: credentials.password,
-		});
-
-		// Store tokens if login is successful
-		if (response.status_code === 200 && response.data && response.data.access_token) {
-			TokenManager.setTokenData({
-				access_token: response.data.access_token,
-				refresh_token: response.data.refresh_token,
-				access_expires: response.data.access_expires,
-				refresh_expires: response.data.refresh_expires,
-				token_type: response.data.token_type,
-				expires_in: response.data.expires_in,
+		try {
+			// Make real API call
+			const response = await apiService.postUrlEncoded('/oauth/access_token', {
+				username: credentials.username,
+				password: credentials.password,
 			});
-			
-			// Initialize token monitoring
-			TokenManager.initialize();
-		}
 
-		return response;
+			// Store tokens if login is successful
+			if (response.status_code === 200 && response.data && response.data.access_token) {
+				TokenManager.setTokenData({
+					access_token: response.data.access_token,
+					refresh_token: response.data.refresh_token,
+					access_expires: response.data.access_expires,
+					refresh_expires: response.data.refresh_expires,
+					token_type: response.data.token_type,
+					expires_in: response.data.expires_in,
+				});
+
+				// Store menu permissions if available
+				if (response.data.menu_permissions) {
+					TokenManager.setMenuPermissions(response.data.menu_permissions);
+					console.log('Menu permissions stored:', response.data.menu_permissions);
+				}
+
+				// Store user data for auth restoration
+				const userData = {
+					id: response.data.user.id.toString(),
+					name: `${response.data.user.first_name} ${response.data.user.last_name}`.trim(),
+					email: response.data.user.email,
+					role: `User Type ${response.data.user.user_type_id}`,
+					userTypeId: response.data.user.user_type_id,
+				};
+				TokenManager.setUserData(userData);
+				console.log('User data stored:', userData);
+
+				// Initialize token monitoring
+				TokenManager.initialize();
+			}
+
+			return response;
+		} catch (error) {
+			console.error('Login API error:', error);
+			throw error;
+		}
 	}
 
 	/**

@@ -1,32 +1,7 @@
-/**
- * Design System Index
- * Central export file for all design system components and utilities
- */
+// Barrel exports for floating components
+export { FloatingInput } from './FloatingInput';
+export { FloatingDropdown } from './FloatingDropdown';
 
-// Design Tokens
-export * from '../../design-system/tokens';
-export * from '../../design-system/utils';
-
-// Core UI Components
-export * from './Alert';
-export * from './Button';
-export * from './Input';
-export * from './Card';
-
-// Form Components
-export * from './Form';
-
-// Navigation Components
-export * from './Navigation';
-
-// Data Display Components
-export * from './DataDisplay';
-
-// Feedback Components
-export * from './Feedback';
-
-// Layout Components
-export * from './Layout';
-
-// Re-export utility functions
-export { cn } from '../../utils/cn';
+// Re-export types for convenience
+export type { FloatingInputProps } from './FloatingInput';
+export type { FloatingDropdownProps, DropdownOption } from './FloatingDropdown';

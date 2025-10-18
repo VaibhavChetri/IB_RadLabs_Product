@@ -5,6 +5,8 @@ import { Layout } from './components/Layout';
 import { Dashboard } from './pages/Dashboard';
 import { Login } from './pages/Login';
 import { MenuManagement } from './pages/MenuManagement';
+import { AddClient } from './pages/AddClient';
+import FloatingLabelDemo from './pages/FloatingLabelDemo';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import TokenManager from './utils/tokenManager';
 import { restoreAuth, initializeAuth } from './store/slices/authSlice';
@@ -80,6 +82,8 @@ function App() {
 									<Routes>
 										<Route path='/' element={<Dashboard />} />
 										<Route path='/menu-management' element={<MenuManagement />} />
+										<Route path='/clients/add' element={<AddClient />} />
+										<Route path='/floating-demo' element={<FloatingLabelDemo />} />
 									</Routes>
 								</Layout>
 							</ProtectedRoute>

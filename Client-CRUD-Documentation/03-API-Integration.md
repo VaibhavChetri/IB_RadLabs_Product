@@ -225,6 +225,27 @@ export interface ClientLocationResponse {
   };
 }
 
+export interface UpdateClientRequest {
+  location_id: number;
+  restaurant_id: number;
+  country_id: number;
+  state_id: number;
+  city_id: number;
+  latitude: string;
+  longitude: string;
+  landmark: string;
+  zipcode: string;
+  location: string;
+  address_1: string;
+  address_2: string;
+  location_type: number;
+  impact_type_ids: number[];
+  billing_type_id: number;
+  onSiteManPower: number;
+  fixed_price?: string;
+  fixed_pricing_id?: number;
+}
+
 export class ClientApiService {
   static async getLocations(filters: ClientLocationFilters = {}): Promise<ClientLocationResponse> {
     try {
@@ -281,6 +302,20 @@ export class ClientApiService {
     }
   }
 
+  static async updateClient(data: UpdateClientRequest): Promise<ApiResponse<unknown>> {
+    try {
+      console.log('🔍 ClientApiService: Updating client:', data);
+      
+      const response = await apiService.put<ApiResponse<unknown>>('/restaurants/updateClient', data);
+      
+      console.log('✅ ClientApiService: Client updated successfully:', response);
+      return response;
+    } catch (error) {
+      console.error('❌ ClientApiService: Failed to update client:', error);
+      throw error;
+    }
+  }
+
   static async deleteLocation(id: number): Promise<void> {
     try {
       console.log('🔍 ClientApiService: Deleting location:', id);
@@ -293,6 +328,167 @@ export class ClientApiService {
       throw error;
     }
   }
+}
+```
+
+## 🔄 Update Client API Implementation
+
+### API Endpoint Details
+
+**Endpoint**: `PUT /restaurants/updateClient`
+
+**Purpose**: Updates an existing client location with new information
+
+**Request Format**:
+```typescript
+interface UpdateClientRequest {
+  location_id: number;        // Required: Location ID to update
+  restaurant_id: number;     // Required: Restaurant ID
+  country_id: number;        // Required: Country ID
+  state_id: number;          // Required: State ID
+  city_id: number;           // Required: City ID
+  latitude: string;          // Required: Latitude coordinate
+  longitude: string;         // Required: Longitude coordinate
+  landmark: string;          // Required: Landmark information
+  zipcode: string;           // Required: Postal code
+  location: string;          // Required: Location name
+  address_1: string;         // Required: Primary address
+  address_2: string;          // Required: Secondary address
+  location_type: number;     // Required: Location type ID
+  impact_type_ids: number[]; // Required: Array of impact type IDs
+  billing_type_id: number;   // Required: Billing type ID
+  onSiteManPower: number;    // Required: 0 or 1 for on-site manpower
+  fixed_price?: string;      // Optional: Fixed price (for Fixed billing type)
+  fixed_pricing_id?: number; // Optional: Fixed pricing ID
+}
+```
+
+**Response Format**:
+```json
+{
+  "status": "Success",
+  "status_code": 200,
+  "message": "Client updated successfully"
+}
+```
+
+### Usage Example
+
+```typescript
+// Example: Update client with Fixed billing type
+const updateData: UpdateClientRequest = {
+  location_id: 95,
+  restaurant_id: 94,
+  country_id: 82,
+  state_id: 15,
+  city_id: 3,
+  latitude: "19.084409",
+  longitude: "72.887045",
+  landmark: "Mumbai",
+  zipcode: "400070",
+  location: "Piramal Agastya Offices Private Limited",
+  address_1: "109A, 109A/1 to 109/21A, 111 and 110, 110/1 to 110/3, Sunder Bung Lane, Kamani Junction, Kurla West",
+  address_2: "Mumbai",
+  location_type: 3,
+  impact_type_ids: [3],
+  billing_type_id: 3,  // Fixed billing type
+  onSiteManPower: 1,
+  fixed_price: "180000.00",
+  fixed_pricing_id: 1
+};
+
+// Example: Update client without Fixed pricing
+const updateDataSimple: UpdateClientRequest = {
+  location_id: 76,
+  restaurant_id: 75,
+  country_id: 82,
+  state_id: 15,
+  city_id: 3,
+  latitude: "18.9995625",
+  longitude: "72.82542229999436",
+  landmark: "Mumbai",
+  zipcode: "400013",
+  location: "Piramal Tower Lower Parel",
+  address_1: "PENINSULA TOWERS, Lower Parel West, Lower Parel, Mumbai, Maharashtra 400013",
+  address_2: "Mumbai",
+  location_type: 3,
+  impact_type_ids: [1],
+  billing_type_id: 1,  // On return count billing type
+  onSiteManPower: 0
+};
+
+// Execute the update
+const result = await ClientApiService.updateClient(updateData);
+
+if (result.status === 'Success' && result.status_code === 200) {
+  console.log('✅ Client updated successfully!');
+} else {
+  console.error('❌ Update failed:', result.message);
+}
+```
+
+### Field Mapping Logic
+
+**From Form Data to API Request**:
+```typescript
+const updateData: UpdateClientRequest = {
+  location_id: selectedLocation.id,
+  restaurant_id: selectedLocation.restaurant_id,
+  country_id: parseInt(formData.country),
+  state_id: parseInt(formData.state),
+  city_id: parseInt(formData.city),
+  latitude: formData.latitude,
+  longitude: formData.longitude,
+  landmark: formData.landmark,
+  zipcode: formData.zipcode,
+  location: formData.location,
+  address_1: formData.address1,
+  address_2: formData.address2,
+  location_type: parseInt(formData.locationType),
+  impact_type_ids: formData.impactType.map(id => parseInt(id)),
+  billing_type_id: parseInt(formData.billingType),
+  onSiteManPower: formData.onSiteManpower ? 1 : 0,
+  // Conditional fields based on billing type
+  ...(formData.billingType === '3' && {
+    fixed_price: formData.fixedPrice,
+    fixed_pricing_id: parseInt(formData.fixedPricingId)
+  })
+};
+```
+
+### Error Handling
+
+```typescript
+try {
+  const result = await ClientApiService.updateClient(updateData);
+  
+  if (result.status === 'Success' && result.status_code === 200) {
+    // Success: Show snackbar and navigate
+    setSnackbar({
+      open: true,
+      message: result.message || 'Client updated successfully!',
+      type: 'success',
+    });
+    
+    setTimeout(() => {
+      navigate('/clients/manage');
+    }, 800);
+  } else {
+    // API returned error status
+    setSnackbar({
+      open: true,
+      message: result.message || 'Failed to update client. Please try again.',
+      type: 'error',
+    });
+  }
+} catch (error) {
+  // Network or other errors
+  console.error('Update failed:', error);
+  setSnackbar({
+    open: true,
+    message: 'Network error. Please check your connection and try again.',
+    type: 'error',
+  });
 }
 ```
 

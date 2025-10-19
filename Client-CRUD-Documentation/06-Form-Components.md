@@ -715,6 +715,248 @@ useEffect(() => {
 }, [isOpen, options]);
 ```
 
+## 🍞 Snackbar Component
+
+### Purpose
+Reusable notification component for displaying transient messages with auto-fade functionality, positioned at the top-right of the screen.
+
+### File Location
+`src/components/ui/Snackbar.tsx`
+
+### Interface Definition
+```typescript
+export interface SnackbarProps {
+  open: boolean;
+  message: string;
+  type: 'success' | 'error' | 'info';
+  onClose: () => void;
+}
+```
+
+### Implementation Details
+
+#### 1. **Component Structure**
+```typescript
+export const Snackbar: React.FC<SnackbarProps> = ({ open, message, type, onClose }) => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setIsVisible(true);
+      // Auto-fade after 4 seconds
+      const timer = setTimeout(() => {
+        setIsVisible(false);
+        setTimeout(onClose, 300); // Wait for animation to complete
+      }, 4000);
+
+      return () => clearTimeout(timer);
+    } else {
+      setIsVisible(false);
+    }
+  }, [open, onClose]);
+
+  return (
+    <div className={`fixed top-4 right-4 z-50 transform transition-all duration-300 ease-in-out ${
+      isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
+    }`}>
+      <div className={`flex items-center gap-2 px-3 py-2 rounded border shadow-lg min-w-72 max-w-sm ${getBgColor()}`}>
+        {getIcon()}
+        <span className='flex-1 text-sm font-medium text-gray-900'>{message}</span>
+        <button onClick={() => { setIsVisible(false); setTimeout(onClose, 300); }}>
+          <XMarkIcon className='w-4 h-4 text-gray-500 hover:text-gray-700' />
+        </button>
+      </div>
+    </div>
+  );
+};
+```
+
+#### 2. **Styling Functions**
+```typescript
+const getBgColor = () => {
+  switch (type) {
+    case 'success':
+      return 'bg-green-50 border-green-200';
+    case 'error':
+      return 'bg-red-50 border-red-200';
+    case 'info':
+      return 'bg-blue-50 border-blue-200';
+    default:
+      return 'bg-gray-50 border-gray-200';
+  }
+};
+
+const getIcon = () => {
+  switch (type) {
+    case 'success':
+      return <CheckCircleIcon className='w-5 h-5 text-green-600' />;
+    case 'error':
+      return <XCircleIcon className='w-5 h-5 text-red-600' />;
+    case 'info':
+      return <InformationCircleIcon className='w-5 h-5 text-blue-600' />;
+    default:
+      return <InformationCircleIcon className='w-5 h-5 text-gray-600' />;
+  }
+};
+```
+
+### Usage Examples
+
+#### 1. **Success Notification**
+```typescript
+const [snackbar, setSnackbar] = useState({
+  open: false,
+  message: '',
+  type: 'success' as 'success' | 'error' | 'info',
+});
+
+// Show success message
+setSnackbar({
+  open: true,
+  message: 'Client updated successfully!',
+  type: 'success',
+});
+
+// In JSX
+<Snackbar
+  open={snackbar.open}
+  message={snackbar.message}
+  type={snackbar.type}
+  onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+/>
+```
+
+#### 2. **Error Notification**
+```typescript
+// Show error message
+setSnackbar({
+  open: true,
+  message: 'Failed to update client. Please try again.',
+  type: 'error',
+});
+```
+
+#### 3. **Info Notification**
+```typescript
+// Show info message
+setSnackbar({
+  open: true,
+  message: 'Changes saved locally. Sync when online.',
+  type: 'info',
+});
+```
+
+#### 4. **With Navigation After Success**
+```typescript
+const handleUpdateSuccess = () => {
+  setSnackbar({
+    open: true,
+    message: 'Client updated successfully!',
+    type: 'success',
+  });
+  
+  // Navigate after showing success message
+  setTimeout(() => {
+    navigate('/clients/manage');
+  }, 800);
+};
+```
+
+### Design Features
+
+#### 1. **Visual Design**
+- **Compact Size**: `px-3 py-2` padding for minimal footprint
+- **Square Rounded Edges**: `rounded` for modern appearance
+- **Fixed Width**: `min-w-72 max-w-sm` for consistent sizing
+- **Shadow**: `shadow-lg` for depth and prominence
+- **Z-Index**: `z-50` to appear above all other content
+
+#### 2. **Animation**
+- **Slide In**: `translate-x-0` from `translate-x-full`
+- **Fade**: `opacity-100` from `opacity-0`
+- **Duration**: `duration-300` for smooth transitions
+- **Easing**: `ease-in-out` for natural motion
+
+#### 3. **Auto-Fade Behavior**
+- **Duration**: 4 seconds before auto-fade
+- **Animation**: 300ms fade-out animation
+- **Cleanup**: Proper timer cleanup on unmount
+- **Manual Close**: Immediate close with animation
+
+### Integration with Forms
+
+#### 1. **Form Submission Feedback**
+```typescript
+const handleSubmit = async (formData: FormData) => {
+  try {
+    const result = await ClientApiService.updateClient(updateData);
+    
+    if (result.status === 'Success' && result.status_code === 200) {
+      setSnackbar({
+        open: true,
+        message: result.message || 'Client updated successfully!',
+        type: 'success',
+      });
+      
+      setTimeout(() => {
+        navigate('/clients/manage');
+      }, 800);
+    } else {
+      setSnackbar({
+        open: true,
+        message: result.message || 'Failed to update client. Please try again.',
+        type: 'error',
+      });
+    }
+  } catch (error) {
+    setSnackbar({
+      open: true,
+      message: 'Network error. Please check your connection and try again.',
+      type: 'error',
+    });
+  }
+};
+```
+
+#### 2. **Validation Feedback**
+```typescript
+const validateForm = () => {
+  const errors = {};
+  
+  if (!formData.location.trim()) {
+    errors.location = 'Location is required';
+  }
+  
+  if (Object.keys(errors).length > 0) {
+    setSnackbar({
+      open: true,
+      message: 'Please fix the validation errors before submitting.',
+      type: 'error',
+    });
+    return false;
+  }
+  
+  return true;
+};
+```
+
+### Accessibility Features
+
+#### 1. **Screen Reader Support**
+- **Semantic HTML**: Uses proper button and span elements
+- **ARIA Labels**: Clear labeling for close button
+- **Focus Management**: Proper focus handling
+
+#### 2. **Keyboard Navigation**
+- **Close Button**: Accessible via Tab key
+- **Escape Key**: Could be added for keyboard dismissal
+- **Focus Trap**: Maintains focus within component
+
+#### 3. **Visual Indicators**
+- **Color Coding**: Different colors for different message types
+- **Icons**: Clear visual indicators for message types
+- **Animation**: Smooth transitions for better UX
+
 ## 🔧 Best Practices
 
 ### 1. **Component Design**

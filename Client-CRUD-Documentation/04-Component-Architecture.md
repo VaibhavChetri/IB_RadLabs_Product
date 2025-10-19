@@ -919,6 +919,130 @@ export const ManageClients: React.FC = () => {
 };
 ```
 
+### 5. **Snackbar Component** (`src/components/ui/Snackbar.tsx`)
+
+#### Purpose
+Reusable notification component for displaying transient messages with auto-fade functionality, positioned at the top-right of the screen.
+
+#### Interface
+```typescript
+export interface SnackbarProps {
+  open: boolean;
+  message: string;
+  type: 'success' | 'error' | 'info';
+  onClose: () => void;
+}
+```
+
+#### Implementation Highlights
+```typescript
+export const Snackbar: React.FC<SnackbarProps> = ({ open, message, type, onClose }) => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setIsVisible(true);
+      // Auto-fade after 4 seconds
+      const timer = setTimeout(() => {
+        setIsVisible(false);
+        setTimeout(onClose, 300); // Wait for animation to complete
+      }, 4000);
+
+      return () => clearTimeout(timer);
+    } else {
+      setIsVisible(false);
+    }
+  }, [open, onClose]);
+
+  return (
+    <div className={`fixed top-4 right-4 z-50 transform transition-all duration-300 ease-in-out ${
+      isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
+    }`}>
+      <div className={`flex items-center gap-2 px-3 py-2 rounded border shadow-lg min-w-72 max-w-sm ${getBgColor()}`}>
+        {getIcon()}
+        <span className='flex-1 text-sm font-medium text-gray-900'>{message}</span>
+        <button onClick={() => { setIsVisible(false); setTimeout(onClose, 300); }}>
+          <XMarkIcon className='w-4 h-4 text-gray-500 hover:text-gray-700' />
+        </button>
+      </div>
+    </div>
+  );
+};
+```
+
+#### Key Features
+- **Auto-Fade**: Automatically disappears after 4 seconds
+- **Manual Close**: Click X button to close immediately
+- **Smooth Animation**: Slide-in from right with fade effect
+- **Type-Based Styling**: Different colors and icons for success/error/info
+- **Compact Design**: Minimal padding and square rounded edges
+- **High Z-Index**: Appears above all other content
+
+#### Usage Examples
+```typescript
+// State management
+const [snackbar, setSnackbar] = useState({
+  open: false,
+  message: '',
+  type: 'success' as 'success' | 'error' | 'info',
+});
+
+// Success notification
+setSnackbar({
+  open: true,
+  message: 'Client updated successfully!',
+  type: 'success',
+});
+
+// Error notification
+setSnackbar({
+  open: true,
+  message: 'Failed to update client. Please try again.',
+  type: 'error',
+});
+
+// In JSX
+<Snackbar
+  open={snackbar.open}
+  message={snackbar.message}
+  type={snackbar.type}
+  onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+/>
+```
+
+#### Integration with Forms
+```typescript
+const handleSubmit = async (formData: FormData) => {
+  try {
+    const result = await ClientApiService.updateClient(updateData);
+    
+    if (result.status === 'Success' && result.status_code === 200) {
+      setSnackbar({
+        open: true,
+        message: result.message || 'Client updated successfully!',
+        type: 'success',
+      });
+      
+      setTimeout(() => {
+        navigate('/clients/manage');
+      }, 800);
+    } else {
+      setSnackbar({
+        open: true,
+        message: result.message || 'Failed to update client. Please try again.',
+        type: 'error',
+      });
+    }
+  } catch (error) {
+    setSnackbar({
+      open: true,
+      message: 'Network error. Please check your connection and try again.',
+      type: 'error',
+    });
+  }
+};
+```
+
 ## 🎯 Component Design Patterns
 
 ### 1. **Composition Pattern**

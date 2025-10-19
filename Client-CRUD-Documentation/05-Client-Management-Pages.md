@@ -643,6 +643,100 @@ export const EditClient: React.FC = () => {
   );
 ```
 
+#### 4. **Update Client API Implementation**
+
+**API Integration**:
+```typescript
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  try {
+    // Map form data to API request format
+    const updateData: UpdateClientRequest = {
+      location_id: selectedLocation.id,
+      restaurant_id: selectedLocation.restaurant_id,
+      country_id: parseInt(formData.country),
+      state_id: parseInt(formData.state),
+      city_id: parseInt(formData.city),
+      latitude: formData.latitude,
+      longitude: formData.longitude,
+      landmark: formData.landmark,
+      zipcode: formData.zipcode,
+      location: formData.name, // Using name as location
+      address_1: formData.address1,
+      address_2: formData.address2,
+      location_type: parseInt(formData.locationType),
+      impact_type_ids: formData.impactType.map(id => parseInt(id)),
+      billing_type_id: parseInt(formData.billingType),
+      onSiteManPower: formData.onSiteManpower ? 1 : 0,
+      // Conditional fields based on billing type
+      ...(formData.billingType === '3' && {
+        fixed_price: formData.fixedPrice,
+        fixed_pricing_id: parseInt(formData.fixedPricingId)
+      })
+    };
+
+    console.log('🔄 Updating client with data:', updateData);
+    
+    const result = await ClientApiService.updateClient(updateData);
+    
+    if (result.status === 'Success' && result.status_code === 200) {
+      console.log('✅ Client updated successfully!');
+      setSnackbar({
+        open: true,
+        message: result.message || 'Client updated successfully!',
+        type: 'success',
+      });
+      
+      // Navigate after showing success message
+      setTimeout(() => {
+        navigate('/clients/manage');
+      }, 800);
+    } else {
+      console.error('❌ Update failed:', result);
+      setSnackbar({
+        open: true,
+        message: result.message || 'Failed to update client. Please try again.',
+        type: 'error',
+      });
+    }
+  } catch (error) {
+    console.error('❌ Update error:', error);
+    setSnackbar({
+      open: true,
+      message: 'Network error. Please check your connection and try again.',
+      type: 'error',
+    });
+  }
+};
+```
+
+**Snackbar Integration**:
+```typescript
+// Snackbar state
+const [snackbar, setSnackbar] = useState({
+  open: false,
+  message: '',
+  type: 'success' as 'success' | 'error' | 'info',
+});
+
+// Snackbar component in JSX
+<Snackbar
+  open={snackbar.open}
+  message={snackbar.message}
+  type={snackbar.type}
+  onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+/>
+```
+
+**Key Implementation Features**:
+- **API Response Validation**: Checks `status === 'Success' && status_code === 200`
+- **User Feedback**: Modern snackbar notifications instead of JavaScript alerts
+- **Navigation**: Automatic redirect to ManageClients after successful update
+- **Error Handling**: Comprehensive error handling for network and API errors
+- **Type Safety**: Proper TypeScript interfaces for API requests
+- **Conditional Fields**: Dynamic inclusion of optional fields based on billing type
+
 ## 📊 ManageClients Page (`src/pages/ManageClients.tsx`)
 
 ### Purpose

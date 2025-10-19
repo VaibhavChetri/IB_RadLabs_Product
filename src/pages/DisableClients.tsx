@@ -1,14 +1,55 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ClientApiService } from '../services/clientApi';
-import { FloatingDropdown } from '../components/ui';
 import { Snackbar } from '../components/ui/Snackbar';
+import { Table } from '../components/ui/DataDisplay';
+import { Pagination } from '../components/ui/Pagination';
 
 interface Client {
 	id: number;
 	location: string;
 	status: string;
 	status_id: number;
+	[key: string]: unknown;
 }
+
+interface TableColumn {
+	key: string;
+	label: string;
+	title: string;
+	width?: string;
+	render?: (value: unknown, row: Client, index: number) => React.ReactNode;
+}
+
+// Sleek Toggle Switch Component
+const StatusToggle: React.FC<{
+	isActive: boolean;
+	onToggle: () => void;
+	disabled?: boolean;
+}> = ({ isActive, onToggle, disabled = false }) => {
+	return (
+		<div className='flex items-center justify-center'>
+			<button
+				onClick={onToggle}
+				disabled={disabled}
+				className={`
+					relative inline-flex h-4 w-8 items-center justify-center rounded-full transition-all duration-200 ease-in-out focus:outline-none
+					${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+					${isActive ? 'bg-green-500' : 'bg-gray-300 hover:bg-gray-400'}
+				`}
+			>
+				<span
+					className={`
+						absolute h-3 w-3 transform rounded-full bg-white transition-all duration-200 ease-in-out
+						${isActive ? 'translate-x-2' : '-translate-x-2'}
+					`}
+				/>
+			</button>
+			<span className={`ml-2 text-xs font-medium ${isActive ? 'text-green-600' : 'text-gray-500'}`}>
+				{isActive ? 'Active' : 'Inactive'}
+			</span>
+		</div>
+	);
+};
 
 const DisableClients: React.FC = () => {
 	const [clients, setClients] = useState<Client[]>([]);
@@ -18,6 +59,14 @@ const DisableClients: React.FC = () => {
 		message: string;
 		type: 'success' | 'error' | 'info';
 	}>({ show: false, message: '', type: 'success' });
+
+	// Pagination state
+	const [pagination, setPagination] = useState({
+		currentPage: 1,
+		pageSize: 10,
+		totalCount: 0,
+		totalPages: 0,
+	});
 
 	// Load clients on component mount
 	const loadClients = useCallback(async () => {
@@ -30,20 +79,27 @@ const DisableClients: React.FC = () => {
 
 			console.log('📊 API Response:', response);
 
-			if (response.status_code === 200 && response.data) {
-				// Transform the data to match our Client interface
+			if (response.statusCode === 200 && response.data) {
+				// Transform the API data to match our Client interface
 				const clientData = (response.data as unknown[]).map((location: unknown) => {
-					const loc = location as { id: number; location: string; status?: string };
+					const loc = location as { id: number; location: string; status: string };
 					return {
 						id: loc.id,
 						location: loc.location,
-						status: loc.status || 'Active',
+						status: loc.status, // "Active" or "Inactive"
 						status_id: loc.status === 'Active' ? 1 : 0,
 					};
 				});
 
 				console.log('✅ Clients loaded:', clientData);
 				setClients(clientData);
+
+				// Update pagination
+				setPagination(prev => ({
+					...prev,
+					totalCount: clientData.length,
+					totalPages: Math.ceil(clientData.length / prev.pageSize),
+				}));
 			} else {
 				console.error('❌ Failed to load clients:', response);
 				setSnackbar({
@@ -104,11 +160,64 @@ const DisableClients: React.FC = () => {
 		}
 	};
 
-	// Status dropdown options
-	const statusOptions = [
-		{ value: '1', label: 'Active' },
-		{ value: '0', label: 'Inactive' },
+	// Table columns definition
+	const columns: TableColumn[] = [
+		{
+			key: 'serial',
+			label: '#',
+			title: '#',
+			width: '60px',
+			render: (_, __, index) => (
+				<span className='text-sm font-semibold text-gray-900'>
+					{(pagination.currentPage - 1) * pagination.pageSize + index + 1}
+				</span>
+			),
+		},
+		{
+			key: 'location',
+			label: 'Client',
+			title: 'Client Name',
+			width: '400px',
+			render: value => (
+				<div className='truncate max-w-[380px]' title={value as string}>
+					<span className='text-sm font-semibold text-gray-900'>{value as string}</span>
+				</div>
+			),
+		},
+		{
+			key: 'status',
+			label: 'Status',
+			title: 'Client Status',
+			width: '180px',
+			render: (_, row) => (
+				<StatusToggle
+					isActive={row.status_id === 1}
+					onToggle={() => updateClientStatus(row.id, row.status_id === 1 ? 0 : 1)}
+					disabled={loading}
+				/>
+			),
+		},
 	];
+
+	// Pagination handlers
+	const handlePageChange = (page: number) => {
+		setPagination(prev => ({ ...prev, currentPage: page }));
+	};
+
+	const handleItemsPerPageChange = (itemsPerPage: number) => {
+		setPagination(prev => ({
+			...prev,
+			pageSize: itemsPerPage,
+			currentPage: 1,
+			totalPages: Math.ceil(prev.totalCount / itemsPerPage),
+		}));
+	};
+
+	// Get paginated data
+	const paginatedClients = clients.slice(
+		(pagination.currentPage - 1) * pagination.pageSize,
+		pagination.currentPage * pagination.pageSize
+	);
 
 	useEffect(() => {
 		console.log('🚀 DisableClients component mounted, loading clients...');
@@ -124,65 +233,41 @@ const DisableClients: React.FC = () => {
 	return (
 		<div className='min-h-screen bg-white p-6'>
 			<div className='max-w-7xl mx-auto'>
-				{/* Header */}
+				{/* Header with useful information */}
 				<div className='mb-8'>
-					<h1 className='text-3xl font-bold text-gray-900 mb-2'>Disable Clients</h1>
-					<p className='text-gray-600'>Manage client status - enable or disable client accounts</p>
-				</div>
-
-				{/* Clients List */}
-				<div className='bg-white rounded-lg border border-gray-200'>
-					<div className='px-6 py-4 border-b border-gray-200'>
-						<h2 className='text-lg font-semibold text-gray-900'>Client Status Management</h2>
+					<div className='flex items-center justify-between'>
+						<div>
+							<h1 className='text-3xl font-bold text-gray-900 mb-2'>Disable Clients</h1>
+							<p className='text-gray-600'>Mumbai • {pagination.totalCount} clients</p>
+						</div>
 					</div>
-
-					{loading ? (
-						<div className='p-8 text-center'>
-							<div className='inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary'></div>
-							<p className='mt-2 text-gray-600'>Loading clients...</p>
-						</div>
-					) : (
-						<div className='divide-y divide-gray-200'>
-							{clients.map(client => (
-								<div key={client.id} className='p-6 flex items-center justify-between'>
-									<div className='flex-1'>
-										<h3 className='text-lg font-semibold text-gray-900'>{client.location}</h3>
-										<p className='text-sm text-gray-600'>Client ID: {client.id}</p>
-									</div>
-
-									<div className='flex items-center space-x-4'>
-										<div className='flex items-center space-x-2'>
-											<span className='text-sm font-medium text-gray-700'>Status:</span>
-											<FloatingDropdown
-												label=''
-												options={statusOptions}
-												value={client.status_id.toString()}
-												onChange={value => updateClientStatus(client.id, parseInt(value))}
-												className='w-32'
-											/>
-										</div>
-
-										<div
-											className={`px-3 py-1 rounded-full text-xs font-medium ${
-												client.status_id === 1
-													? 'bg-green-100 text-green-800'
-													: 'bg-red-100 text-red-800'
-											}`}
-										>
-											{client.status}
-										</div>
-									</div>
-								</div>
-							))}
-						</div>
-					)}
-
-					{!loading && clients.length === 0 && (
-						<div className='p-8 text-center'>
-							<p className='text-gray-600'>No clients found</p>
-						</div>
-					)}
 				</div>
+
+				{/* Table */}
+				<div className='bg-white'>
+					<Table columns={columns} data={paginatedClients} loading={loading} className='w-full' />
+				</div>
+
+				{/* Pagination */}
+				{pagination.totalPages > 0 && (
+					<div className='mt-6'>
+						<Pagination
+							currentPage={pagination.currentPage}
+							totalPages={pagination.totalPages}
+							totalItems={pagination.totalCount}
+							itemsPerPage={pagination.pageSize}
+							onPageChange={handlePageChange}
+							onItemsPerPageChange={handleItemsPerPageChange}
+						/>
+					</div>
+				)}
+
+				{/* Empty state */}
+				{!loading && clients.length === 0 && (
+					<div className='text-center py-12'>
+						<p className='text-gray-600 text-lg'>No clients found</p>
+					</div>
+				)}
 			</div>
 
 			{/* Snackbar */}

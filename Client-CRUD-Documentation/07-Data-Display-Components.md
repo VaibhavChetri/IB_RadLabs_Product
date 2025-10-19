@@ -196,7 +196,7 @@ const columns: TableColumn[] = [
   {
     key: 'serial',
     label: '#',
-    title: 'Serial Number',
+    title: '#',
     sortable: false,
     width: '60px',
     render: (_value: unknown, _row: Record<string, unknown>, index: number) => (

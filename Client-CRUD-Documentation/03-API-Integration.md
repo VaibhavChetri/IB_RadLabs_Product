@@ -328,6 +328,39 @@ export class ClientApiService {
       throw error;
     }
   }
+
+  static async getAllLocations(locationType: number): Promise<ApiResponse<unknown[]>> {
+    try {
+      console.log('🔍 ClientApiService: Fetching all locations for type:', locationType);
+      
+      const response = await apiService.get<ApiResponse<unknown[]>>(
+        `/locations/getAllLocations?location_type=${locationType}`
+      );
+      
+      console.log('✅ ClientApiService: All locations fetched successfully:', response);
+      return response;
+    } catch (error) {
+      console.error('❌ ClientApiService: Failed to fetch all locations:', error);
+      throw error;
+    }
+  }
+
+  static async updateClientStatus(clientId: number, status: number): Promise<ApiResponse<unknown>> {
+    try {
+      console.log('🔍 ClientApiService: Updating client status:', { clientId, status });
+      
+      const response = await apiService.put<ApiResponse<unknown>>(
+        '/restaurants/updateClientStatus',
+        { id: clientId, status }
+      );
+      
+      console.log('✅ ClientApiService: Client status updated successfully:', response);
+      return response;
+    } catch (error) {
+      console.error('❌ ClientApiService: Failed to update client status:', error);
+      throw error;
+    }
+  }
 }
 ```
 

@@ -161,7 +161,7 @@ export class ClientApiService {
 	/**
 	 * Get all locations (for disable clients page)
 	 */
-	static async getAllLocations(locationType: number): Promise<ApiResponse<unknown[]>> {
+	static async getAllLocations(locationType: number): Promise<ApiResponse<ClientLocation[]>> {
 		return apiService.get(`/locations/getAllLocations?location_type=${locationType}`);
 	}
 

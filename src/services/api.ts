@@ -19,6 +19,7 @@ const API_TIMEOUT = Number(import.meta.env.VITE_API_TIMEOUT) || 10000;
 // API Response Types
 export interface ApiResponse<T = any> {
 	status_code: number;
+	statusCode?: number; // Alternative format for some APIs
 	status: string;
 	message: string | null;
 	data: T;

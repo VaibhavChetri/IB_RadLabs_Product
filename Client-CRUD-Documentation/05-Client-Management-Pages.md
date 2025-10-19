@@ -1,6 +1,6 @@
 # Client Management Pages
 
-This document provides detailed implementation guides for the three main client management pages: AddClient, EditClient, and ManageClients.
+This document provides detailed implementation guides for the four main client management pages: AddClient, EditClient, ManageClients, and DisableClients.
 
 ## 📝 AddClient Page (`src/pages/AddClient.tsx`)
 
@@ -1325,6 +1325,195 @@ EditClient Page → Refresh → localStorage Check → Redux State Restoration �
 2. Verify `client.id` matches `location.id` in API response
 3. Check `handleFilterChange` logic
 **Solution**: Ensure client extraction uses correct ID field (`location.id` not `location.restaurant_id`)
+
+## 🚫 DisableClients Page (`src/pages/DisableClients.tsx`)
+
+### Purpose
+Admin interface for enabling/disabling client accounts with a modern toggle switch interface.
+
+### Key Features
+- **Toggle Switch Interface**: Modern, intuitive status toggle instead of dropdown
+- **Real-time Updates**: Instant status changes with API integration
+- **Pagination**: Efficient handling of large client lists
+- **User Feedback**: Snackbar notifications for success/error states
+- **Compact Design**: Reduced padding for better data density
+
+### Data Interface
+```typescript
+interface Client {
+  id: number;
+  location: string;
+  status: string;
+  status_id: number;
+  [key: string]: unknown; // Index signature for Table compatibility
+}
+```
+
+### API Integration
+```typescript
+// Load all clients
+const response = await ClientApiService.getAllLocations(3);
+
+// Update client status
+const response = await ClientApiService.updateClientStatus(clientId, newStatus);
+```
+
+### StatusToggle Component
+```typescript
+const StatusToggle: React.FC<{
+  isActive: boolean;
+  onToggle: () => void;
+  disabled?: boolean;
+}> = ({ isActive, onToggle, disabled = false }) => {
+  return (
+    <div className='flex items-center justify-center'>
+      <button
+        onClick={onToggle}
+        disabled={disabled}
+        className={`
+          relative inline-flex h-4 w-8 items-center justify-center rounded-full 
+          transition-all duration-200 ease-in-out focus:outline-none
+          ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+          ${isActive ? 'bg-green-500' : 'bg-gray-300 hover:bg-gray-400'}
+        `}
+      >
+        <span
+          className={`
+            absolute h-3 w-3 transform rounded-full bg-white 
+            transition-all duration-200 ease-in-out
+            ${isActive ? 'translate-x-2' : '-translate-x-2'}
+          `}
+        />
+      </button>
+      <span className={`ml-2 text-xs font-medium ${isActive ? 'text-green-600' : 'text-gray-500'}`}>
+        {isActive ? 'Active' : 'Inactive'}
+      </span>
+    </div>
+  );
+};
+```
+
+### Table Configuration
+```typescript
+const columns: TableColumn[] = [
+  {
+    key: 'serial',
+    label: '#',
+    title: '#',
+    width: '60px',
+    render: (_, __, index) => (
+      <span className='text-sm font-semibold text-gray-900'>
+        {(pagination.currentPage - 1) * pagination.pageSize + index + 1}
+      </span>
+    ),
+  },
+  {
+    key: 'location',
+    label: 'Client',
+    title: 'Client Name',
+    width: '400px',
+    render: value => (
+      <div className='truncate max-w-[380px]' title={value as string}>
+        <span className='text-sm font-semibold text-gray-900'>{value as string}</span>
+      </div>
+    ),
+  },
+  {
+    key: 'status',
+    label: 'Status',
+    title: 'Client Status',
+    width: '180px',
+    render: (_, row) => (
+      <StatusToggle
+        isActive={row.status_id === 1}
+        onToggle={() => updateClientStatus(row.id, row.status_id === 1 ? 0 : 1)}
+        disabled={loading}
+      />
+    ),
+  },
+];
+```
+
+### Key Implementation Details
+
+#### 1. **Status Toggle Design**
+- **Size**: 32px × 16px (compact design)
+- **Animation**: 200ms smooth transitions
+- **Colors**: Green for active, gray for inactive
+- **Accessibility**: Focus rings and disabled states
+
+#### 2. **API Response Handling**
+```typescript
+// Handle both statusCode formats
+if (response.statusCode === 200 && response.data) {
+  // Process data
+}
+
+// Update status with status_code format
+if (response.status_code === 200) {
+  // Success handling
+}
+```
+
+#### 3. **State Management**
+```typescript
+// Local state updates for immediate UI feedback
+setClients(prevClients =>
+  prevClients.map(client =>
+    client.id === clientId
+      ? { ...client, status_id: newStatus, status: newStatus === 1 ? 'Active' : 'Inactive' }
+      : client
+  )
+);
+```
+
+#### 4. **Pagination Integration**
+- **Client-side pagination**: Efficient for moderate data sets
+- **Dynamic page calculation**: `Math.ceil(totalCount / pageSize)`
+- **State synchronization**: Pagination state updates with data changes
+
+### Design Decisions
+
+#### 1. **Toggle vs Dropdown**
+- **Why Toggle**: More intuitive for binary states (active/inactive)
+- **Benefits**: Single click, visual feedback, modern UX
+- **Space Efficient**: Takes less horizontal space than dropdown
+
+#### 2. **Compact Padding**
+- **Table Rows**: `py-2` instead of `py-4` for density
+- **Toggle Size**: Smaller dimensions for better table fit
+- **Result**: More data visible per page
+
+#### 3. **Real-time Updates**
+- **Immediate UI**: Local state updates before API confirmation
+- **Error Handling**: Rollback on API failure
+- **User Feedback**: Snackbar notifications for all actions
+
+### Troubleshooting
+
+#### 1. **Toggle Not Responding**
+**Problem**: Toggle switch doesn't change state
+**Debug Steps**:
+1. Check `disabled` prop (should be `false` when not loading)
+2. Verify `onToggle` function is properly bound
+3. Check console for JavaScript errors
+**Solution**: Ensure `loading` state is properly managed
+
+#### 2. **Status Not Persisting**
+**Problem**: Status reverts after toggle
+**Debug Steps**:
+1. Check API response format (`statusCode` vs `status_code`)
+2. Verify `updateClientStatus` API call
+3. Check network tab for API errors
+**Solution**: Ensure API response handling matches backend format
+
+#### 3. **Type Errors**
+**Problem**: TypeScript errors with Table component
+**Debug Steps**:
+1. Check `Client` interface has index signature
+2. Verify `TableColumn` interface matches expected type
+3. Ensure all required properties are defined
+**Solution**: Add `[key: string]: unknown` to interfaces
 
 ---
 

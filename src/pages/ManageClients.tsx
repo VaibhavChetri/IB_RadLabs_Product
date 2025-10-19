@@ -182,7 +182,7 @@ export const ManageClients: React.FC = () => {
 	const loadClients = useCallback(async () => {
 		try {
 			const response = await clientsApi.execute({});
-			if (response.statusCode === 200) {
+			if ((response as any).statusCode === 200) {
 				const locations = (response.data as unknown as ClientLocation[]) || [];
 				// Extract unique clients from locations
 				const uniqueClients = locations.reduce((acc: Client[], location: ClientLocation) => {
@@ -210,10 +210,13 @@ export const ManageClients: React.FC = () => {
 	}, []); // Empty dependency array - only run once on mount
 
 	// Handle filter changes with local filtering first
-	const handleFilterChange = (key: keyof ClientLocationFilters, value: string | number) => {
+	const handleFilterChange = (
+		key: keyof ClientLocationFilters,
+		value: string | number | undefined
+	) => {
 		const newFilters = {
 			...filters,
-			[key]: value || undefined,
+			[key]: value ?? undefined,
 		};
 		setFilters(newFilters);
 
@@ -269,7 +272,7 @@ export const ManageClients: React.FC = () => {
 		{
 			key: 'serial',
 			label: '#',
-			title: 'Serial Number',
+			title: '#',
 			sortable: false,
 			width: '60px',
 			render: (_value: unknown, _row: Record<string, unknown>, index: number) => (

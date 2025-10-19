@@ -96,7 +96,7 @@ export const Table = <T extends Record<string, unknown>>({
 								<th
 									key={column.key}
 									className={cn(
-										'px-6 py-4 text-left font-bold text-gray-900',
+										'px-6 py-2 text-left font-bold text-gray-900',
 										sizeClasses[size],
 										column.align === 'center' && 'text-center',
 										column.align === 'right' && 'text-right',
@@ -147,7 +147,7 @@ export const Table = <T extends Record<string, unknown>>({
 											<td
 												key={column.key}
 												className={cn(
-													'px-6 py-4 font-semibold text-gray-900',
+													'px-6 py-2 font-semibold text-gray-900',
 													sizeClasses[size],
 													column.align === 'center' && 'text-center',
 													column.align === 'right' && 'text-right',

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { FloatingInput, FloatingDropdown } from '../components/ui';
-import { ArrowLeft, MapPin, DollarSign, Target, Building } from 'lucide-react';
+import { ArrowLeft, DollarSign, Target, Building } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
@@ -181,10 +181,10 @@ export const AddClient: React.FC = () => {
 	};
 
 	return (
-		<div className='min-h-screen bg-background-secondary p-6'>
-			<div className='max-w-4xl mx-auto'>
+		<div className='min-h-screen bg-background-secondary p-4'>
+			<div className='max-w-7xl mx-auto'>
 				{/* Header */}
-				<div className='flex items-center gap-4 mb-8'>
+				<div className='flex items-center gap-4 mb-6'>
 					<Button variant='ghost' size='sm' onClick={() => navigate('/clients')} className='p-2'>
 						<ArrowLeft className='w-4 h-4' />
 					</Button>
@@ -194,15 +194,16 @@ export const AddClient: React.FC = () => {
 					</div>
 				</div>
 
-				<form onSubmit={handleSubmit} className='space-y-8'>
-					{/* Basic Information Section */}
-					<Card className='p-6'>
-						<div className='flex items-center gap-3 mb-6'>
+				<form onSubmit={handleSubmit} className='space-y-6'>
+					{/* Client Information Section */}
+					<Card className='p-4'>
+						<div className='flex items-center gap-3 mb-4'>
 							<Building className='w-5 h-5 text-primary' />
-							<h2 className='text-xl font-semibold text-foreground'>Basic Information</h2>
+							<h2 className='text-xl font-semibold text-foreground'>Client Information</h2>
 						</div>
 
-						<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+						<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+							{/* Basic Information Row */}
 							<FloatingInput
 								label='Name'
 								value={formData.name}
@@ -228,66 +229,6 @@ export const AddClient: React.FC = () => {
 							/>
 
 							<FloatingInput
-								label='Zipcode'
-								value={formData.zipcode}
-								onChange={value => handleInputChange('zipcode', value)}
-							/>
-						</div>
-					</Card>
-
-					{/* Location Section */}
-					<Card className='p-6'>
-						<div className='flex items-center gap-3 mb-6'>
-							<MapPin className='w-5 h-5 text-primary' />
-							<h2 className='text-xl font-semibold text-foreground'>Location Details</h2>
-						</div>
-
-						<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-							<FloatingDropdown
-								label='Select Location Type'
-								options={locationTypes}
-								value={formData.locationType}
-								onChange={value => handleInputChange('locationType', value)}
-								loading={locationTypesLoading}
-								required
-								error={!!errors.locationType}
-								errorMessage={errors.locationType}
-							/>
-
-							<FloatingDropdown
-								label='Select Country'
-								options={countries}
-								value={formData.country}
-								onChange={value => handleInputChange('country', value)}
-								loading={countriesLoading}
-								required
-								error={!!errors.country}
-								errorMessage={errors.country}
-							/>
-
-							<FloatingDropdown
-								label='Select State'
-								options={states}
-								value={formData.state}
-								onChange={value => handleInputChange('state', value)}
-								loading={statesLoading}
-								required
-								error={!!errors.state}
-								errorMessage={errors.state}
-							/>
-
-							<FloatingDropdown
-								label='Select City'
-								options={cities}
-								value={formData.city}
-								onChange={value => handleInputChange('city', value)}
-								loading={citiesLoading}
-								required
-								error={!!errors.city}
-								errorMessage={errors.city}
-							/>
-
-							<FloatingInput
 								label='Landmark'
 								value={formData.landmark}
 								onChange={value => handleInputChange('landmark', value)}
@@ -300,28 +241,75 @@ export const AddClient: React.FC = () => {
 								label='Latitude'
 								value={formData.latitude}
 								onChange={value => handleInputChange('latitude', value)}
-								required
-								error={!!errors.latitude}
-								errorMessage={errors.latitude}
 							/>
 
 							<FloatingInput
 								label='Longitude'
 								value={formData.longitude}
 								onChange={value => handleInputChange('longitude', value)}
+							/>
+
+							{/* Location Hierarchy Row */}
+							<FloatingDropdown
+								label='Select City'
+								options={cities}
+								value={formData.city}
+								onChange={(value: string) => handleInputChange('city', value)}
+								loading={citiesLoading}
 								required
-								error={!!errors.longitude}
-								errorMessage={errors.longitude}
+								error={!!errors.city}
+								errorMessage={errors.city}
+							/>
+
+							<FloatingDropdown
+								label='Select State'
+								options={states}
+								value={formData.state}
+								onChange={(value: string) => handleInputChange('state', value)}
+								loading={statesLoading}
+								required
+								error={!!errors.state}
+								errorMessage={errors.state}
+							/>
+
+							<FloatingDropdown
+								label='Select Country'
+								options={countries}
+								value={formData.country}
+								onChange={(value: string) => handleInputChange('country', value)}
+								loading={countriesLoading}
+								required
+								error={!!errors.country}
+								errorMessage={errors.country}
+							/>
+
+							{/* Location Type */}
+							<FloatingDropdown
+								label='Select Location Type'
+								options={locationTypes}
+								value={formData.locationType}
+								onChange={(value: string) => handleInputChange('locationType', value)}
+								loading={locationTypesLoading}
+								required
+								error={!!errors.locationType}
+								errorMessage={errors.locationType}
+							/>
+
+							<FloatingInput
+								label='Zipcode'
+								value={formData.zipcode}
+								onChange={value => handleInputChange('zipcode', value)}
 							/>
 						</div>
 
+						{/* On-site Manpower Checkbox */}
 						<div className='mt-6'>
-							<label className='flex items-center gap-3'>
+							<label className='flex items-center gap-3 cursor-pointer'>
 								<input
 									type='checkbox'
 									checked={formData.onSiteManpower}
 									onChange={e => handleInputChange('onSiteManpower', e.target.checked)}
-									className='w-4 h-4 text-primary bg-background border-border rounded focus:ring-primary focus:ring-2'
+									className='w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary'
 								/>
 								<span className='text-sm font-medium text-foreground'>On-site Manpower</span>
 							</label>
@@ -329,18 +317,18 @@ export const AddClient: React.FC = () => {
 					</Card>
 
 					{/* Billing Type Section */}
-					<Card className='p-6'>
-						<div className='flex items-center gap-3 mb-6'>
+					<Card className='p-4'>
+						<div className='flex items-center gap-3 mb-4'>
 							<DollarSign className='w-5 h-5 text-primary' />
 							<h2 className='text-xl font-semibold text-foreground'>Billing Type</h2>
 						</div>
 
-						<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+						<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
 							<FloatingDropdown
 								label='Select Billing Type'
 								options={billingTypes}
 								value={formData.billingType}
-								onChange={value => handleInputChange('billingType', value)}
+								onChange={(value: string) => handleInputChange('billingType', value)}
 								loading={billingTypesLoading}
 								required
 								error={!!errors.billingType}
@@ -365,7 +353,7 @@ export const AddClient: React.FC = () => {
 									label='Billing Sub Type'
 									options={billingSubTypes}
 									value={formData.billingSubType || ''}
-									onChange={value => handleInputChange('billingSubType', value)}
+									onChange={(value: string) => handleInputChange('billingSubType', value)}
 									loading={billingSubTypesLoading}
 									required
 									error={!!errors.billingSubType}
@@ -376,18 +364,18 @@ export const AddClient: React.FC = () => {
 					</Card>
 
 					{/* Impact Type Section */}
-					<Card className='p-6'>
-						<div className='flex items-center gap-3 mb-6'>
+					<Card className='p-4'>
+						<div className='flex items-center gap-3 mb-4'>
 							<Target className='w-5 h-5 text-primary' />
 							<h2 className='text-xl font-semibold text-foreground'>Impact Type</h2>
 						</div>
 
-						<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+						<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
 							<FloatingDropdown
 								label='Select Client Impact Types'
 								options={impactTypes}
 								value={formData.impactType}
-								onChange={value => handleInputChange('impactType', value)}
+								onChange={(value: string) => handleInputChange('impactType', value)}
 								loading={impactTypesLoading}
 								required
 								error={!!errors.impactType}
@@ -396,6 +384,7 @@ export const AddClient: React.FC = () => {
 						</div>
 					</Card>
 
+					{/* Submit Button */}
 					{/* Submit Button */}
 					<div className='flex justify-end'>
 						<Button
@@ -411,3 +400,5 @@ export const AddClient: React.FC = () => {
 		</div>
 	);
 };
+
+export default AddClient;

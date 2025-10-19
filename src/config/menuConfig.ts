@@ -63,7 +63,7 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 						id: 'clients-manage',
 						name: 'Manage Clients',
 						icon: Eye,
-						href: '/clients',
+						href: '/clients/manage',
 					},
 					{
 						id: 'clients-disable',

@@ -9,6 +9,7 @@ export interface User {
 	role: string;
 	userTypeId?: number; // NEW: User type ID
 	city_id?: number; // NEW: User's city ID
+	state_id?: number; // NEW: User's state ID
 	menuPermissions?: Record<string, MenuPermission>; // NEW: Menu permissions
 }
 

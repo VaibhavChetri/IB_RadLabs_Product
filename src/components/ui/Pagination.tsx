@@ -25,11 +25,11 @@ export const Pagination: React.FC<PaginationProps> = ({
 	const startItem = (currentPage - 1) * itemsPerPage + 1;
 	const endItem = Math.min(currentPage * itemsPerPage, totalItems);
 
-	const itemsPerPageOptions = [5, 10, 25, 50];
+	const itemsPerPageOptions = [5, 10, 25, 50, totalItems];
 
 	return (
 		<div className={`flex items-center justify-between ${className}`}>
-			{/* Items per page selector */}
+			{/* Items per page selector - always show */}
 			{showItemsPerPage && onItemsPerPageChange && (
 				<div className='flex items-center gap-3'>
 					<span className='text-sm font-medium text-gray-700'>Rows per page:</span>
@@ -41,7 +41,7 @@ export const Pagination: React.FC<PaginationProps> = ({
 						>
 							{itemsPerPageOptions.map(option => (
 								<option key={option} value={option}>
-									{option}
+									{option === totalItems ? 'All' : option}
 								</option>
 							))}
 						</select>
@@ -66,34 +66,38 @@ export const Pagination: React.FC<PaginationProps> = ({
 
 			{/* Page info */}
 			<div className='text-sm font-medium text-gray-700'>
-				{startItem}-{endItem} of {totalItems}
+				{itemsPerPage === totalItems
+					? `All ${totalItems} items`
+					: `${startItem}-${endItem} of ${totalItems}`}
 			</div>
 
-			{/* Navigation arrows */}
-			<div className='flex items-center gap-2'>
-				<button
-					onClick={() => onPageChange(currentPage - 1)}
-					disabled={currentPage === 1}
-					className={`p-1 rounded transition-colors ${
-						currentPage === 1
-							? 'text-gray-300 cursor-not-allowed'
-							: 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-					}`}
-				>
-					<ChevronLeft className='w-4 h-4' />
-				</button>
-				<button
-					onClick={() => onPageChange(currentPage + 1)}
-					disabled={currentPage === totalPages}
-					className={`p-1 rounded transition-colors ${
-						currentPage === totalPages
-							? 'text-gray-300 cursor-not-allowed'
-							: 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
-					}`}
-				>
-					<ChevronRight className='w-4 h-4' />
-				</button>
-			</div>
+			{/* Navigation arrows - only show when there are multiple pages */}
+			{totalPages > 1 && (
+				<div className='flex items-center gap-2'>
+					<button
+						onClick={() => onPageChange(currentPage - 1)}
+						disabled={currentPage === 1}
+						className={`p-1 rounded transition-colors ${
+							currentPage === 1
+								? 'text-gray-300 cursor-not-allowed'
+								: 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+						}`}
+					>
+						<ChevronLeft className='w-4 h-4' />
+					</button>
+					<button
+						onClick={() => onPageChange(currentPage + 1)}
+						disabled={currentPage === totalPages}
+						className={`p-1 rounded transition-colors ${
+							currentPage === totalPages
+								? 'text-gray-300 cursor-not-allowed'
+								: 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+						}`}
+					>
+						<ChevronRight className='w-4 h-4' />
+					</button>
+				</div>
+			)}
 		</div>
 	);
 };

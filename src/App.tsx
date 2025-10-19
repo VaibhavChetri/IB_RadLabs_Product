@@ -31,6 +31,9 @@ function App() {
 
 			console.log('Retrieved userData:', userData);
 			console.log('Retrieved menuPermissions:', menuPermissions);
+			console.log('🔍 App.tsx: userData.city_id:', userData?.city_id);
+			console.log('🔍 App.tsx: userData.state_id:', userData?.state_id);
+			console.log('🔍 App.tsx: userData.userTypeId:', userData?.userTypeId);
 
 			const user = {
 				id: userData?.id || 'Unknown',
@@ -38,6 +41,8 @@ function App() {
 				email: userData?.email || 'unknown@example.com',
 				role: userData?.role || 'Unknown Role',
 				userTypeId: userData?.userTypeId || 0,
+				city_id: userData?.city_id || undefined,
+				state_id: userData?.state_id || undefined, // Added state_id
 				menuPermissions: menuPermissions || {},
 			};
 			console.log('Restoring user with menu permissions:', user);

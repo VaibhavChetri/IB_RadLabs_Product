@@ -89,15 +89,24 @@ export class AuthApiService {
 				}
 
 				// Store user data for auth restoration
+				// Use the actual user profile data from the API response
+				console.log('🔍 authApi: Full API response:', response.data);
+				console.log('🔍 authApi: User object from API:', response.data.user);
+				console.log('🔍 authApi: city_id in response:', response.data.user.city_id);
+				console.log('🔍 authApi: state_id in response:', response.data.user.state_id);
+
 				const userData = {
 					id: response.data.user.id.toString(),
 					name: `${response.data.user.first_name} ${response.data.user.last_name}`.trim(),
 					email: response.data.user.email,
 					role: `User Type ${response.data.user.user_type_id}`,
 					userTypeId: response.data.user.user_type_id,
+					city_id: response.data.user.city_id,
+					state_id: response.data.user.state_id,
 				};
 				TokenManager.setUserData(userData);
-				console.log('User data stored:', userData);
+				console.log('✅ authApi: User data stored from API response:', userData);
+				console.log('✅ authApi: city_id:', userData.city_id, 'state_id:', userData.state_id);
 
 				// Initialize token monitoring
 				TokenManager.initialize();
@@ -111,8 +120,18 @@ export class AuthApiService {
 	}
 
 	/**
-	 * Refresh access token
+	 * Get user profile data (including city_id, state_id)
 	 */
+	static async getUserProfile(): Promise<ApiResponse<unknown>> {
+		try {
+			const response = await apiService.get('/user/profile');
+			console.log('User profile response:', response);
+			return response;
+		} catch (error) {
+			console.error('Get user profile error:', error);
+			throw error;
+		}
+	}
 	static async refreshToken(refreshToken: string): Promise<ApiResponse<RefreshTokenResponse>> {
 		return apiService.post('/oauth/refresh', {
 			refresh_token: refreshToken,

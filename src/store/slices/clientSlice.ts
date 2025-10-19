@@ -25,6 +25,15 @@ export const clientSlice = createSlice({
 		},
 		setSelectedLocation: (state, action: PayloadAction<ClientLocation | null>) => {
 			state.selectedLocation = action.payload;
+			// Persist to localStorage for page refresh
+			if (action.payload) {
+				localStorage.setItem('selectedClientLocation', JSON.stringify(action.payload));
+			} else {
+				localStorage.removeItem('selectedClientLocation');
+			}
+		},
+		restoreSelectedLocation: (state, action: PayloadAction<ClientLocation>) => {
+			state.selectedLocation = action.payload;
 		},
 		setLoading: (state, action: PayloadAction<boolean>) => {
 			state.isLoading = action.payload;
@@ -36,11 +45,18 @@ export const clientSlice = createSlice({
 			state.locations = [];
 			state.selectedLocation = null;
 			state.error = null;
+			localStorage.removeItem('selectedClientLocation');
 		},
 	},
 });
 
-export const { setLocations, setSelectedLocation, setLoading, setError, clearClientData } =
-	clientSlice.actions;
+export const {
+	setLocations,
+	setSelectedLocation,
+	restoreSelectedLocation,
+	setLoading,
+	setError,
+	clearClientData,
+} = clientSlice.actions;
 
 export default clientSlice.reducer;

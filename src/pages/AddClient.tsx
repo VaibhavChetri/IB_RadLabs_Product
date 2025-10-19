@@ -16,6 +16,8 @@ import {
 	useBillingTypes,
 	useBillingSubTypes,
 } from '../hooks/useLocationData';
+import { useApi } from '../hooks/useApi';
+import { apiService } from '../services/api';
 
 interface ClientFormData {
 	// Basic Information
@@ -41,6 +43,9 @@ interface ClientFormData {
 
 	// Impact Type
 	impactType: string;
+
+	// Facility (when onSiteManpower is true)
+	facility?: string;
 }
 
 export const AddClient: React.FC = () => {
@@ -65,14 +70,20 @@ export const AddClient: React.FC = () => {
 	const { billingTypes, loading: billingTypesLoading } = useBillingTypes();
 	const { billingSubTypes, loading: billingSubTypesLoading } = useBillingSubTypes();
 
-	// Debug logging
-	useEffect(() => {
-		console.log('AddClient Debug:');
-		console.log('- Countries:', countries.length, countries);
-		console.log('- Impact Types:', impactTypes.length, impactTypes);
-		console.log('- Billing Types:', billingTypes.length, billingTypes);
-		console.log('- Location Types:', locationTypes.length, locationTypes);
-	}, [countries, impactTypes, billingTypes, locationTypes]);
+	// Facility API
+	const facilitiesApi = useApi('facilities', async () => {
+		const params = new URLSearchParams();
+		params.append('location_type', '2');
+		if (user?.city_id) {
+			params.append('city_id', user.city_id.toString());
+		}
+		console.log('🏢 Fetching facilities with params:', params.toString());
+		const response = await apiService.get(`/locations/getLocations?${params.toString()}`);
+		console.log('🏢 Facilities API response:', response);
+		return response;
+	});
+
+	const [facilities, setFacilities] = useState<unknown[]>([]);
 
 	const [formData, setFormData] = useState<ClientFormData>({
 		name: '',
@@ -91,7 +102,21 @@ export const AddClient: React.FC = () => {
 		fixedPrice: '',
 		billingSubType: '',
 		impactType: '',
+		facility: '',
 	});
+
+	// Trigger facilities API when onSiteManpower is checked
+	useEffect(() => {
+		if (formData.onSiteManpower && user?.city_id) {
+			console.log('🏢 useEffect: Fetching facilities for city_id:', user.city_id);
+			facilitiesApi.execute({}).then(response => {
+				if (response.data) {
+					setFacilities(response.data);
+					console.log('🏢 Facilities stored:', response.data);
+				}
+			});
+		}
+	}, [formData.onSiteManpower, user?.city_id, facilitiesApi]);
 
 	const [errors, setErrors] = useState<Partial<ClientFormData>>({});
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -106,11 +131,86 @@ export const AddClient: React.FC = () => {
 		}
 	}, [countries, formData.country]);
 
+	// Debug: Check localStorage data
+	useEffect(() => {
+		const storedUserData = localStorage.getItem('user_data');
+		const parsedData = storedUserData ? JSON.parse(storedUserData) : null;
+		console.log('💾 AddClient: Stored user data in localStorage:', parsedData);
+		console.log('💾 AddClient: city_id in localStorage:', parsedData?.city_id);
+		console.log('💾 AddClient: state_id in localStorage:', parsedData?.state_id);
+		console.log('💾 AddClient: userTypeId in localStorage:', parsedData?.userTypeId);
+
+		// Also check what's in Redux
+		console.log('🔍 AddClient: Redux user object:', user);
+		console.log('🔍 AddClient: Redux user.city_id:', user?.city_id);
+		console.log('🔍 AddClient: Redux user.state_id:', user?.state_id);
+		console.log('🔍 AddClient: Redux user.userTypeId:', user?.userTypeId);
+	}, [user]);
+
+	// Set user's city and state as default for non-super admins
+	useEffect(() => {
+		console.log('🔍 AddClient: Checking user data for preloading:', {
+			user: user,
+			city_id: user?.city_id,
+			state_id: user?.state_id,
+			userTypeId: user?.userTypeId,
+			cities: cities.length,
+			states: states.length,
+		});
+
+		// Check if user is not a super admin (userTypeId > 4) and has location data
+		if (user?.userTypeId && user.userTypeId > 4 && user?.city_id && cities.length > 0) {
+			console.log('✅ AddClient: User is non-super admin, preloading city and state');
+
+			// Find and set the user's city
+			const userCity = cities.find(city => city.value === user.city_id?.toString());
+			console.log('🏙️ AddClient: Found user city:', userCity);
+			if (userCity) {
+				setFormData(prev => ({ ...prev, city: userCity.value }));
+				console.log('✅ AddClient: City set to:', userCity.value);
+			}
+
+			// Find and set the user's state
+			if (user.state_id && states.length > 0) {
+				const userState = states.find(state => state.value === user.state_id?.toString());
+				console.log('🏛️ AddClient: Found user state:', userState);
+				if (userState) {
+					setFormData(prev => ({ ...prev, state: userState.value }));
+					console.log('✅ AddClient: State set to:', userState.value);
+				}
+			} else {
+				console.log('⚠️ AddClient: No state_id in user data or states not loaded');
+			}
+
+			// Set country to India (82) for non-super admins
+			setFormData(prev => ({ ...prev, country: '82' }));
+			console.log('✅ AddClient: Country set to India (82)');
+		} else {
+			console.log('❌ AddClient: Conditions not met for preloading:', {
+				hasUserTypeId: !!user?.userTypeId,
+				isNonSuperAdmin: user?.userTypeId && user.userTypeId > 4,
+				hasCityId: !!user?.city_id,
+				hasCities: cities.length > 0,
+			});
+		}
+	}, [user?.city_id, user?.state_id, user?.userTypeId, cities, states, user]);
+
 	const handleInputChange = (field: keyof ClientFormData, value: string | boolean) => {
 		setFormData(prev => ({ ...prev, [field]: value }));
 		// Clear error when user starts typing
 		if (errors[field]) {
 			setErrors(prev => ({ ...prev, [field]: undefined }));
+		}
+
+		// Trigger facilities API when onSiteManpower is checked
+		if (field === 'onSiteManpower' && value === true) {
+			console.log('🏢 On-site Manpower checked, fetching facilities...');
+			facilitiesApi.execute({}).then(response => {
+				if (response.data) {
+					setFacilities(response.data);
+					console.log('🏢 Facilities stored from handleInputChange:', response.data);
+				}
+			});
 		}
 	};
 
@@ -131,18 +231,12 @@ export const AddClient: React.FC = () => {
 		if (!formData.longitude.trim()) newErrors.longitude = 'Longitude is required';
 
 		// Conditional validation for Fixed Price
-		if (
-			getBillingTypeName(formData.billingType).toLowerCase().includes('fixed') &&
-			!formData.fixedPrice?.trim()
-		) {
+		if (formData.billingType === '3' && !formData.fixedPrice?.trim()) {
 			newErrors.fixedPrice = 'Fixed Price is required';
 		}
 
 		// Conditional validation for Billing Sub Type
-		if (
-			getBillingTypeName(formData.billingType).toLowerCase().includes('set pricing') &&
-			!formData.billingSubType
-		) {
+		if (formData.billingType === '4' && !formData.billingSubType) {
 			newErrors.billingSubType = 'Billing Sub Type is required';
 		}
 
@@ -172,12 +266,6 @@ export const AddClient: React.FC = () => {
 		} finally {
 			setIsSubmitting(false);
 		}
-	};
-
-	// Helper function to get billing type name for validation
-	const getBillingTypeName = (billingTypeId: string) => {
-		const billingType = billingTypes.find(bt => bt.value === billingTypeId);
-		return billingType?.label || '';
 	};
 
 	return (
@@ -259,6 +347,7 @@ export const AddClient: React.FC = () => {
 								required
 								error={!!errors.city}
 								errorMessage={errors.city}
+								disabled={user?.userTypeId ? user.userTypeId > 4 : false}
 							/>
 
 							<FloatingDropdown
@@ -270,6 +359,7 @@ export const AddClient: React.FC = () => {
 								required
 								error={!!errors.state}
 								errorMessage={errors.state}
+								disabled={user?.userTypeId ? user.userTypeId > 4 : false}
 							/>
 
 							<FloatingDropdown
@@ -281,6 +371,7 @@ export const AddClient: React.FC = () => {
 								required
 								error={!!errors.country}
 								errorMessage={errors.country}
+								disabled={user?.userTypeId ? user.userTypeId > 4 : false}
 							/>
 
 							{/* Location Type */}
@@ -314,6 +405,27 @@ export const AddClient: React.FC = () => {
 								<span className='text-sm font-medium text-foreground'>On-site Manpower</span>
 							</label>
 						</div>
+
+						{/* Facility Dropdown (when onSiteManpower is true) */}
+						{formData.onSiteManpower && (
+							<div className='mt-4'>
+								{/* Debug log for facility dropdown */}
+								<FloatingDropdown
+									label='Facility'
+									options={facilities.map((facility: unknown) => ({
+										// eslint-disable-next-line @typescript-eslint/no-explicit-any
+										value: (facility as any).id.toString(),
+										// eslint-disable-next-line @typescript-eslint/no-explicit-any
+										label: (facility as any).location || `Facility ${(facility as any).id}`,
+									}))}
+									value={formData.facility || ''}
+									onChange={(value: string) => handleInputChange('facility', value)}
+									loading={facilitiesApi.loading}
+									placeholder='Select Facility'
+									required
+								/>
+							</div>
+						)}
 					</Card>
 
 					{/* Billing Type Section */}
@@ -336,7 +448,7 @@ export const AddClient: React.FC = () => {
 							/>
 
 							{/* Dynamic Fields based on Billing Type */}
-							{getBillingTypeName(formData.billingType).toLowerCase().includes('fixed') && (
+							{formData.billingType === '3' && (
 								<FloatingInput
 									label='Fixed Price'
 									value={formData.fixedPrice || ''}
@@ -348,7 +460,7 @@ export const AddClient: React.FC = () => {
 								/>
 							)}
 
-							{getBillingTypeName(formData.billingType).toLowerCase().includes('set pricing') && (
+							{formData.billingType === '4' && (
 								<FloatingDropdown
 									label='Billing Sub Type'
 									options={billingSubTypes}

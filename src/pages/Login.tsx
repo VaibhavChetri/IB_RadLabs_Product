@@ -38,17 +38,19 @@ export const Login: React.FC = () => {
 						name: `${result.data.user.first_name} ${result.data.user.last_name}`.trim(),
 						email: result.data.user.email,
 						role: `User Type ${result.data.user.user_type_id}`,
-						userTypeId: result.data.user.user_type_id, // NEW: Store user type ID
-						menuPermissions: result.data.menu_permissions || {}, // NEW: Store menu permissions
+						userTypeId: result.data.user.user_type_id,
+						city_id: result.data.user.city_id,
+						state_id: (result.data.user as unknown as { state_id: number }).state_id, // Added state_id
+						menuPermissions: result.data.menu_permissions || {},
 					})
 				);
 				navigate('/');
 			} else {
 				setError('Login failed: Invalid response from server');
 			}
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error('Login error:', error);
-			setError(error.message || 'Login failed. Please check your credentials.');
+			setError((error as Error).message || 'Login failed. Please check your credentials.');
 		}
 	};
 

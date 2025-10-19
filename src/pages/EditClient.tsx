@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
-import { FloatingInput, FloatingDropdown } from '../components/ui';
+import { FloatingInput, FloatingDropdown, Snackbar } from '../components/ui';
 import { ArrowLeft, DollarSign, Target, Building } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store';
-import TokenManager from '../utils/tokenManager';
+import { restoreSelectedLocation } from '../store/slices/clientSlice';
+import { useApi } from '../hooks/useApi';
+import { apiService } from '../services/api';
 import {
 	useCountries,
 	useStates,
@@ -16,6 +18,7 @@ import {
 	useBillingTypes,
 	useBillingSubTypes,
 } from '../hooks/useLocationData';
+import { ClientApiService, UpdateClientRequest } from '../services/clientApi';
 
 interface ClientFormData {
 	// Basic Information
@@ -41,10 +44,14 @@ interface ClientFormData {
 
 	// Impact Type
 	impactType: string;
+
+	// Facility (when onSiteManpower is true)
+	facility?: string;
 }
 
 export const EditClient: React.FC = () => {
 	const navigate = useNavigate();
+	const dispatch = useDispatch();
 	const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
 	const { selectedLocation } = useSelector((state: RootState) => state.client);
 
@@ -59,13 +66,24 @@ export const EditClient: React.FC = () => {
 		}
 	}, [isAuthenticated, navigate]);
 
-	// Redirect if no selected location
+	// Restore selected location from localStorage on page refresh
 	useEffect(() => {
 		if (!selectedLocation) {
-			console.log('❌ No selected location, redirecting to manage clients');
-			navigate('/clients/manage');
+			const savedLocation = localStorage.getItem('selectedClientLocation');
+			if (savedLocation) {
+				try {
+					const location = JSON.parse(savedLocation);
+					dispatch(restoreSelectedLocation(location));
+				} catch (error) {
+					console.error('Failed to parse saved location:', error);
+					navigate('/clients/manage');
+				}
+			} else {
+				console.log('❌ No selected location, redirecting to manage clients');
+				navigate('/clients/manage');
+			}
 		}
-	}, [selectedLocation, navigate]);
+	}, [selectedLocation, dispatch, navigate]);
 
 	// API hooks
 	const { countries, loading: countriesLoading } = useCountries();
@@ -75,6 +93,19 @@ export const EditClient: React.FC = () => {
 	const { impactTypes, loading: impactTypesLoading } = useImpactTypes();
 	const { billingTypes, loading: billingTypesLoading } = useBillingTypes();
 	const { billingSubTypes, loading: billingSubTypesLoading } = useBillingSubTypes();
+
+	// Facility API
+	const facilitiesApi = useApi('facilities', async () => {
+		const params = new URLSearchParams();
+		params.append('location_type', '2');
+		if (user?.city_id) {
+			params.append('city_id', user.city_id.toString());
+		}
+		console.log('🏢 EditClient: Fetching facilities with params:', params.toString());
+		const response = await apiService.get(`/locations/getLocations?${params.toString()}`);
+		console.log('🏢 EditClient: Facilities API response:', response);
+		return response;
+	});
 
 	// Form state with prefilled values from selectedLocation
 	const [formData, setFormData] = useState<ClientFormData>({
@@ -90,8 +121,8 @@ export const EditClient: React.FC = () => {
 
 		// Location - prefilled from selectedLocation
 		locationType: selectedLocation?.locationTypeId?.toString() || '',
-		country: selectedLocation?.country_name || '',
-		state: selectedLocation?.state_name || '',
+		country: selectedLocation?.country_id?.toString() || '',
+		state: selectedLocation?.state_id?.toString() || '',
 		city: selectedLocation?.city_id?.toString() || '',
 
 		// Billing Type - prefilled from selectedLocation
@@ -100,16 +131,16 @@ export const EditClient: React.FC = () => {
 		billingSubType: selectedLocation?.billing_sub_type_id?.toString() || '',
 
 		// Impact Type - prefilled from selectedLocation (first impact type if multiple)
-		impactType: selectedLocation?.impactTypes?.[0]?.id?.toString() || '',
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		impactType: (selectedLocation?.impactTypes?.[0] as any)?.id?.toString() || '',
+		facility: selectedLocation?.facilityId?.toString() || '',
 	});
-
-	// Dynamic fields state
-	const [showFixedPrice, setShowFixedPrice] = useState(false);
-	const [showBillingSubType, setShowBillingSubType] = useState(false);
 
 	// Update form data when selectedLocation changes
 	useEffect(() => {
 		if (selectedLocation) {
+			const billingTypeId = selectedLocation.billing_type_id;
+
 			setFormData({
 				name: selectedLocation.restaurant_name || '',
 				address1: selectedLocation.address_1 || '',
@@ -120,26 +151,76 @@ export const EditClient: React.FC = () => {
 				longitude: selectedLocation.longitude || '',
 				onSiteManpower: selectedLocation.hasOnSiteManPower || false,
 				locationType: selectedLocation.locationTypeId?.toString() || '',
-				country: selectedLocation.country_name || '',
-				state: selectedLocation.state_name || '',
+				country: selectedLocation.country_id?.toString() || '',
+				state: selectedLocation.state_id?.toString() || '',
 				city: selectedLocation.city_id?.toString() || '',
-				billingType: selectedLocation.billing_type_id?.toString() || '',
+				billingType: billingTypeId?.toString() || '',
 				fixedPrice: selectedLocation.fixedPrice?.toString() || '',
 				billingSubType: selectedLocation.billing_sub_type_id?.toString() || '',
-				impactType: selectedLocation.impactTypes?.[0]?.id?.toString() || '',
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				impactType: (selectedLocation.impactTypes?.[0] as any)?.id?.toString() || '',
+				facility: selectedLocation.facilityId?.toString() || '',
 			});
+
+			// Initialize dynamic fields based on billing type
+			// Note: Fixed Price and Billing Sub Type are now handled by direct conditional rendering
 		}
 	}, [selectedLocation]);
+
+	const [facilities, setFacilities] = useState<unknown[]>([]); // Local state for facilities
+
+	// Snackbar state
+	const [snackbar, setSnackbar] = useState({
+		open: false,
+		message: '',
+		type: 'success' as 'success' | 'error' | 'info',
+	});
+
+	// Trigger facilities API when onSiteManpower is checked
+	useEffect(() => {
+		if (formData.onSiteManpower && user?.city_id) {
+			console.log('🏢 EditClient useEffect: Fetching facilities for city_id:', user.city_id);
+			facilitiesApi.execute({}).then(response => {
+				if (response.data) {
+					setFacilities(response.data);
+					console.log('🏢 EditClient Facilities stored:', response.data);
+				}
+			});
+		}
+	}, [formData.onSiteManpower, user?.city_id]); // Removed facilitiesApi from dependencies
+
+	// Set user's city and state as default for non-super admins
+	useEffect(() => {
+		if (user?.city_id && user?.userTypeId && user.userTypeId > 4) {
+			// Find and set the user's city
+			const userCity = cities.find(city => city.value === user.city_id?.toString());
+			if (userCity) {
+				setFormData(prev => ({ ...prev, city: userCity.value }));
+			}
+
+			// Find and set the user's state
+			if (user.state_id) {
+				const userState = states.find(state => state.value === user.state_id?.toString());
+				if (userState) {
+					setFormData(prev => ({ ...prev, state: userState.value }));
+				}
+			}
+		}
+	}, [user?.city_id, user?.state_id, user?.userTypeId, cities, states]);
 
 	// Handle form field changes
 	const handleInputChange = (field: keyof ClientFormData, value: string | boolean) => {
 		setFormData(prev => ({ ...prev, [field]: value }));
 
-		// Show/hide dynamic fields based on billing type
-		if (field === 'billingType') {
-			const billingTypeId = parseInt(value as string);
-			setShowFixedPrice(billingTypeId === 1); // Fixed Price billing type
-			setShowBillingSubType(billingTypeId === 2); // Other billing types that need sub-type
+		// Trigger facilities API when onSiteManpower is checked
+		if (field === 'onSiteManpower' && value === true) {
+			console.log('🏢 EditClient: On-site Manpower checked, fetching facilities...');
+			facilitiesApi.execute({}).then(response => {
+				if (response.data) {
+					setFacilities(response.data);
+					console.log('🏢 EditClient Facilities stored from handleInputChange:', response.data);
+				}
+			});
 		}
 	};
 
@@ -148,10 +229,70 @@ export const EditClient: React.FC = () => {
 		e.preventDefault();
 		console.log('📝 Form submitted:', formData);
 
-		// TODO: Implement update API call
-		// For now, just show success message
-		alert('Client updated successfully!');
-		navigate('/clients/manage');
+		if (!selectedLocation) {
+			console.error('❌ No client selected for editing');
+			return;
+		}
+
+		try {
+			// Map form data to API format
+			const updateData: UpdateClientRequest = {
+				location_id: selectedLocation.id,
+				restaurant_id: selectedLocation.restaurant_id,
+				country_id: parseInt(formData.country),
+				state_id: parseInt(formData.state),
+				city_id: parseInt(formData.city),
+				latitude: formData.latitude,
+				longitude: formData.longitude,
+				landmark: formData.landmark,
+				zipcode: formData.zipcode,
+				location: formData.name,
+				address_1: formData.address1,
+				address_2: formData.address2,
+				location_type: parseInt(formData.locationType),
+				impact_type_ids: [parseInt(formData.impactType)],
+				billing_type_id: parseInt(formData.billingType),
+				onSiteManPower: formData.onSiteManpower ? 1 : 0,
+			};
+
+			// Add optional fields based on billing type
+			if (formData.billingType === '3' && formData.fixedPrice) {
+				updateData.fixed_price = formData.fixedPrice;
+				updateData.fixed_pricing_id = selectedLocation.fixedPriceId || undefined;
+			}
+
+			console.log('🚀 Sending update data:', updateData);
+
+			const result = await ClientApiService.updateClient(updateData);
+
+			if (result.status === 'Success' && result.status_code === 200) {
+				console.log('✅ Client updated successfully!');
+				setSnackbar({
+					open: true,
+					message: result.message || 'Client updated successfully!',
+					type: 'success',
+				});
+
+				// Navigate after showing success message
+				setTimeout(() => {
+					navigate('/clients/manage');
+				}, 800);
+			} else {
+				console.error('❌ Update failed:', result);
+				setSnackbar({
+					open: true,
+					message: result.message || 'Failed to update client. Please try again.',
+					type: 'error',
+				});
+			}
+		} catch (error) {
+			console.error('❌ Update error:', error);
+			setSnackbar({
+				open: true,
+				message: 'An error occurred while updating the client.',
+				type: 'error',
+			});
+		}
 	};
 
 	// Handle back navigation
@@ -165,22 +306,27 @@ export const EditClient: React.FC = () => {
 
 	return (
 		<div className='min-h-screen bg-white p-4'>
+			{/* Snackbar */}
+			<Snackbar
+				open={snackbar.open}
+				message={snackbar.message}
+				type={snackbar.type}
+				onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+			/>
+
 			<div className='max-w-4xl mx-auto'>
-				{/* Header */}
-				<div className='flex items-center gap-4 mb-8'>
+				{/* Simple Header */}
+				<div className='mb-8'>
 					<Button
 						variant='ghost'
 						size='sm'
 						onClick={handleBack}
-						className='text-gray-600 hover:text-gray-800'
+						className='text-gray-500 hover:text-gray-700 mb-4'
 					>
 						<ArrowLeft className='w-4 h-4 mr-2' />
-						Back to Manage Clients
+						Back
 					</Button>
-					<div>
-						<h1 className='text-3xl font-bold text-foreground'>Edit Client</h1>
-						<p className='text-foreground-muted mt-1'>Update client location information</p>
-					</div>
+					<h1 className='text-2xl font-semibold text-gray-900'>Edit Client</h1>
 				</div>
 
 				<form onSubmit={handleSubmit} className='space-y-8'>
@@ -229,7 +375,6 @@ export const EditClient: React.FC = () => {
 								value={formData.latitude}
 								onChange={(value: string) => handleInputChange('latitude', value)}
 								type='number'
-								step='any'
 							/>
 
 							<FloatingInput
@@ -237,7 +382,6 @@ export const EditClient: React.FC = () => {
 								value={formData.longitude}
 								onChange={(value: string) => handleInputChange('longitude', value)}
 								type='number'
-								step='any'
 							/>
 
 							<div className='flex items-center gap-3'>
@@ -252,6 +396,28 @@ export const EditClient: React.FC = () => {
 									Has On-Site Manpower
 								</label>
 							</div>
+
+							{/* Facility Dropdown (when onSiteManpower is true) */}
+							{formData.onSiteManpower && (
+								<div className='mt-4'>
+									<FloatingDropdown
+										label='Facility'
+										options={
+											facilities.map((facility: unknown) => ({
+												// eslint-disable-next-line @typescript-eslint/no-explicit-any
+												value: (facility as any).id.toString(),
+												// eslint-disable-next-line @typescript-eslint/no-explicit-any
+												label: (facility as any).location || `Facility ${(facility as any).id}`,
+											})) || []
+										}
+										value={formData.facility || ''}
+										onChange={(value: string) => handleInputChange('facility', value)}
+										loading={facilitiesApi.loading}
+										placeholder='Select Facility'
+										required
+									/>
+								</div>
+							)}
 						</div>
 					</Card>
 
@@ -281,6 +447,7 @@ export const EditClient: React.FC = () => {
 								loading={countriesLoading}
 								placeholder='Select Country'
 								required
+								disabled={user?.userTypeId ? user.userTypeId > 4 : false}
 							/>
 
 							<FloatingDropdown
@@ -291,6 +458,7 @@ export const EditClient: React.FC = () => {
 								loading={statesLoading}
 								placeholder='Select State'
 								required
+								disabled={user?.userTypeId ? user.userTypeId > 4 : false}
 							/>
 
 							<FloatingDropdown
@@ -301,6 +469,7 @@ export const EditClient: React.FC = () => {
 								loading={citiesLoading}
 								placeholder='Select City'
 								required
+								disabled={user?.userTypeId ? user.userTypeId > 4 : false}
 							/>
 						</div>
 					</Card>
@@ -323,18 +492,17 @@ export const EditClient: React.FC = () => {
 								required
 							/>
 
-							{showFixedPrice && (
+							{formData.billingType === '3' && (
 								<FloatingInput
 									label='Fixed Price'
 									value={formData.fixedPrice || ''}
 									onChange={(value: string) => handleInputChange('fixedPrice', value)}
 									type='number'
-									step='0.01'
 									required
 								/>
 							)}
 
-							{showBillingSubType && (
+							{formData.billingType === '4' && (
 								<FloatingDropdown
 									label='Billing Sub Type'
 									options={billingSubTypes.map(type => ({ value: type.value, label: type.label }))}

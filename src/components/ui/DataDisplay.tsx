@@ -87,27 +87,27 @@ export const Table = <T extends Record<string, unknown>>({
 	}
 
 	return (
-		<div className={cn('w-full overflow-hidden', className)}>
+		<div className={cn('w-full', className)}>
 			<div className='overflow-x-auto'>
-				<table className={cn('w-full border-collapse', bordered && 'border border-border')}>
+				<table className='w-full border-collapse'>
 					<thead>
-						<tr className='border-b border-border'>
+						<tr className='border-b border-gray-200'>
 							{columns.map(column => (
 								<th
 									key={column.key}
 									className={cn(
-										'px-4 py-3 text-left font-medium text-foreground-secondary',
+										'px-6 py-4 text-left font-bold text-gray-900',
 										sizeClasses[size],
 										column.align === 'center' && 'text-center',
 										column.align === 'right' && 'text-right',
-										column.sortable && 'cursor-pointer hover:text-foreground select-none',
-										column.fixed === 'left' && 'sticky left-0 bg-background z-10',
-										column.fixed === 'right' && 'sticky right-0 bg-background z-10'
+										column.sortable && 'cursor-pointer hover:bg-gray-50 select-none',
+										column.fixed === 'left' && 'sticky left-0 bg-white z-10',
+										column.fixed === 'right' && 'sticky right-0 bg-white z-10'
 									)}
 									style={{ width: column.width }}
 									onClick={() => column.sortable && handleSort(column.key)}
 								>
-									<div className='flex items-center space-x-1'>
+									<div className='flex items-center space-x-2'>
 										<span>{column.title}</span>
 										{column.sortable && (
 											<span className='flex-shrink-0'>{getSortIcon(column.key)}</span>
@@ -132,9 +132,9 @@ export const Table = <T extends Record<string, unknown>>({
 								<tr
 									key={index}
 									className={cn(
-										'border-b border-border transition-colors',
-										striped && index % 2 === 1 && 'bg-background-secondary',
-										hoverable && 'hover:bg-background-secondary'
+										'border-b border-gray-200 transition-colors',
+										striped && index % 2 === 1 && 'bg-gray-50',
+										hoverable && 'hover:bg-gray-50'
 									)}
 								>
 									{columns.map(column => {
@@ -147,12 +147,12 @@ export const Table = <T extends Record<string, unknown>>({
 											<td
 												key={column.key}
 												className={cn(
-													'px-4 py-3',
+													'px-6 py-4 font-semibold text-gray-900',
 													sizeClasses[size],
 													column.align === 'center' && 'text-center',
 													column.align === 'right' && 'text-right',
-													column.fixed === 'left' && 'sticky left-0 bg-background z-10',
-													column.fixed === 'right' && 'sticky right-0 bg-background z-10'
+													column.fixed === 'left' && 'sticky left-0 bg-white z-10',
+													column.fixed === 'right' && 'sticky right-0 bg-white z-10'
 												)}
 											>
 												{renderedValue as React.ReactNode}

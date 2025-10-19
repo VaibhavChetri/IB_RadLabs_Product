@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '../components/ui/Button';
-import { Card } from '../components/ui/Card';
 import { FloatingDropdown, Pagination } from '../components/ui';
 import { Table } from '../components/ui/DataDisplay';
 import { useApi } from '../hooks/useApi';
@@ -17,11 +16,17 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store';
 import { setLocations, setSelectedLocation } from '../store/slices/clientSlice';
 
+interface PaginationData {
+	totalCount: number;
+	pageSize: number;
+	currentPage: number;
+	totalPages: number;
+}
+
 export const ManageClients: React.FC = () => {
 	const navigate = useNavigate();
 	const dispatch = useDispatch();
 	const { user } = useSelector((state: RootState) => state.auth);
-	const { locations: reduxLocations } = useSelector((state: RootState) => state.client);
 
 	// Debug Redux state
 	console.log('🔍 Redux user state:', user);
@@ -56,6 +61,38 @@ export const ManageClients: React.FC = () => {
 		totalPages: 0,
 	});
 
+	const [sortBy, setSortBy] = useState<string>('');
+	const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+	// Handle sorting
+	const handleSort = (key: string, order: 'asc' | 'desc') => {
+		setSortBy(key);
+		setSortOrder(order);
+
+		// Sort the data locally
+		const sortedData = [...clientLocations].sort((a, b) => {
+			const aValue = a[key as keyof typeof a];
+			const bValue = b[key as keyof typeof b];
+
+			// Handle different data types
+			if (typeof aValue === 'string' && typeof bValue === 'string') {
+				return order === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+			}
+
+			// Handle numbers
+			if (typeof aValue === 'number' && typeof bValue === 'number') {
+				return order === 'asc' ? aValue - bValue : bValue - aValue;
+			}
+
+			// Fallback to string comparison
+			const aStr = String(aValue || '');
+			const bStr = String(bValue || '');
+			return order === 'asc' ? aStr.localeCompare(bStr) : bStr.localeCompare(aStr);
+		});
+
+		setClientLocations(sortedData);
+	};
+
 	// Debug component state
 	console.log('🔍 Component filters:', filters);
 	console.log('🔍 Component clientLocations:', clientLocations);
@@ -73,20 +110,26 @@ export const ManageClients: React.FC = () => {
 
 				const response = await clientLocationsApi.execute(filtersToUse);
 				console.log('🔍 FULL API Response:', response);
-				console.log('📊 Response statusCode:', (response as any).statusCode);
+				console.log(
+					'📊 Response statusCode:',
+					(response as unknown as { statusCode: number }).statusCode
+				);
 				console.log('📊 Response status_code:', response.status_code);
 				console.log('📦 Response data:', response.data);
 
 				// Check both statusCode and status_code for compatibility
-				const isSuccess = (response as any).statusCode === 200 || response.status_code === 200;
+				const isSuccess =
+					(response as unknown as { statusCode: number }).statusCode === 200 ||
+					response.status_code === 200;
 
 				if (isSuccess) {
 					// Clear any previous errors
 					setError(null);
 
 					// The backend returns data directly as an array
-					const locations = (response.data as any) || [];
-					const paginationData = (response as any).pagination || {};
+					const locations = (response.data as unknown as ClientLocation[]) || [];
+					const paginationData =
+						(response as unknown as { pagination: PaginationData }).pagination || {};
 
 					console.log('📍 Locations found:', locations.length);
 					console.log('📍 First location:', locations[0]);
@@ -123,7 +166,7 @@ export const ManageClients: React.FC = () => {
 					setClients(uniqueClients);
 				} else {
 					setError(
-						`API Error: ${(response as any).message || (response as any).status || 'Unknown error'}`
+						`API Error: ${(response as unknown as { message?: string; status?: string }).message || (response as unknown as { message?: string; status?: string }).status || 'Unknown error'}`
 					);
 				}
 			} catch (error: unknown) {
@@ -184,66 +227,79 @@ export const ManageClients: React.FC = () => {
 	// Table columns - relevant business data
 	const columns = [
 		{
+			key: 'serial',
+			label: '#',
+			title: 'Serial Number',
+			sortable: false,
+			width: '60px',
+			render: (_value: unknown, _row: Record<string, unknown>, index: number) => (
+				<div className='font-semibold text-gray-600 text-center'>
+					{(pagination.currentPage - 1) * pagination.pageSize + index + 1}
+				</div>
+			),
+		},
+		{
+			key: 'actions',
+			label: 'Actions',
+			title: 'Actions',
+			sortable: false,
+			render: (_value: unknown, row: Record<string, unknown>) => (
+				<Button
+					variant='ghost'
+					size='sm'
+					onClick={() => {
+						const location = clientLocations.find(loc => loc.id === row.id);
+						if (location) {
+							dispatch(setSelectedLocation(location));
+							navigate('/clients/edit');
+						}
+					}}
+					className='text-green-600 hover:text-green-700 hover:bg-green-50 px-2 py-1 rounded'
+				>
+					<Edit className='w-4 h-4' />
+				</Button>
+			),
+		},
+		{
 			key: 'restaurant_name',
 			label: 'Client',
 			title: 'Client',
-			render: (value: unknown) => (
-				<div className='font-semibold text-gray-900'>{String(value)}</div>
-			),
-		},
-		{
-			key: 'city_name',
-			label: 'City',
-			title: 'City',
-			render: (value: unknown, row: Record<string, unknown>) => (
-				<div className='text-gray-900'>
-					<div className='font-medium'>{String(value)}</div>
-					<div className='text-sm text-gray-500'>
-						{String(row.state_name)}, {String(row.country_name)}
+			sortable: true,
+			width: '200px',
+			render: (value: unknown) => {
+				const clientName = String(value);
+
+				return (
+					<div className='relative group'>
+						<div
+							className='font-semibold text-gray-900'
+							style={{
+								overflow: 'hidden',
+								textOverflow: 'ellipsis',
+								whiteSpace: 'nowrap',
+								maxWidth: '180px',
+							}}
+						>
+							{clientName}
+						</div>
+						{/* Custom tooltip - accessibility feature */}
+						<div className='absolute bottom-full left-0 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 whitespace-nowrap'>
+							{clientName}
+							<div className='absolute top-full left-2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900'></div>
+						</div>
 					</div>
-				</div>
-			),
-		},
-		{
-			key: 'address',
-			label: 'Address',
-			title: 'Address',
-			render: (value: unknown, row: Record<string, unknown>) => {
-				const address1 = String(row.address_1 || '');
-				const address2 = String(row.address_2 || '');
-				const landmark = String(row.landmark || '');
-				const zipcode = String(row.zipcode || '');
-
-				const fullAddress = [address1, address2, landmark, zipcode]
-					.filter(addr => addr.trim())
-					.join(', ');
-
-				return <div className='text-sm text-gray-700 max-w-xs'>{fullAddress || 'N/A'}</div>;
+				);
 			},
-		},
-		{
-			key: 'coordinates',
-			label: 'Coordinates',
-			title: 'Coordinates',
-			render: (value: unknown, row: Record<string, unknown>) => (
-				<div className='text-sm text-gray-600'>
-					<div className='font-mono text-xs'>
-						<span className='text-blue-600'>Lat:</span> {String(row.latitude || 'N/A')}
-					</div>
-					<div className='font-mono text-xs'>
-						<span className='text-green-600'>Lng:</span> {String(row.longitude || 'N/A')}
-					</div>
-				</div>
-			),
 		},
 		{
 			key: 'billingType',
 			label: 'Billing',
 			title: 'Billing',
+			sortable: true,
 			render: (value: unknown, row: Record<string, unknown>) => (
 				<div className='text-gray-900'>
 					<div className='font-medium'>{String(value)}</div>
-					{row.subTypeName && (
+					{(row.subTypeName as string) && (
 						<div className='text-xs text-gray-500 mt-1'>{String(row.subTypeName)}</div>
 					)}
 				</div>
@@ -253,6 +309,7 @@ export const ManageClients: React.FC = () => {
 			key: 'impactTypes',
 			label: 'Impact Types',
 			title: 'Impact Types',
+			sortable: false,
 			render: (value: unknown) => {
 				// Handle impactTypes array
 				let impactTypes = [];
@@ -278,9 +335,21 @@ export const ManageClients: React.FC = () => {
 			},
 		},
 		{
+			key: 'location_type_name',
+			label: 'Type',
+			title: 'Type',
+			sortable: true,
+			render: (value: unknown) => (
+				<span className='inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800'>
+					{String(value)}
+				</span>
+			),
+		},
+		{
 			key: 'status',
 			label: 'Status',
 			title: 'Status',
+			sortable: true,
 			render: (value: unknown) => (
 				<span
 					className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -292,35 +361,42 @@ export const ManageClients: React.FC = () => {
 			),
 		},
 		{
-			key: 'location_type_name',
-			label: 'Type',
-			title: 'Type',
-			render: (value: unknown) => (
-				<span className='inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800'>
-					{String(value)}
-				</span>
+			key: 'coordinates',
+			label: 'Coordinates',
+			title: 'Coordinates',
+			sortable: false,
+			render: (_value: unknown, row: Record<string, unknown>) => (
+				<div className='text-sm text-gray-600'>
+					<div className='font-mono text-xs'>
+						<span className='text-blue-600'>Lat:</span> {String(row.latitude || 'N/A')}
+					</div>
+					<div className='font-mono text-xs'>
+						<span className='text-green-600'>Lng:</span> {String(row.longitude || 'N/A')}
+					</div>
+				</div>
 			),
 		},
 		{
-			key: 'actions',
-			label: 'Actions',
-			title: 'Actions',
-			render: (value: unknown, row: Record<string, unknown>) => (
-				<Button
-					variant='ghost'
-					size='sm'
-					onClick={() => {
-						const location = clientLocations.find(loc => loc.id === row.id);
-						if (location) {
-							dispatch(setSelectedLocation(location));
-							navigate('/clients/edit');
-						}
-					}}
-					className='text-green-600 hover:text-green-700 hover:bg-green-50 px-2 py-1 rounded'
-				>
-					<Edit className='w-4 h-4' />
-				</Button>
-			),
+			key: 'address',
+			label: 'Address',
+			title: 'Address',
+			sortable: false,
+			render: (_value: unknown, row: Record<string, unknown>) => {
+				const address1 = String(row.address_1 || '');
+				const address2 = String(row.address_2 || '');
+				const landmark = String(row.landmark || '');
+				const zipcode = String(row.zipcode || '');
+
+				const fullAddress = [address1, address2, landmark, zipcode]
+					.filter(addr => addr.trim())
+					.join(', ');
+
+				return (
+					<div className='text-sm text-gray-700 max-w-xs truncate' title={fullAddress || 'N/A'}>
+						{fullAddress || 'N/A'}
+					</div>
+				);
+			},
 		},
 	];
 
@@ -333,7 +409,18 @@ export const ManageClients: React.FC = () => {
 				<div className='flex items-center justify-between mb-6'>
 					<div>
 						<h1 className='text-3xl font-bold text-foreground'>Manage Clients</h1>
-						<p className='text-foreground-muted mt-1'>View and manage client locations</p>
+						<div className='flex items-center gap-4 mt-2'>
+							<span className='text-sm text-gray-600'>
+								📍{' '}
+								{shouldShowCityFilter
+									? 'All Cities'
+									: user?.city_id
+										? cities.find(c => c.value === user.city_id?.toString())?.label || 'Mumbai'
+										: 'Mumbai'}
+							</span>
+							<span className='text-sm text-gray-500'>•</span>
+							<span className='text-sm text-gray-600'>🏢 {pagination.totalCount} locations</span>
+						</div>
 					</div>
 					<Button
 						onClick={() => navigate('/clients/add')}
@@ -344,10 +431,10 @@ export const ManageClients: React.FC = () => {
 					</Button>
 				</div>
 
-				{/* Clean Filter Section */}
-				<div className='mb-8'>
-					<div className='bg-white border border-gray-200 rounded-xl p-6 shadow-sm'>
-						<div className='flex items-center gap-6'>
+				{/* Sleek Filter Section */}
+				<div className='mb-6'>
+					<div className='bg-gradient-to-r from-gray-50 to-white border border-gray-100 rounded-lg p-4'>
+						<div className='flex items-center gap-4'>
 							{shouldShowCityFilter && (
 								<FloatingDropdown
 									label='City'
@@ -382,7 +469,7 @@ export const ManageClients: React.FC = () => {
 
 							<Button
 								onClick={() => loadClientLocations(filters)}
-								className='px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center gap-2'
+								className='px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors flex items-center gap-1.5 text-sm font-medium'
 							>
 								<Search className='w-4 h-4' />
 							</Button>
@@ -391,7 +478,7 @@ export const ManageClients: React.FC = () => {
 								variant='ghost'
 								size='sm'
 								onClick={clearFilters}
-								className='text-gray-500 hover:text-gray-700 px-3 py-1'
+								className='text-gray-500 hover:text-gray-700 px-2 py-1 text-sm'
 							>
 								Reset
 							</Button>
@@ -425,26 +512,27 @@ export const ManageClients: React.FC = () => {
 						</div>
 					) : (
 						<div>
-							<div className='overflow-x-auto overflow-hidden rounded-lg border border-gray-200'>
+							<div className='overflow-x-auto'>
 								<Table
 									columns={columns}
 									data={clientLocations as unknown as Record<string, unknown>[]}
 									className='min-w-max'
+									sortBy={sortBy}
+									sortOrder={sortOrder}
+									onSort={handleSort}
 								/>
 							</div>
-							{pagination.totalPages > 1 && (
-								<div className='mt-6'>
-									<Pagination
-										currentPage={pagination.currentPage}
-										totalPages={pagination.totalPages}
-										totalItems={pagination.totalCount}
-										itemsPerPage={pagination.pageSize}
-										onPageChange={handlePageChange}
-										onItemsPerPageChange={handleItemsPerPageChange}
-										showItemsPerPage={true}
-									/>
-								</div>
-							)}
+							<div className='mt-6'>
+								<Pagination
+									currentPage={pagination.currentPage}
+									totalPages={pagination.totalPages}
+									totalItems={pagination.totalCount}
+									itemsPerPage={pagination.pageSize}
+									onPageChange={handlePageChange}
+									onItemsPerPageChange={handleItemsPerPageChange}
+									showItemsPerPage={true}
+								/>
+							</div>
 						</div>
 					)}
 				</div>

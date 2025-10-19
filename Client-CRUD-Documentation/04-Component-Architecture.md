@@ -11,6 +11,7 @@ Components/
 ├── UI Components (Reusable)           # Generic, configurable components
 │   ├── FloatingInput.tsx
 │   ├── FloatingDropdown.tsx
+│   ├── MultiSelectDropdown.tsx
 │   ├── DataDisplay.tsx
 │   ├── Pagination.tsx
 │   ├── Button.tsx
@@ -297,7 +298,89 @@ export const FloatingDropdown: React.FC<FloatingDropdownProps> = ({
 />
 ```
 
-### 3. **DataTable Component** (`src/components/ui/DataDisplay.tsx`)
+### 3. **MultiSelectDropdown Component** (`src/components/ui/MultiSelectDropdown.tsx`)
+
+#### Purpose
+Multi-select dropdown component with floating label behavior, search functionality, and chip-based selection display. Built on FloatingDropdown skeleton for consistency.
+
+#### Interface
+```typescript
+export interface MultiSelectOption {
+  value: string;
+  label: string;
+  disabled?: boolean;
+}
+
+export interface MultiSelectDropdownProps {
+  label: string;
+  options: MultiSelectOption[];
+  value: string[];
+  onChange: (value: string[]) => void;
+  placeholder?: string;
+  disabled?: boolean;
+  error?: boolean;
+  errorMessage?: string;
+  required?: boolean;
+  className?: string;
+  loading?: boolean;
+  searchable?: boolean;
+  maxDisplayItems?: number;
+}
+```
+
+#### Implementation Highlights
+```typescript
+export const MultiSelectDropdown = forwardRef<HTMLDivElement, MultiSelectDropdownProps>(
+  ({ label, options, value, onChange, ...props }, ref) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [isFocused, setIsFocused] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    
+    const selectedOptions = options.filter(option => value.includes(option.value));
+    const shouldFloat = isFocused || isOpen || selectedOptions.length > 0;
+    
+    // Conditional rendering: Search + Options OR Button
+    return (
+      <div ref={dropdownRef}>
+        <label className={cn(
+          'absolute left-4 bg-background px-1 pointer-events-none transition-all duration-200',
+          shouldFloat ? '-top-2 text-xs text-primary font-medium' : 'top-4 text-sm text-foreground-muted'
+        )}>
+          {label}
+        </label>
+        
+        {searchable && isOpen ? (
+          <SearchAndOptionsView />
+        ) : (
+          <ButtonView />
+        )}
+      </div>
+    );
+  }
+);
+```
+
+#### Key Features
+- **Floating Label**: Same behavior as FloatingDropdown
+- **Chip Display**: Selected items shown as removable chips
+- **Search Integration**: Real-time filtering when opened
+- **Multi-Selection**: Toggle selection with check marks
+- **Consistent Styling**: Matches FloatingDropdown design
+
+#### Usage Example
+```typescript
+<MultiSelectDropdown
+  label="Select Impact Types"
+  options={impactTypeOptions}
+  value={impactTypes}
+  onChange={setImpactTypes}
+  required={true}
+  searchable={true}
+  maxDisplayItems={3}
+/>
+```
+
+### 4. **DataTable Component** (`src/components/ui/DataDisplay.tsx`)
 
 #### Purpose
 Reusable data table component with sorting, custom rendering, and responsive design.

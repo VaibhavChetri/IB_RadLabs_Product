@@ -977,6 +977,203 @@ const validateForm = () => {
 - **Screen Readers**: ARIA attributes and semantic HTML
 - **Keyboard Navigation**: Full keyboard support
 
+## 🎯 MultiSelectDropdown Component
+
+### Purpose
+Multi-select dropdown component with floating label behavior, search functionality, and chip-based selection display. Built on FloatingDropdown skeleton for consistency.
+
+### File Location
+`src/components/ui/MultiSelectDropdown.tsx`
+
+### Interface Definition
+```typescript
+export interface MultiSelectOption {
+  value: string;
+  label: string;
+  disabled?: boolean;
+}
+
+export interface MultiSelectDropdownProps {
+  label: string;
+  options: MultiSelectOption[];
+  value: string[];
+  onChange: (value: string[]) => void;
+  placeholder?: string;
+  disabled?: boolean;
+  error?: boolean;
+  errorMessage?: string;
+  required?: boolean;
+  className?: string;
+  loading?: boolean;
+  searchable?: boolean;
+  maxDisplayItems?: number;
+}
+```
+
+### Implementation Details
+
+#### 1. **Component Structure**
+```typescript
+export const MultiSelectDropdown = forwardRef<HTMLDivElement, MultiSelectDropdownProps>(
+  ({ label, options, value, onChange, ...props }, ref) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [isFocused, setIsFocused] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    
+    const selectedOptions = options.filter(option => value.includes(option.value));
+    const shouldFloat = isFocused || isOpen || selectedOptions.length > 0;
+    
+    return (
+      <div ref={dropdownRef}>
+        {/* Floating Label */}
+        <label className={cn(
+          'absolute left-4 bg-background px-1 pointer-events-none transition-all duration-200',
+          shouldFloat ? '-top-2 text-xs text-primary font-medium' : 'top-4 text-sm text-foreground-muted'
+        )}>
+          {label}
+        </label>
+        
+        {/* Conditional Rendering */}
+        {searchable && isOpen ? (
+          <SearchAndOptionsView />
+        ) : (
+          <ButtonView />
+        )}
+      </div>
+    );
+  }
+);
+```
+
+#### 2. **Key Features**
+
+**Floating Label Behavior**
+- Label floats up when focused, opened, or has selections
+- Uses same positioning logic as FloatingDropdown
+- Smooth transitions with `transition-all duration-200`
+
+**Chip-Based Selection Display**
+- Selected items appear as removable chips above dropdown
+- Each chip has an X button for individual removal
+- Shows max N items + "more" count for space efficiency
+- Chips use `bg-primary/10 text-primary` styling
+
+**Search Integration**
+- Search input replaces button when opened (if `searchable=true`)
+- Real-time filtering of options based on search term
+- Search icon on left, close button on right
+- Same styling as FloatingDropdown search
+
+**Multi-Selection Logic**
+- `handleOptionToggle`: Adds/removes items from selection array
+- `handleRemoveOption`: Removes specific item from chips
+- Maintains array of selected values (`string[]`)
+
+#### 3. **Usage Examples**
+
+**Basic Multi-Select**
+```typescript
+const [impactTypes, setImpactTypes] = useState<string[]>([]);
+
+<MultiSelectDropdown
+  label="Select Impact Types"
+  options={impactTypeOptions}
+  value={impactTypes}
+  onChange={setImpactTypes}
+  placeholder="Select impact types..."
+  required={true}
+  searchable={true}
+  maxDisplayItems={3}
+/>
+```
+
+**With Error Handling**
+```typescript
+<MultiSelectDropdown
+  label="Select Impact Types"
+  options={impactTypeOptions}
+  value={impactTypes}
+  onChange={setImpactTypes}
+  error={!!errors.impactTypes}
+  errorMessage={errors.impactTypes}
+  required={true}
+/>
+```
+
+**Disabled State**
+```typescript
+<MultiSelectDropdown
+  label="Select Impact Types"
+  options={impactTypeOptions}
+  value={impactTypes}
+  onChange={setImpactTypes}
+  disabled={isLoading}
+  loading={isLoading}
+/>
+```
+
+#### 4. **Styling and Behavior**
+
+**Visual States**
+- **Default**: Gray border, placeholder text
+- **Focused**: Primary border, floating label
+- **Selected**: Shows chips with selected items
+- **Error**: Red border, error message below
+- **Disabled**: Grayed out, non-interactive
+
+**Chip Styling**
+```css
+.inline-flex.items-center.gap-1.px-2.py-1.bg-primary\/10.text-primary.text-xs.rounded-md
+```
+
+**Search Input Styling**
+- Matches FloatingDropdown search exactly
+- `rounded-t-md` for top corners
+- `pl-10 pr-10` for icon spacing
+- Same padding as button (`py-4`)
+
+#### 5. **Integration with Forms**
+
+**Form Validation**
+```typescript
+const validateImpactTypes = (impactTypes: string[]) => {
+  if (!impactTypes || impactTypes.length === 0) {
+    return 'At least one Impact Type is required';
+  }
+  return null;
+};
+
+// In form submission
+const impactTypeError = validateImpactTypes(formData.impactTypes);
+if (impactTypeError) {
+  setErrors(prev => ({ ...prev, impactTypes: impactTypeError }));
+  return;
+}
+```
+
+**API Payload Mapping**
+```typescript
+// Convert string array to number array for API
+const payload = {
+  impact_type_ids: formData.impactTypes.map(id => parseInt(id))
+};
+```
+
+#### 6. **Accessibility Features**
+
+- **Keyboard Navigation**: Enter/Space to open, Escape to close
+- **Screen Reader Support**: Proper ARIA labels and roles
+- **Focus Management**: Focus search input when opened
+- **Outside Click**: Close dropdown when clicking outside
+- **Disabled State**: Proper disabled styling and behavior
+
+#### 7. **Performance Considerations**
+
+- **Efficient Filtering**: Client-side search filtering
+- **Memoization**: Options filtering memoized
+- **Event Handling**: Proper event cleanup
+- **Ref Management**: ForwardRef for parent component access
+
 ### 4. **Performance**
 - **Memoization**: Use React.memo and useMemo appropriately
 - **Debouncing**: Debounce search and validation

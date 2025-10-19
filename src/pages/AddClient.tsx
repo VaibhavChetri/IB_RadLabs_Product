@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
-import { FloatingInput, FloatingDropdown } from '../components/ui';
+import { FloatingInput, FloatingDropdown, MultiSelectDropdown, Snackbar } from '../components/ui';
 import { ArrowLeft, DollarSign, Target, Building } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
-import TokenManager from '../utils/tokenManager';
+import { ClientApiService } from '../services/clientApi';
 import {
 	useCountries,
 	useStates,
@@ -18,6 +18,7 @@ import {
 } from '../hooks/useLocationData';
 import { useApi } from '../hooks/useApi';
 import { apiService } from '../services/api';
+import TokenManager from '../utils/tokenManager';
 
 interface ClientFormData {
 	// Basic Information
@@ -42,7 +43,7 @@ interface ClientFormData {
 	billingSubType?: string;
 
 	// Impact Type
-	impactType: string;
+	impactTypes: string[];
 
 	// Facility (when onSiteManpower is true)
 	facility?: string;
@@ -66,6 +67,12 @@ export const AddClient: React.FC = () => {
 	const { states, loading: statesLoading } = useStates();
 	const { cities, loading: citiesLoading } = useCities();
 	const { locationTypes, loading: locationTypesLoading } = useLocationTypes();
+
+	// Debug: Check location types data
+	useEffect(() => {
+		console.log('🔍 AddClient: Location Types:', locationTypes);
+		console.log('🔍 AddClient: Location Types Loading:', locationTypesLoading);
+	}, [locationTypes, locationTypesLoading]);
 	const { impactTypes, loading: impactTypesLoading } = useImpactTypes();
 	const { billingTypes, loading: billingTypesLoading } = useBillingTypes();
 	const { billingSubTypes, loading: billingSubTypesLoading } = useBillingSubTypes();
@@ -85,14 +92,54 @@ export const AddClient: React.FC = () => {
 
 	const [facilities, setFacilities] = useState<unknown[]>([]);
 
+	// Generate random values for testing
+	const generateRandomValues = () => {
+		const randomNames = [
+			'Test Client A',
+			'Sample Restaurant B',
+			'Demo Location C',
+			'Quick Test D',
+			'Mock Client E',
+		];
+		const randomAddresses = [
+			'123 Main Street',
+			'456 Business Ave',
+			'789 Commercial Rd',
+			'321 Office Plaza',
+			'654 Corporate Blvd',
+		];
+		const randomLandmarks = [
+			'Near Metro Station',
+			'Opposite Mall',
+			'Behind Hospital',
+			'Next to School',
+			'Near Airport',
+		];
+		const randomZipcodes = ['400001', '400002', '400003', '400004', '400005'];
+		const randomLatitudes = ['19.0760', '19.0176', '19.2183', '19.1136', '19.0225'];
+		const randomLongitudes = ['72.8777', '72.8562', '72.9781', '72.8697', '72.8546'];
+
+		return {
+			name: randomNames[Math.floor(Math.random() * randomNames.length)],
+			address1: randomAddresses[Math.floor(Math.random() * randomAddresses.length)],
+			address2: 'Suite ' + Math.floor(Math.random() * 100),
+			zipcode: randomZipcodes[Math.floor(Math.random() * randomZipcodes.length)],
+			landmark: randomLandmarks[Math.floor(Math.random() * randomLandmarks.length)],
+			latitude: randomLatitudes[Math.floor(Math.random() * randomLatitudes.length)],
+			longitude: randomLongitudes[Math.floor(Math.random() * randomLongitudes.length)],
+		};
+	};
+
+	const randomValues = generateRandomValues();
+
 	const [formData, setFormData] = useState<ClientFormData>({
-		name: '',
-		address1: '',
-		address2: '',
-		zipcode: '',
-		landmark: '',
-		latitude: '',
-		longitude: '',
+		name: randomValues.name,
+		address1: randomValues.address1,
+		address2: randomValues.address2,
+		zipcode: randomValues.zipcode,
+		landmark: randomValues.landmark,
+		latitude: randomValues.latitude,
+		longitude: randomValues.longitude,
 		onSiteManpower: false,
 		locationType: '',
 		country: '82', // India's ID from the API
@@ -101,7 +148,7 @@ export const AddClient: React.FC = () => {
 		billingType: '',
 		fixedPrice: '',
 		billingSubType: '',
-		impactType: '',
+		impactTypes: [],
 		facility: '',
 	});
 
@@ -116,10 +163,17 @@ export const AddClient: React.FC = () => {
 				}
 			});
 		}
-	}, [formData.onSiteManpower, user?.city_id, facilitiesApi]);
+	}, [formData.onSiteManpower, user?.city_id]);
 
 	const [errors, setErrors] = useState<Partial<ClientFormData>>({});
 	const [isSubmitting, setIsSubmitting] = useState(false);
+
+	// Snackbar state
+	const [snackbar, setSnackbar] = useState({
+		open: false,
+		message: '',
+		type: 'success' as 'success' | 'error' | 'info',
+	});
 
 	// Set India as default country
 	useEffect(() => {
@@ -222,7 +276,8 @@ export const AddClient: React.FC = () => {
 		if (!formData.address1.trim()) newErrors.address1 = 'Address 1 is required';
 		if (!formData.locationType) newErrors.locationType = 'Location Type is required';
 		if (!formData.billingType) newErrors.billingType = 'Billing Type is required';
-		if (!formData.impactType) newErrors.impactType = 'Impact Type is required';
+		if (!formData.impactTypes || formData.impactTypes.length === 0)
+			newErrors.impactTypes = 'At least one Impact Type is required';
 		if (!formData.country) newErrors.country = 'Country is required';
 		if (!formData.state) newErrors.state = 'State is required';
 		if (!formData.city) newErrors.city = 'City is required';
@@ -246,23 +301,97 @@ export const AddClient: React.FC = () => {
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
+		console.log('🚀 AddClient: Submit button clicked!');
 
-		if (!validateForm()) {
+		// Validate form and get errors
+		const newErrors: Partial<ClientFormData> = {};
+
+		// Required fields validation
+		if (!formData.name.trim()) newErrors.name = 'Name is required';
+		if (!formData.address1.trim()) newErrors.address1 = 'Address 1 is required';
+		if (!formData.locationType) newErrors.locationType = 'Location Type is required';
+		if (!formData.billingType) newErrors.billingType = 'Billing Type is required';
+		if (!formData.impactTypes || formData.impactTypes.length === 0)
+			newErrors.impactTypes = 'At least one Impact Type is required';
+		if (!formData.country) newErrors.country = 'Country is required';
+		if (!formData.state) newErrors.state = 'State is required';
+		if (!formData.city) newErrors.city = 'City is required';
+		if (!formData.landmark.trim()) newErrors.landmark = 'Landmark is required';
+		if (!formData.latitude.trim()) newErrors.latitude = 'Latitude is required';
+		if (!formData.longitude.trim()) newErrors.longitude = 'Longitude is required';
+		if (!formData.zipcode.trim()) newErrors.zipcode = 'Zipcode is required';
+
+		// Conditional validation for Fixed Price
+		if (formData.billingType === '3' && !formData.fixedPrice?.trim()) {
+			newErrors.fixedPrice = 'Fixed Price is required';
+		}
+
+		// Conditional validation for Billing Sub Type
+		if (formData.billingType === '4' && !formData.billingSubType) {
+			newErrors.billingSubType = 'Billing Sub Type is required';
+		}
+
+		if (Object.keys(newErrors).length > 0) {
+			console.log('❌ AddClient: Form validation failed');
+			console.log('❌ AddClient: Validation errors:', newErrors);
+			setErrors(newErrors);
 			return;
 		}
 
+		console.log('✅ AddClient: Form validation passed');
 		setIsSubmitting(true);
 		try {
-			// TODO: Implement API call when APIs are provided
-			console.log('Submitting client data:', formData);
+			// Prepare API payload matching the expected format
+			const payload = {
+				location: formData.name,
+				address_1: formData.address1,
+				address_2: formData.address2,
+				landmark: formData.landmark,
+				zipcode: formData.zipcode,
+				latitude: formData.latitude,
+				longitude: formData.longitude,
+				city_id: parseInt(formData.city),
+				state_id: parseInt(formData.state),
+				country_id: parseInt(formData.country),
+				location_type: parseInt(formData.locationType),
+				billing_type_id: parseInt(formData.billingType),
+				billing_sub_type_id: formData.billingSubType
+					? parseInt(formData.billingSubType)
+					: undefined,
+				impact_type_ids: formData.impactTypes.map(id => parseInt(id)),
+				onSiteManPower: formData.onSiteManpower ? 1 : 0,
+				facility_id: formData.facility ? parseInt(formData.facility) : undefined,
+			};
 
-			// Simulate API call
-			await new Promise(resolve => setTimeout(resolve, 1000));
+			// Add optional fields based on billing type
+			if (formData.billingType === '3' && formData.fixedPrice) {
+				payload.fixed_price = formData.fixedPrice;
+				// For new clients, we don't have a fixed_pricing_id yet, so we'll let the backend handle it
+			}
 
-			// Navigate back to clients list or show success message
-			navigate('/clients');
+			console.log('📝 Submitting client data:', payload);
+
+			// Call actual API
+			const result = await ClientApiService.addClient(payload);
+
+			// Show success message
+			setSnackbar({
+				open: true,
+				message: 'Client created successfully!',
+				type: 'success',
+			});
+
+			// Navigate after showing success message
+			setTimeout(() => {
+				navigate('/clients/manage');
+			}, 800);
 		} catch (error) {
 			console.error('Failed to add client:', error);
+			setSnackbar({
+				open: true,
+				message: 'Failed to create client. Please try again.',
+				type: 'error',
+			});
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -329,12 +458,20 @@ export const AddClient: React.FC = () => {
 								label='Latitude'
 								value={formData.latitude}
 								onChange={value => handleInputChange('latitude', value)}
+								type='number'
+								required
+								error={!!errors.latitude}
+								errorMessage={errors.latitude}
 							/>
 
 							<FloatingInput
 								label='Longitude'
 								value={formData.longitude}
 								onChange={value => handleInputChange('longitude', value)}
+								type='number'
+								required
+								error={!!errors.longitude}
+								errorMessage={errors.longitude}
 							/>
 
 							{/* Location Hierarchy Row */}
@@ -390,6 +527,9 @@ export const AddClient: React.FC = () => {
 								label='Zipcode'
 								value={formData.zipcode}
 								onChange={value => handleInputChange('zipcode', value)}
+								required
+								error={!!errors.zipcode}
+								errorMessage={errors.zipcode}
 							/>
 						</div>
 
@@ -479,19 +619,24 @@ export const AddClient: React.FC = () => {
 					<Card className='p-4'>
 						<div className='flex items-center gap-3 mb-4'>
 							<Target className='w-5 h-5 text-primary' />
-							<h2 className='text-xl font-semibold text-foreground'>Impact Type</h2>
+							<h2 className='text-xl font-semibold text-foreground'>Impact Types</h2>
 						</div>
 
 						<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-							<FloatingDropdown
-								label='Select Client Impact Types'
+							<MultiSelectDropdown
+								label='Select Impact Types'
 								options={impactTypes}
-								value={formData.impactType}
-								onChange={(value: string) => handleInputChange('impactType', value)}
+								value={formData.impactTypes}
+								onChange={(values: string[]) =>
+									setFormData(prev => ({ ...prev, impactTypes: values }))
+								}
+								placeholder=''
 								loading={impactTypesLoading}
 								required
-								error={!!errors.impactType}
-								errorMessage={errors.impactType}
+								error={!!errors.impactTypes}
+								errorMessage={errors.impactTypes}
+								searchable
+								maxDisplayItems={2}
 							/>
 						</div>
 					</Card>
@@ -509,6 +654,14 @@ export const AddClient: React.FC = () => {
 					</div>
 				</form>
 			</div>
+
+			{/* Snackbar */}
+			<Snackbar
+				open={snackbar.open}
+				message={snackbar.message}
+				type={snackbar.type}
+				onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+			/>
 		</div>
 	);
 };

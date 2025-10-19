@@ -126,7 +126,7 @@ export const AddClient: React.FC = () => {
         }
       });
     }
-  }, [formData.onSiteManpower, user?.city_id, facilitiesApi]);
+  }, [formData.onSiteManpower, user?.city_id]); // Removed facilitiesApi from dependencies to prevent infinite calls
 
   // Set user's city and state as default for non-super admins
   useEffect(() => {
@@ -790,8 +790,18 @@ export const ManageClients: React.FC = () => {
     return await ClientApiService.getLocations(filters);
   });
 
+  // Separate API hook for client dropdown
+  const clientsApi = useApi('clients', async () => {
+    return await ClientApiService.getClientLocations({
+      city_id: user?.city_id,
+      location_type: 3,
+      page: 1,
+      limit: 1000, // Get all clients for dropdown
+    });
+  });
+
   // Data loading function
-  const loadClientLocations = useCallback(async () => {
+  const loadClientLocations = useCallback(async (filtersToUse: ClientLocationFilters = filters) => {
     try {
       setLoading(true);
       setError(null);
@@ -828,19 +838,6 @@ export const ManageClients: React.FC = () => {
 
         // Store in Redux for navigation
         dispatch(setLocations(locations));
-
-        // Extract unique clients for filter dropdown
-        const uniqueClients = locations.reduce((acc: Client[], location: ClientLocation) => {
-          const existingClient = acc.find(client => client.id === location.id);
-          if (!existingClient) {
-            acc.push({
-              id: location.id,
-              name: location.restaurant_name,
-            });
-          }
-          return acc;
-        }, []);
-        setClients(uniqueClients);
       } else {
         setError(
           `API Error: ${(response as unknown as { message?: string; status?: string }).message || (response as unknown as { message?: string; status?: string }).status || 'Unknown error'}`
@@ -854,10 +851,78 @@ export const ManageClients: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [clientLocationsApi, filtersToUse, dispatch]);
+  }, [clientLocationsApi, filters, dispatch]);
+
+  // Load clients for dropdown
+  const loadClients = useCallback(async () => {
+    try {
+      const response = await clientsApi.execute({});
+      if (response.statusCode === 200) {
+        const locations = (response.data as unknown as ClientLocation[]) || [];
+        // Extract unique clients from locations
+        const uniqueClients = locations.reduce((acc: Client[], location: ClientLocation) => {
+          const existingClient = acc.find(client => client.id === location.id);
+          if (!existingClient && location.id) {
+            acc.push({
+              id: location.id,
+              restaurant_name: location.restaurant_name,
+            });
+          }
+          return acc;
+        }, []);
+        setClients(uniqueClients);
+      }
+    } catch (error: unknown) {
+      console.error('Failed to load clients:', error);
+    }
+  }, [clientsApi]);
 ```
 
-#### 3. **Table Columns Configuration**
+#### 3. **Smart Filtering Implementation**
+```typescript
+  // Handle filter changes with local filtering first
+  const handleFilterChange = (key: keyof ClientLocationFilters, value: string | number) => {
+    const newFilters = {
+      ...filters,
+      [key]: value || undefined,
+    };
+    setFilters(newFilters);
+    
+    // Try local filtering first
+    if (key === 'client_id') {
+      if (!value) {
+        // "All" selected - restore original data
+        loadClientLocations(newFilters);
+        return;
+      } else {
+        const filteredData = clientLocations.filter(location => location.id === parseInt(value.toString()));
+        if (filteredData.length > 0) {
+          // Found data locally, use it
+          setClientLocations(filteredData);
+          return;
+        }
+      }
+    }
+    
+    // If no local data found or other filters changed, make API call
+    loadClientLocations(newFilters);
+  };
+```
+
+**Smart Filtering Strategy**:
+- **"All" Selected**: Always makes API call to get fresh data from backend
+- **Specific Client Selected**: 
+  - First tries local filtering on existing data
+  - If found locally → shows filtered data instantly (no API call)
+  - If not found locally → makes API call with client_id filter
+- **Other Filters**: Always makes API call
+
+**Benefits**:
+- **Performance**: Instant local filtering when possible
+- **Fresh Data**: API fallback ensures data consistency
+- **User Experience**: No loading delays for local filtering
+
+#### 4. **Table Columns Configuration**
 ```typescript
   const columns: TableColumn[] = [
     {
@@ -1026,7 +1091,7 @@ export const ManageClients: React.FC = () => {
   ];
 ```
 
-#### 4. **Filter Section**
+#### 5. **Filter Section**
 ```typescript
   // Filter section with modern design
   const renderFilterSection = () => (
@@ -1036,21 +1101,30 @@ export const ManageClients: React.FC = () => {
           label="Location Type"
           options={locationTypes.map(type => ({ value: type.value, label: type.label }))}
           value={filters.location_type?.toString() || ''}
-          onChange={(value: string) => setFilters(prev => ({ ...prev, location_type: parseInt(value) }))}
+          onChange={(value: string) => handleFilterChange('location_type', parseInt(value))}
           loading={locationTypesLoading}
           placeholder="All Types"
         />
 
         <FloatingDropdown
           label="Client"
-          options={clients.map(client => ({ value: client.id.toString(), label: client.name }))}
+          options={[
+            { value: '', label: 'All' }, // Added "All" option
+            ...clients.map(client => ({
+              value: client.id?.toString() || '',
+              label: client.restaurant_name || 'Unknown Client',
+            }))
+          ]}
           value={filters.client_id?.toString() || ''}
-          onChange={(value: string) => setFilters(prev => ({ ...prev, client_id: parseInt(value) }))}
-          placeholder="All Clients"
+          onChange={(value: string) =>
+            handleFilterChange('client_id', value ? parseInt(value) : undefined)
+          }
+          loading={clientsApi.loading}
+          placeholder="All"
         />
 
         <Button
-          onClick={handleSearch}
+          onClick={() => loadClientLocations(filters)}
           className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors flex items-center gap-1.5 text-sm font-medium"
         >
           <Search className="w-4 h-4" />
@@ -1068,7 +1142,7 @@ export const ManageClients: React.FC = () => {
   );
 ```
 
-#### 5. **Sorting Logic**
+#### 6. **Sorting Logic**
 ```typescript
   const handleSort = (column: string) => {
     let newOrder: 'asc' | 'desc' = 'asc';
@@ -1108,7 +1182,7 @@ export const ManageClients: React.FC = () => {
   };
 ```
 
-#### 6. **Pagination Handlers**
+#### 7. **Pagination Handlers**
 ```typescript
   const handlePageChange = (page: number) => {
     setFilters(prev => ({ ...prev, page }));
@@ -1120,7 +1194,7 @@ export const ManageClients: React.FC = () => {
   };
 ```
 
-#### 7. **Complete Page Layout**
+#### 8. **Complete Page Layout**
 ```typescript
   return (
     <div className="min-h-screen bg-white p-4">
@@ -1213,6 +1287,44 @@ EditClient Page → Refresh → localStorage Check → Redux State Restoration �
 - **Error Messages**: Clear error communication
 - **Validation**: Immediate feedback on form errors
 - **Accessibility**: Tooltips and proper labeling
+
+## 🔧 Troubleshooting Common Issues
+
+### 1. **Infinite API Calls**
+**Problem**: `getLocations` API called infinitely when checking "On-site Manpower"
+**Root Cause**: `facilitiesApi` included in `useEffect` dependency array
+**Solution**: Remove `facilitiesApi` from dependencies, only include state variables
+```typescript
+// ❌ Wrong - causes infinite calls
+}, [formData.onSiteManpower, user?.city_id, facilitiesApi]);
+
+// ✅ Correct - only triggers on state changes
+}, [formData.onSiteManpower, user?.city_id]);
+```
+
+### 2. **Missing Location Type Dropdown**
+**Problem**: Location Type dropdown not visible in Edit Client page
+**Debug Steps**:
+1. Check browser console for `🔍 EditClient: Location Types:` logs
+2. Verify `locationTypes` array is not empty
+3. Check if `locationTypesLoading` is stuck in loading state
+**Solution**: Ensure `useLocationTypes()` hook is working properly
+
+### 3. **Facility Dropdown Empty**
+**Problem**: Facility dropdown shows empty when "On-site Manpower" is checked
+**Debug Steps**:
+1. Check browser console for `🏢 Facilities API response:` logs
+2. Verify `user.city_id` is available
+3. Check API endpoint `/locations/getLocations?location_type=2&city_id={user.city_id}`
+**Solution**: Ensure user profile has `city_id` and API returns facility data
+
+### 4. **Smart Filtering Not Working**
+**Problem**: Client filter always makes API calls instead of local filtering
+**Debug Steps**:
+1. Check if `clientLocations` array has data
+2. Verify `client.id` matches `location.id` in API response
+3. Check `handleFilterChange` logic
+**Solution**: Ensure client extraction uses correct ID field (`location.id` not `location.restaurant_id`)
 
 ---
 

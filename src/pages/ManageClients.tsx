@@ -43,6 +43,16 @@ export const ManageClients: React.FC = () => {
 	// Client locations API
 	const clientLocationsApi = useApi('clientLocations', ClientApiService.getClientLocations);
 
+	// Clients API for dropdown
+	const clientsApi = useApi('clients', async () => {
+		return await ClientApiService.getClientLocations({
+			city_id: user?.city_id,
+			location_type: 3,
+			page: 1,
+			limit: 1000, // Get all clients for dropdown
+		});
+	});
+
 	// State
 	const [filters, setFilters] = useState<ClientLocationFilters>({
 		page: 1,
@@ -150,20 +160,6 @@ export const ManageClients: React.FC = () => {
 							),
 					});
 					console.log('✅ State updated with locations and pagination');
-
-					// Extract unique clients from locations
-					const uniqueClients = locations.reduce((acc: Client[], location: ClientLocation) => {
-						const existingClient = acc.find(client => client.id === location.restaurant_id);
-						if (!existingClient) {
-							acc.push({
-								id: location.restaurant_id,
-								name: location.restaurant_name,
-								restaurant_name: location.restaurant_name,
-							});
-						}
-						return acc;
-					}, []);
-					setClients(uniqueClients);
 				} else {
 					setError(
 						`API Error: ${(response as unknown as { message?: string; status?: string }).message || (response as unknown as { message?: string; status?: string }).status || 'Unknown error'}`
@@ -182,20 +178,64 @@ export const ManageClients: React.FC = () => {
 		[clientLocationsApi]
 	);
 
+	// Load clients for dropdown
+	const loadClients = useCallback(async () => {
+		try {
+			const response = await clientsApi.execute({});
+			if (response.statusCode === 200) {
+				const locations = (response.data as unknown as ClientLocation[]) || [];
+				// Extract unique clients from locations
+				const uniqueClients = locations.reduce((acc: Client[], location: ClientLocation) => {
+					const existingClient = acc.find(client => client.id === location.id);
+					if (!existingClient && location.id) {
+						acc.push({
+							id: location.id,
+							restaurant_name: location.restaurant_name,
+						});
+					}
+					return acc;
+				}, []);
+				setClients(uniqueClients);
+			}
+		} catch (error: unknown) {
+			console.error('Failed to load clients:', error);
+		}
+	}, [clientsApi]);
+
 	// Load data on mount only
 	useEffect(() => {
 		loadClientLocations();
+		loadClients();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []); // Empty dependency array - only run once on mount
 
-	// Handle filter changes with auto-search
+	// Handle filter changes with local filtering first
 	const handleFilterChange = (key: keyof ClientLocationFilters, value: string | number) => {
 		const newFilters = {
 			...filters,
 			[key]: value || undefined,
 		};
 		setFilters(newFilters);
-		// Auto-search when filters change
+
+		// Try local filtering first
+		if (key === 'client_id') {
+			if (!value) {
+				// "All" selected - restore original data
+				loadClientLocations(newFilters);
+				return;
+			} else {
+				const filteredData = clientLocations.filter(
+					location => location.id === parseInt(value.toString())
+				);
+				if (filteredData.length > 0) {
+					// Found data locally, use it
+					setClientLocations(filteredData);
+					return;
+				}
+			}
+		}
+
+		// If no local data found or other filters changed, make API call
 		loadClientLocations(newFilters);
 	};
 
@@ -457,14 +497,19 @@ export const ManageClients: React.FC = () => {
 
 							<FloatingDropdown
 								label='Client'
-								options={clients.map(client => ({
-									value: client.id?.toString() || '',
-									label: client.name || client.restaurant_name || 'Unknown Client',
-								}))}
+								options={[
+									{ value: '', label: 'All' },
+									...clients.map(client => ({
+										value: client.id?.toString() || '',
+										label: client.restaurant_name || 'Unknown Client',
+									})),
+								]}
 								value={filters.client_id?.toString() || ''}
-								onChange={(value: string) => handleFilterChange('client_id', parseInt(value))}
-								loading={loading}
-								placeholder='All Clients'
+								onChange={(value: string) =>
+									handleFilterChange('client_id', value ? parseInt(value) : undefined)
+								}
+								loading={clientsApi.loading}
+								placeholder='All'
 							/>
 
 							<Button

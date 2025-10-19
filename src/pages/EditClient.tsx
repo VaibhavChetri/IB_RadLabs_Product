@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
-import { FloatingInput, FloatingDropdown, Snackbar } from '../components/ui';
+import { FloatingInput, FloatingDropdown, MultiSelectDropdown, Snackbar } from '../components/ui';
 import { ArrowLeft, DollarSign, Target, Building } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
@@ -30,6 +30,7 @@ interface ClientFormData {
 	latitude: string;
 	longitude: string;
 	onSiteManpower: boolean;
+	operationalDays: string;
 
 	// Location
 	locationType: string;
@@ -43,7 +44,7 @@ interface ClientFormData {
 	billingSubType?: string;
 
 	// Impact Type
-	impactType: string;
+	impactTypes: string[];
 
 	// Facility (when onSiteManpower is true)
 	facility?: string;
@@ -90,6 +91,12 @@ export const EditClient: React.FC = () => {
 	const { states, loading: statesLoading } = useStates();
 	const { cities, loading: citiesLoading } = useCities();
 	const { locationTypes, loading: locationTypesLoading } = useLocationTypes();
+
+	// Debug: Check location types data
+	useEffect(() => {
+		console.log('🔍 EditClient: Location Types:', locationTypes);
+		console.log('🔍 EditClient: Location Types Loading:', locationTypesLoading);
+	}, [locationTypes, locationTypesLoading]);
 	const { impactTypes, loading: impactTypesLoading } = useImpactTypes();
 	const { billingTypes, loading: billingTypesLoading } = useBillingTypes();
 	const { billingSubTypes, loading: billingSubTypesLoading } = useBillingSubTypes();
@@ -117,7 +124,8 @@ export const EditClient: React.FC = () => {
 		landmark: selectedLocation?.landmark || '',
 		latitude: selectedLocation?.latitude || '',
 		longitude: selectedLocation?.longitude || '',
-		onSiteManpower: selectedLocation?.hasOnSiteManPower || false,
+		onSiteManpower: Boolean(selectedLocation?.hasOnSiteManPower),
+		operationalDays: selectedLocation?.operationalDays?.toString() || '',
 
 		// Location - prefilled from selectedLocation
 		locationType: selectedLocation?.locationTypeId?.toString() || '',
@@ -130,9 +138,10 @@ export const EditClient: React.FC = () => {
 		fixedPrice: selectedLocation?.fixedPrice?.toString() || '',
 		billingSubType: selectedLocation?.billing_sub_type_id?.toString() || '',
 
-		// Impact Type - prefilled from selectedLocation (first impact type if multiple)
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		impactType: (selectedLocation?.impactTypes?.[0] as any)?.id?.toString() || '',
+		// Impact Type - prefilled from selectedLocation (all impact types if multiple)
+
+		impactTypes:
+			(selectedLocation?.impactTypes as any[])?.map((impact: any) => impact.id?.toString()) || [],
 		facility: selectedLocation?.facilityId?.toString() || '',
 	});
 
@@ -149,7 +158,8 @@ export const EditClient: React.FC = () => {
 				landmark: selectedLocation.landmark || '',
 				latitude: selectedLocation.latitude || '',
 				longitude: selectedLocation.longitude || '',
-				onSiteManpower: selectedLocation.hasOnSiteManPower || false,
+				onSiteManpower: Boolean(selectedLocation.hasOnSiteManPower),
+				operationalDays: selectedLocation.operationalDays?.toString() || '',
 				locationType: selectedLocation.locationTypeId?.toString() || '',
 				country: selectedLocation.country_id?.toString() || '',
 				state: selectedLocation.state_id?.toString() || '',
@@ -157,8 +167,10 @@ export const EditClient: React.FC = () => {
 				billingType: billingTypeId?.toString() || '',
 				fixedPrice: selectedLocation.fixedPrice?.toString() || '',
 				billingSubType: selectedLocation.billing_sub_type_id?.toString() || '',
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				impactType: (selectedLocation.impactTypes?.[0] as any)?.id?.toString() || '',
+
+				impactTypes:
+					(selectedLocation.impactTypes as any[])?.map((impact: any) => impact.id?.toString()) ||
+					[],
 				facility: selectedLocation.facilityId?.toString() || '',
 			});
 
@@ -250,9 +262,13 @@ export const EditClient: React.FC = () => {
 				address_1: formData.address1,
 				address_2: formData.address2,
 				location_type: parseInt(formData.locationType),
-				impact_type_ids: [parseInt(formData.impactType)],
+				impact_type_ids: formData.impactTypes.map(id => parseInt(id)),
 				billing_type_id: parseInt(formData.billingType),
+				billing_sub_type_id: formData.billingSubType
+					? parseInt(formData.billingSubType)
+					: undefined,
 				onSiteManPower: formData.onSiteManpower ? 1 : 0,
+				facility_id: formData.facility ? parseInt(formData.facility) : undefined,
 			};
 
 			// Add optional fields based on billing type
@@ -524,14 +540,18 @@ export const EditClient: React.FC = () => {
 						</div>
 
 						<div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-							<FloatingDropdown
-								label='Impact Type'
-								options={impactTypes.map(type => ({ value: type.value, label: type.label }))}
-								value={formData.impactType}
-								onChange={(value: string) => handleInputChange('impactType', value)}
+							<MultiSelectDropdown
+								label='Impact Types'
+								options={impactTypes}
+								value={formData.impactTypes}
+								onChange={(values: string[]) =>
+									setFormData(prev => ({ ...prev, impactTypes: values }))
+								}
+								placeholder=''
 								loading={impactTypesLoading}
-								placeholder='Select Impact Type'
 								required
+								searchable
+								maxDisplayItems={2}
 							/>
 						</div>
 					</Card>

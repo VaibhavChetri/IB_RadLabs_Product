@@ -80,6 +80,26 @@ export interface Client {
 	restaurant_name?: string;
 }
 
+export interface AddClientRequest {
+	location: string;
+	address_1: string;
+	address_2: string;
+	landmark: string;
+	zipcode: string;
+	latitude: string;
+	longitude: string;
+	city_id: number;
+	state_id: number;
+	country_id: number;
+	location_type: number;
+	billing_type_id: number;
+	billing_sub_type_id?: number;
+	impact_type_ids: number[];
+	onSiteManPower: number;
+	facility_id?: number;
+	fixed_price?: string;
+}
+
 export interface UpdateClientRequest {
 	location_id: number;
 	restaurant_id: number;
@@ -96,7 +116,9 @@ export interface UpdateClientRequest {
 	location_type: number;
 	impact_type_ids: number[];
 	billing_type_id: number;
+	billing_sub_type_id?: number;
 	onSiteManPower: number;
+	facility_id?: number;
 	fixed_price?: string;
 	fixed_pricing_id?: number;
 }
@@ -120,6 +142,13 @@ export class ClientApiService {
 		if (filters.client_id) params.append('client_id', filters.client_id.toString());
 
 		return apiService.get(`/locations/getLocations?${params.toString()}`);
+	}
+
+	/**
+	 * Add client location
+	 */
+	static async addClient(data: AddClientRequest): Promise<ApiResponse<unknown>> {
+		return apiService.post('/restaurants/addClient', data);
 	}
 
 	/**

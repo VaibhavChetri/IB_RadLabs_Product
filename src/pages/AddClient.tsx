@@ -398,7 +398,7 @@ export const AddClient: React.FC = () => {
 	};
 
 	return (
-		<div className='min-h-screen bg-background-secondary p-4'>
+		<div className='min-h-screen bg-white p-4'>
 			<div className='max-w-7xl mx-auto'>
 				{/* Header */}
 				<div className='flex items-center gap-4 mb-6'>

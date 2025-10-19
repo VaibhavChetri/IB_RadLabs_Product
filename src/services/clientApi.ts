@@ -157,4 +157,11 @@ export class ClientApiService {
 	static async updateClient(data: UpdateClientRequest): Promise<ApiResponse<unknown>> {
 		return apiService.put('/restaurants/updateClient', data);
 	}
+
+	/**
+	 * Update client status
+	 */
+	static async updateClientStatus(id: number, status: number): Promise<ApiResponse<unknown>> {
+		return apiService.put('/restaurants/updateClientStatus', { id, status });
+	}
 }

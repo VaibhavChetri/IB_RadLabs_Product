@@ -159,6 +159,13 @@ export class ClientApiService {
 	}
 
 	/**
+	 * Get all locations (for disable clients page)
+	 */
+	static async getAllLocations(locationType: number): Promise<ApiResponse<unknown[]>> {
+		return apiService.get(`/locations/getAllLocations?location_type=${locationType}`);
+	}
+
+	/**
 	 * Update client status
 	 */
 	static async updateClientStatus(id: number, status: number): Promise<ApiResponse<unknown>> {

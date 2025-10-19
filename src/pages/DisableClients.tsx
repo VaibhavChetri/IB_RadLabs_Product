@@ -24,29 +24,24 @@ const DisableClients: React.FC = () => {
 		try {
 			setLoading(true);
 			console.log('🔄 Loading clients...');
-			
-			// Use the existing getClientLocations API instead
-			const response = await ClientApiService.getClientLocations({
-				page: 1,
-				limit: 1000,
-				city_id: 3, // Mumbai
-				location_type: 3 // Client locations
-			});
+
+			// Use the getAllLocations API as requested
+			const response = await ClientApiService.getAllLocations(3); // location_type=3 for clients
 
 			console.log('📊 API Response:', response);
 
 			if (response.status_code === 200 && response.data) {
 				// Transform the data to match our Client interface
-				const clientData = response.data.data.map((location: unknown) => {
+				const clientData = (response.data as unknown[]).map((location: unknown) => {
 					const loc = location as { id: number; location: string; status?: string };
 					return {
 						id: loc.id,
 						location: loc.location,
 						status: loc.status || 'Active',
-						status_id: loc.status === 'Active' ? 1 : 0
+						status_id: loc.status === 'Active' ? 1 : 0,
 					};
 				});
-				
+
 				console.log('✅ Clients loaded:', clientData);
 				setClients(clientData);
 			} else {

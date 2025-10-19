@@ -6,6 +6,8 @@ import { Dashboard } from './pages/Dashboard';
 import { Login } from './pages/Login';
 import { MenuManagement } from './pages/MenuManagement';
 import { AddClient } from './pages/AddClient';
+import { EditClient } from './pages/EditClient';
+import { ManageClients } from './pages/ManageClients';
 import FloatingLabelDemo from './pages/FloatingLabelDemo';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import TokenManager from './utils/tokenManager';
@@ -83,6 +85,8 @@ function App() {
 										<Route path='/' element={<Dashboard />} />
 										<Route path='/menu-management' element={<MenuManagement />} />
 										<Route path='/clients/add' element={<AddClient />} />
+										<Route path='/clients/edit' element={<EditClient />} />
+										<Route path='/clients/manage' element={<ManageClients />} />
 										<Route path='/floating-demo' element={<FloatingLabelDemo />} />
 									</Routes>
 								</Layout>

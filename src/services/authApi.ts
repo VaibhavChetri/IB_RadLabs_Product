@@ -31,6 +31,7 @@ export interface LoginResponse {
 		avatar: string;
 		status: number;
 		user_type_id: number;
+		user_type_name: string; // NEW: User type name from backend
 		city_id: number;
 		facility_id: number;
 		created_at: string | null;
@@ -99,8 +100,9 @@ export class AuthApiService {
 					id: response.data.user.id.toString(),
 					name: `${response.data.user.first_name} ${response.data.user.last_name}`.trim(),
 					email: response.data.user.email,
-					role: `User Type ${response.data.user.user_type_id}`,
+					role: response.data.user.user_type_name, // Use backend-provided user type name
 					userTypeId: response.data.user.user_type_id,
+					userTypeName: response.data.user.user_type_name, // Use backend-provided user type name
 					city_id: response.data.user.city_id,
 					state_id: response.data.user.state_id,
 				};

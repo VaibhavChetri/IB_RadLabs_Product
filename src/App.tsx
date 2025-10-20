@@ -13,7 +13,6 @@ import FloatingLabelDemo from './pages/FloatingLabelDemo';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import TokenManager from './utils/tokenManager';
 import { restoreAuth, initializeAuth } from './store/slices/authSlice';
-import { getUserTypeName } from './utils/userTypeMapping';
 
 function App() {
 	const dispatch = useDispatch();
@@ -41,9 +40,9 @@ function App() {
 				id: userData?.id || 'Unknown',
 				name: userData?.name || 'Unknown User',
 				email: userData?.email || 'unknown@example.com',
-				role: userData?.role || getUserTypeName(userData?.userTypeId),
+				role: userData?.role || 'Unknown Role',
 				userTypeId: userData?.userTypeId || 0,
-				userTypeName: getUserTypeName(userData?.userTypeId),
+				userTypeName: userData?.userTypeName || 'Unknown',
 				city_id: userData?.city_id || undefined,
 				state_id: userData?.state_id || undefined, // Added state_id
 				menuPermissions: menuPermissions || {},

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button } from '../components/ui/Button';
-import { FloatingDropdown, Pagination } from '../components/ui';
+import { SearchButton, FloatingDropdown, Pagination, Button } from '../components/ui';
 import { Table } from '../components/ui/DataDisplay';
 import { useApi } from '../hooks/useApi';
 import {
@@ -243,16 +242,16 @@ export const ManageClients: React.FC = () => {
 	};
 
 	// Clear filters
-	const clearFilters = () => {
-		const newFilters = {
-			page: 1,
-			limit: 10,
-			city_id: user?.city_id || undefined, // Reset to user's city
-			location_type: 3, // Reset to default location type
-		};
-		setFilters(newFilters);
-		loadClientLocations(newFilters);
-	};
+	// const clearFilters = () => {
+	// 	const newFilters = {
+	// 		page: 1,
+	// 		limit: 10,
+	// 		city_id: user?.city_id || undefined, // Reset to user's city
+	// 		location_type: 3, // Reset to default location type
+	// 	};
+	// 	setFilters(newFilters);
+	// 	loadClientLocations(newFilters);
+	// };
 
 	// Pagination handlers
 	const handlePageChange = (page: number) => {
@@ -475,9 +474,9 @@ export const ManageClients: React.FC = () => {
 				</div>
 
 				{/* Sleek Filter Section */}
-				<div className='mb-6'>
-					<div className='bg-gradient-to-r from-gray-50 to-white border border-gray-100 rounded-lg p-4'>
-						<div className='flex items-center gap-4'>
+				<div className='mb-6 flex w-full '>
+					<div className='bg-gradient-to-r from-gray-50 to-white border border-gray-100 rounded-lg p-4 flex w-full gap-3'>
+						<div className='flex items-center gap-4 w-full'>
 							{shouldShowCityFilter && (
 								<FloatingDropdown
 									label='City'
@@ -515,22 +514,16 @@ export const ManageClients: React.FC = () => {
 								placeholder='All'
 							/>
 
-							<Button
-								onClick={() => loadClientLocations(filters)}
-								className='px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors flex items-center gap-1.5 text-sm font-medium'
-							>
-								<Search className='w-4 h-4' />
-							</Button>
-
-							<Button
+							{/* <Button
 								variant='ghost'
 								size='sm'
 								onClick={clearFilters}
 								className='text-gray-500 hover:text-gray-700 px-2 py-1 text-sm'
 							>
 								Reset
-							</Button>
+							</Button> */}
 						</div>
+						<SearchButton onClick={() => loadClientLocations(filters)} title='Search' size='md' />
 					</div>
 				</div>
 

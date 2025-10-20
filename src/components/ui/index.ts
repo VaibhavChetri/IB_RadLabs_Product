@@ -4,6 +4,11 @@ export { FloatingDropdown } from './FloatingDropdown';
 export { MultiSelectDropdown } from './MultiSelectDropdown';
 export { Pagination } from './Pagination';
 export { Snackbar } from './Snackbar';
+export { SearchButton } from './SearchButton';
+export { ModernFilter } from './ModernFilter';
+export { FilterChips } from './FilterChips';
+export { Button, IconButton, ButtonGroup, FAB } from './Button';
+export { Table } from './DataDisplay';
 
 // Re-export types for convenience
 export type { FloatingInputProps } from './FloatingInput';

@@ -25,6 +25,7 @@ export interface MultiSelectDropdownProps {
 	loading?: boolean;
 	searchable?: boolean;
 	maxDisplayItems?: number;
+	showSelectedCount?: boolean; // New prop to show "X selected" format
 }
 
 // -----------------------
@@ -46,6 +47,7 @@ export const MultiSelectDropdown = forwardRef<HTMLDivElement, MultiSelectDropdow
 			loading = false,
 			searchable = false,
 			maxDisplayItems = 3,
+			showSelectedCount = false,
 		},
 		ref
 	) => {
@@ -212,34 +214,40 @@ export const MultiSelectDropdown = forwardRef<HTMLDivElement, MultiSelectDropdow
 								shouldFloat && 'border-primary ring-1 ring-primary/20'
 							)}
 						>
-							<div className='flex items-center justify-between'>
-								<div className='flex-1 min-w-0'>
+							<div className='flex  items-center justify-between'>
+								<div className=' flex   min-w-0'>
 									{selectedOptions.length > 0 ? (
-										<div className='flex flex-wrap gap-1'>
-											{selectedOptions.slice(0, maxDisplayItems).map(option => (
-												<span
-													key={option.value}
-													className='inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary text-xs rounded-md'
-												>
-													{option.label}
-													<button
-														type='button'
-														onClick={e => {
-															e.stopPropagation();
-															handleRemoveOption(option.value);
-														}}
-														className='hover:text-primary/70'
+										showSelectedCount ? (
+											<span className='inline-flex px-1.5 pb-0.5 bg-green-100 text-green-800 text-xs font-medium rounded-full border border-green-200'>
+												{selectedOptions.length} selected
+											</span>
+										) : (
+											<div className='flex flex-wrap gap-1'>
+												{selectedOptions.slice(0, maxDisplayItems).map(option => (
+													<span
+														key={option.value}
+														className='inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary text-xs rounded-md'
 													>
-														<X className='h-3 w-3' />
-													</button>
-												</span>
-											))}
-											{selectedOptions.length > maxDisplayItems && (
-												<span className='text-xs text-foreground-muted'>
-													+{selectedOptions.length - maxDisplayItems} more
-												</span>
-											)}
-										</div>
+														{option.label}
+														<button
+															type='button'
+															onClick={e => {
+																e.stopPropagation();
+																handleRemoveOption(option.value);
+															}}
+															className='hover:text-primary/70'
+														>
+															<X className='h-3 w-3' />
+														</button>
+													</span>
+												))}
+												{selectedOptions.length > maxDisplayItems && (
+													<span className='text-xs text-foreground-muted'>
+														+{selectedOptions.length - maxDisplayItems} more
+													</span>
+												)}
+											</div>
+										)
 									) : (
 										<span className='text-foreground-muted'>
 											{loading ? 'Loading...' : placeholder}

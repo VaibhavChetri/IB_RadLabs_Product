@@ -8,6 +8,7 @@ export interface User {
 	avatar?: string;
 	role: string;
 	userTypeId?: number; // NEW: User type ID
+	userTypeName?: string; // NEW: User type name
 	city_id?: number; // NEW: User's city ID
 	state_id?: number; // NEW: User's state ID
 	menuPermissions?: Record<string, MenuPermission>; // NEW: Menu permissions

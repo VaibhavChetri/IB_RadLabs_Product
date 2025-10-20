@@ -3,12 +3,16 @@ import { Menu, Search, Bell, User, LogOut } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import TokenManager from '../utils/tokenManager';
+import { useSelector } from 'react-redux';
+import { RootState } from '../store';
 
 interface HeaderProps {
 	onMenuClick: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
+	const { user } = useSelector((state: RootState) => state.auth);
+	
 	const handleLogout = async () => {
 		await TokenManager.logout();
 	};
@@ -38,8 +42,12 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
 
 					<div className='flex items-center space-x-2 sm:space-x-3'>
 						<div className='text-right hidden sm:block'>
-							<p className='text-sm font-medium text-foreground'>John Doe</p>
-							<p className='text-xs text-foreground-muted'>Administrator</p>
+							<p className='text-sm font-medium text-foreground'>
+								{user?.name || 'User'}
+							</p>
+							<p className='text-xs text-foreground-muted'>
+								{user?.userTypeName || user?.role || 'User'}
+							</p>
 						</div>
 						<Button variant='ghost' size='sm'>
 							<User className='w-5 h-5' />

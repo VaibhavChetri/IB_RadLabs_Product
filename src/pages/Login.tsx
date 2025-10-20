@@ -8,6 +8,7 @@ import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
 import { AuthApiService } from '../services/authApi';
 import { useFormApi } from '../hooks/useApi';
+import { getUserTypeName } from '../utils/userTypeMapping';
 
 export const Login: React.FC = () => {
 	const dispatch = useDispatch<AppDispatch>();
@@ -37,8 +38,9 @@ export const Login: React.FC = () => {
 						id: result.data.user.id.toString(),
 						name: `${result.data.user.first_name} ${result.data.user.last_name}`.trim(),
 						email: result.data.user.email,
-						role: `User Type ${result.data.user.user_type_id}`,
+						role: getUserTypeName(result.data.user.user_type_id),
 						userTypeId: result.data.user.user_type_id,
+						userTypeName: getUserTypeName(result.data.user.user_type_id),
 						city_id: result.data.user.city_id,
 						state_id: (result.data.user as unknown as { state_id: number }).state_id, // Added state_id
 						menuPermissions: result.data.menu_permissions || {},

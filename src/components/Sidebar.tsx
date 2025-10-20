@@ -75,7 +75,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
 		const iconClasses = cn(
 			'h-5 w-5 flex-shrink-0 transition-colors',
-			isActive ? 'text-primary' : 'text-foreground-muted group-hover:text-foreground-secondary'
+			isActive
+				? 'text-primary'
+				: hasActiveChildMenu
+					? 'text-primary'
+					: 'text-foreground-muted group-hover:text-foreground-secondary'
 		);
 
 		return (

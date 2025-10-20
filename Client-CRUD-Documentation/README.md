@@ -35,6 +35,7 @@ This documentation provides a **conceptual guide** to understanding the Client C
 - **[08-Authentication-Authorization.md](./08-Authentication-Authorization.md)** - 🔐 Security patterns
 - **[09-TypeScript-Interfaces.md](./09-TypeScript-Interfaces.md)** - 📋 Type definitions
 - **[10-Development-Guidelines.md](./10-Development-Guidelines.md)** - 📚 Best practices
+- **[11-Menu-Management.md](./11-Menu-Management.md)** - 🗂️ Menu creation, hierarchy, and permissions
 
 ## 🎯 Key Features Implemented
 

@@ -8,7 +8,6 @@ import {
 	LayoutDashboard,
 	Users,
 	UserPlus,
-	Edit,
 	Eye,
 	BarChart3,
 	DollarSign,
@@ -25,6 +24,11 @@ import {
 	Building2,
 	UserX,
 	Menu,
+	Truck,
+	MapPin,
+	Package,
+	ArrowRight,
+	ArrowLeft,
 } from 'lucide-react';
 
 import { MenuItem } from '../types/menu';
@@ -178,6 +182,76 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 				name: 'Push Notifications',
 				icon: Bell,
 				href: '/communication/notifications',
+			},
+		],
+	},
+	{
+		id: 'transit-plan',
+		name: 'Transit Plan',
+		icon: Truck,
+		children: [
+			{
+				id: 'master-plan',
+				name: 'Master Plan',
+				icon: MapPin,
+				children: [
+					{
+						id: 'create-transit-master-plan',
+						name: 'Create Transit Master Plan',
+						icon: MapPin,
+						href: '/transit-plan/master-plan/create',
+					},
+					{
+						id: 'master-plan-listing',
+						name: 'Master Plan Listing',
+						icon: FileText,
+						href: '/transit-plan/master-plan/listing',
+					},
+				],
+			},
+			{
+				id: 'transit-plan-listing',
+				name: 'Transit Plan Listing',
+				icon: FileText,
+				href: '/transit-plan/listing',
+			},
+			{
+				id: 'sent-inventory',
+				name: 'Sent Inventory',
+				icon: ArrowRight,
+				children: [
+					{
+						id: 'sent-transit-plan',
+						name: 'Sent Transit Plan',
+						icon: ArrowRight,
+						href: '/transit-plan/sent/plan',
+					},
+					{
+						id: 'sent-inventory-listing',
+						name: 'Sent Inventory Listing',
+						icon: Package,
+						href: '/transit-plan/sent/listing',
+					},
+				],
+			},
+			{
+				id: 'received-inventory',
+				name: 'Received Inventory',
+				icon: ArrowLeft,
+				children: [
+					{
+						id: 'received-transit-plan',
+						name: 'Received Transit Plan',
+						icon: ArrowLeft,
+						href: '/transit-plan/received/plan',
+					},
+					{
+						id: 'received-inventory-listing',
+						name: 'Received Inventory Listing',
+						icon: Package,
+						href: '/transit-plan/received/listing',
+					},
+				],
 			},
 		],
 	},

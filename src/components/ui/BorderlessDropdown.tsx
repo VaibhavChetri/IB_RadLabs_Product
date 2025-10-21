@@ -67,7 +67,14 @@ export const BorderlessDropdown: React.FC<BorderlessDropdownProps> = ({
 			</button>
 
 			{isOpen && (
-				<div className='absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto'>
+				<div
+					className='fixed z-[9999] bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto'
+					style={{
+						top: dropdownRef.current?.getBoundingClientRect().bottom + 'px',
+						left: dropdownRef.current?.getBoundingClientRect().left + 'px',
+						width: dropdownRef.current?.getBoundingClientRect().width + 'px',
+					}}
+				>
 					{options.map(option => (
 						<button
 							key={option.value}

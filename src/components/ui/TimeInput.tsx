@@ -17,101 +17,161 @@ export const TimeInput: React.FC<TimeInputProps> = ({
 	const [hour, setHour] = useState('');
 	const [minute, setMinute] = useState('');
 	const [period, setPeriod] = useState<'AM' | 'PM'>('AM');
+	const [isInitialized, setIsInitialized] = useState(false);
 
-	// Parse initial value
+	// Parse initial value ONLY once
 	useEffect(() => {
-		if (value) {
-			const [time, periodPart] = value.split(' ');
-			if (time) {
-				const [h, m] = time.split(':');
-				setHour(h || '');
+		if (value && !isInitialized) {
+			if (value.includes('AM') || value.includes('PM')) {
+				const [time, periodPart] = value.split(' ');
+				if (time) {
+					const [h, m] = time.split(':');
+					setHour(h || '');
+					setMinute(m || '');
+					setPeriod(periodPart === 'PM' ? 'PM' : 'AM');
+				}
+			} else {
+				const [h, m] = value.split(':');
+				const hourNum = parseInt(h || '0', 10);
 				setMinute(m || '');
-				setPeriod(periodPart === 'PM' ? 'PM' : 'AM');
+				if (hourNum >= 12) {
+					setPeriod('PM');
+					setHour((((hourNum - 1) % 12) + 1).toString().padStart(2, '0'));
+				} else {
+					setPeriod('AM');
+					setHour(hourNum === 0 ? '12' : String(hourNum).padStart(2, '0'));
+				}
 			}
+			setIsInitialized(true);
 		}
-	}, [value]);
+	}, []);
 
-	// Update parent when internal state changes
+	// Emit only when BOTH fields are 2 digits with valid values
 	useEffect(() => {
-		if (hour && minute) {
-			onChange(`${hour}:${minute} ${period}`);
+		if (hour && hour.length === 2 && minute && minute.length === 2) {
+			const hourNum = parseInt(hour, 10);
+			const minuteNum = parseInt(minute, 10);
+
+			// Only emit if values are in valid range
+			if (hourNum >= 1 && hourNum <= 12 && minuteNum >= 0 && minuteNum <= 59) {
+				onChange(`${hour}:${minute} ${period}`);
+			}
 		}
 	}, [hour, minute, period, onChange]);
 
 	const handleHourChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const val = e.target.value.replace(/\D/g, '').slice(0, 2);
-		setHour(val);
+		let val = e.target.value.replace(/\D/g, '').slice(0, 2);
 
-		// Auto-focus minute input when hour is complete
+		if (val === '') {
+			setHour('');
+			return;
+		}
+
+		let num = parseInt(val, 10);
+
+		// Auto-convert 24-hour to 12-hour when field is complete
 		if (val.length === 2) {
-			const minuteInput = e.target.parentElement?.querySelector(
-				'input[data-minute]'
-			) as HTMLInputElement;
-			minuteInput?.focus();
+			if (num === 0 || num === 24) {
+				setHour('12');
+				setPeriod('AM');
+			} else if (num > 12) {
+				setHour(String(num - 12).padStart(2, '0'));
+				setPeriod('PM');
+			} else if (num === 12) {
+				setHour('12');
+				setPeriod('PM');
+			} else {
+				setHour(val.padStart(2, '0'));
+			}
+		} else {
+			// Just store the raw value while typing
+			setHour(val);
 		}
 	};
 
 	const handleMinuteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const val = e.target.value.replace(/\D/g, '').slice(0, 2);
-		setMinute(val);
+		let val = e.target.value.replace(/\D/g, '').slice(0, 2);
+
+		if (val === '') {
+			setMinute('');
+			return;
+		}
+
+		// Cap at 59 when field is complete
+		if (val.length === 2) {
+			let num = parseInt(val, 10);
+			if (num > 59) num = 59;
+			setMinute(String(num).padStart(2, '0'));
+		} else {
+			// Just store the raw value while typing
+			setMinute(val);
+		}
 	};
 
-	const togglePeriod = () => {
-		setPeriod(prev => (prev === 'AM' ? 'PM' : 'AM'));
+	// ✅ Fix 3: Arrow key logic now works for both fields safely
+	const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, type: 'hour' | 'minute') => {
+		if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+			e.preventDefault();
+			if (type === 'hour') {
+				let current = parseInt(hour || '12', 10);
+				if (e.key === 'ArrowUp') current = current >= 12 ? 1 : current + 1;
+				else current = current <= 1 ? 12 : current - 1;
+				setHour(current.toString().padStart(2, '0'));
+			} else {
+				let current = parseInt(minute || '00', 10);
+				if (e.key === 'ArrowUp') current = current >= 59 ? 0 : current + 1;
+				else current = current <= 0 ? 59 : current - 1;
+				setMinute(current.toString().padStart(2, '0'));
+			}
+		}
 	};
 
 	return (
-		<div className={cn('flex items-center', className)}>
-			<div className='flex items-center gap-0'>
-				<input
-					type='text'
-					value={hour}
-					onChange={handleHourChange}
-					placeholder='00'
-					disabled={disabled}
-					className='w-4 md:w-6 text-center border-none bg-transparent py-1 text-gray-900 focus:outline-none focus:ring-0'
-					style={{ fontSize: '12px', lineHeight: '16px' }}
-					maxLength={2}
-				/>
-				<span className='text-gray-500 font-bold' style={{ fontSize: '12px', lineHeight: '16px' }}>
-					:
-				</span>
-				<input
-					type='text'
-					data-minute
-					value={minute}
-					onChange={handleMinuteChange}
-					placeholder='00'
-					disabled={disabled}
-					className='w-6 text-center border-none bg-transparent py-1 text-gray-900 focus:outline-none focus:ring-0'
-					style={{ fontSize: '12px', lineHeight: '16px' }}
-					maxLength={2}
-				/>
-			</div>
-
-			<div className='flex gap-1'>
-				<button
-					type='button'
-					onClick={() => setPeriod('AM')}
-					disabled={disabled}
-					className={cn(
-						'px-1 py-0.5 text-xs rounded transition-colors',
-						period === 'AM' ? 'bg-green-100 text-green-800' : 'text-gray-500 hover:text-gray-700'
-					)}
-				>
-					AM
-				</button>
-				<button
-					type='button'
-					onClick={() => setPeriod('PM')}
-					disabled={disabled}
-					className={cn(
-						'px-1 py-0.5 text-xs rounded transition-colors',
-						period === 'PM' ? 'bg-green-100 text-green-800' : 'text-gray-500 hover:text-gray-700'
-					)}
-				>
-					PM
-				</button>
+		<div
+			className={cn(
+				'flex items-center gap-1 text-[12px] border border-gray-300 rounded-md px-3 py-2 bg-white hover:border-green-400 focus-within:border-green-400 transition-all',
+				className
+			)}
+		>
+			<input
+				type='text'
+				value={hour}
+				onChange={handleHourChange}
+				onKeyDown={e => handleKeyDown(e, 'hour')}
+				disabled={disabled}
+				className='w-8 text-center text-gray-800 font-medium focus:outline-none bg-transparent'
+				maxLength={2}
+				placeholder='HH'
+			/>
+			<span className='text-gray-400 select-none'>:</span>
+			<input
+				type='text'
+				data-minute
+				value={minute}
+				onChange={handleMinuteChange}
+				onKeyDown={e => handleKeyDown(e, 'minute')}
+				disabled={disabled}
+				className='w-8 text-center text-gray-800 font-medium focus:outline-none bg-transparent'
+				maxLength={2}
+				placeholder='MM'
+			/>
+			<div className='flex gap-1 ml-2'>
+				{['AM', 'PM'].map(p => (
+					<button
+						key={p}
+						type='button'
+						onClick={() => setPeriod(p as 'AM' | 'PM')}
+						disabled={disabled}
+						className={cn(
+							'px-1 py-1 text-[9px] rounded-md border transition-all',
+							period === p
+								? 'bg-green-600 text-white border-green-600'
+								: 'border-gray-200 hover:bg-green-50 hover:text-green-600 hover:border-green-300'
+						)}
+					>
+						{p}
+					</button>
+				))}
 			</div>
 		</div>
 	);

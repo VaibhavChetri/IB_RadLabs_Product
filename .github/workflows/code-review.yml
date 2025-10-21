@@ -1,0 +1,96 @@
+name: Code Review Checks
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+jobs:
+  code-quality:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run TypeScript check
+        run: npm run type-check
+
+      - name: Run tests
+        run: npm run test:coverage
+
+      - name: Check test coverage
+        run: |
+          if [ $(cat coverage/coverage-summary.json | jq '.total.lines.pct') -lt 80 ]; then
+            echo "Test coverage is below 80%"
+            exit 1
+          fi
+
+      - name: Check bundle size
+        run: npm run build
+
+      - name: Bundle size check
+        uses: preactjs/compressed-size-action@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          pattern: './dist/**/*.js'
+          exclude: '*.map'
+
+      - name: Comment PR with results
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            // Read ESLint results
+            const eslintResults = fs.readFileSync('eslint-results.json', 'utf8');
+            const eslintData = JSON.parse(eslintResults);
+
+            // Read test coverage
+            const coverageResults = fs.readFileSync('coverage/coverage-summary.json', 'utf8');
+            const coverageData = JSON.parse(coverageResults);
+
+            const comment = `## 🔍 Code Review Results
+
+            ### ✅ Quality Checks
+            - **ESLint:** ${eslintData.errorCount === 0 ? '✅ Passed' : '❌ Failed'}
+            - **TypeScript:** ✅ Passed
+            - **Tests:** ✅ Passed
+            - **Coverage:** ${coverageData.total.lines.pct}% (Target: 80%)
+
+            ### 📊 Metrics
+            - **Errors:** ${eslintData.errorCount}
+            - **Warnings:** ${eslintData.warningCount}
+            - **Test Coverage:** ${coverageData.total.lines.pct}%
+
+            ### 📋 Checklist
+            - [ ] All ESLint errors resolved
+            - [ ] TypeScript compilation successful
+            - [ ] Test coverage above 80%
+            - [ ] No console errors
+            - [ ] Bundle size within limits
+
+            ${eslintData.errorCount > 0 ? '⚠️ **Please fix ESLint errors before merging**' : '🎉 **Ready for review!**'}
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });

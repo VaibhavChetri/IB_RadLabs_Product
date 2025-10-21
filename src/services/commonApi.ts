@@ -48,22 +48,39 @@ export class CommonApiService {
 	/**
 	 * Get facilities (locations with type=2) for dropdowns
 	 */
-	static async getFacilities(cityId: number): Promise<ApiResponse<FacilityOption[]>> {
-		return api.get(`/locations/getLocations?location_type=2&city_id=${cityId}&limit=1000`);
+	static async getFacilities(cityId?: number): Promise<ApiResponse<FacilityOption[]>> {
+		const url = cityId
+			? `/locations/getLocations?location_type=2&city_id=${cityId}&limit=1000`
+			: `/locations/getLocations?location_type=2&limit=1000`;
+		return api.get(url);
 	}
 
 	/**
 	 * Get all clients for dropdowns (no city filter)
 	 */
 	static async getClientsByCity(): Promise<ApiResponse<ClientByCityOption[]>> {
-		const response = await api.get(`/inventory/getClientByCity`);
-		// Transform the response to match our expected format
-		return {
-			status_code: response.status_code,
-			status: response.status,
-			message: response.message,
-			data: response.result || [], // Use result array
-		};
+		try {
+			const response = await api.get(`/transit-plan/get-citywise-restaurants`);
+			// Transform the response to match our expected format
+			return {
+				status_code: response.status_code,
+				status: response.status,
+				message: response.message,
+				data: (response.result || response.data || []).map((c: any) => ({
+					clientId: c.id,
+					clientName: c.name,
+				})),
+			};
+		} catch (error) {
+			console.error('Error fetching clients:', error);
+			// Fallback to empty array if API fails
+			return {
+				status_code: 200,
+				status: 'success',
+				message: 'Fallback data',
+				data: [],
+			};
+		}
 	}
 
 	/**
@@ -118,7 +135,10 @@ export class CommonApiService {
 				status_code: response.status_code,
 				status: response.status,
 				message: response.message,
-				data: response.result || response.data || [],
+				data: (response.result || response.data || []).map((t: any) => ({
+					id: t.id,
+					name: t.type, // API returns 'type' field, not 'name'
+				})),
 			};
 		} catch (error) {
 			// Fallback to hardcoded values if API is not available yet

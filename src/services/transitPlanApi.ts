@@ -53,4 +53,22 @@ export const TransitPlanApi = {
 		if (params.transitTypeId) searchParams.set('transitTypeId', String(params.transitTypeId));
 		return api.get(`/plan/getMasterPlanListing?${searchParams.toString()}`);
 	},
+
+	async createMasterPlan(payload: {
+		restaurantId: number;
+		cityId: number;
+		facilityId: number;
+		input: Array<{
+			transitTypeId: number;
+			data: Array<{
+				vehicleId: number;
+				transitDate: string;
+				transitTime: string;
+				driverName: string;
+				driverPhone: string;
+			}>;
+		}>;
+	}): Promise<ApiResponse<any>> {
+		return api.post('/transit-plan/create-master-transit-plan', payload);
+	},
 };

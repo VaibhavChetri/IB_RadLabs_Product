@@ -1,0 +1,68 @@
+{
+	"extends": ["react-app", "react-app/jest"],
+	"rules": {
+		// File Size & Complexity Limits
+		"max-lines": ["error", 150],
+		"complexity": ["error", 10],
+		"max-params": ["error", 5],
+		"max-depth": ["error", 4],
+		"max-lines-per-function": ["error", 50],
+
+		// TypeScript Rules
+		"@typescript-eslint/no-explicit-any": "error",
+		"@typescript-eslint/no-unused-vars": "error",
+		"@typescript-eslint/explicit-function-return-type": "warn",
+		"@typescript-eslint/no-empty-function": "error",
+
+		// React Rules
+		"react-hooks/exhaustive-deps": "error",
+		"react-hooks/rules-of-hooks": "error",
+		"react/jsx-no-bind": "error",
+		"react/jsx-key": "error",
+		"react/no-array-index-key": "warn",
+		"react/prop-types": "off",
+
+		// General Code Quality
+		"no-console": "warn",
+		"no-debugger": "error",
+		"no-alert": "error",
+		"no-var": "error",
+		"prefer-const": "error",
+		"no-duplicate-imports": "error",
+		"no-unused-expressions": "error",
+
+		// Performance & Best Practices
+		"no-loop-func": "error",
+		"no-nested-ternary": "warn",
+		"no-magic-numbers": ["warn", { "ignore": [0, 1, -1] }],
+		"prefer-template": "error",
+		"object-shorthand": "error",
+
+		// Security
+		"no-eval": "error",
+		"no-implied-eval": "error",
+		"no-new-func": "error"
+	},
+	"overrides": [
+		{
+			"files": ["*.test.ts", "*.test.tsx", "*.spec.ts", "*.spec.tsx"],
+			"rules": {
+				"max-lines": "off",
+				"complexity": "off",
+				"no-magic-numbers": "off"
+			}
+		},
+		{
+			"files": ["src/hooks/*.ts"],
+			"rules": {
+				"max-lines": ["error", 100]
+			}
+		},
+		{
+			"files": ["src/pages/*.tsx"],
+			"rules": {
+				"max-lines": ["error", 200]
+			}
+		}
+	]
+}

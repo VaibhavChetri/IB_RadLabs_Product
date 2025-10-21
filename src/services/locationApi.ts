@@ -1,34 +1,9 @@
 import { apiService } from './api';
 import { ApiResponse } from './api';
+import { CommonApiService } from './commonApi';
 
-// Location Types
-export interface LocationType {
-	id: number;
-	name: string;
-	slug: string;
-	status: number;
-}
-
-export interface Country {
-	id: number;
-	name: string;
-	code: string;
-	status: number;
-}
-
-export interface State {
-	id: number;
-	name: string;
-	country_id: number;
-	status: number;
-}
-
-export interface City {
-	id: number;
-	name: string;
-	state_id: number;
-	status: number;
-}
+// Re-export common interfaces for backward compatibility
+export type { LocationTypeOption as LocationType, CityOption as City } from './commonApi';
 
 // Impact Types
 export interface ImpactType {
@@ -55,33 +30,11 @@ export interface BillingSubType {
 }
 
 export class LocationApiService {
-	/**
-	 * Get all location types
-	 */
-	static async getLocationTypes(): Promise<ApiResponse<LocationType[]>> {
-		return apiService.get('/locations/getLocationType');
-	}
-
-	/**
-	 * Get all countries
-	 */
-	static async getCountries(): Promise<ApiResponse<Country[]>> {
-		return apiService.get('/locations/getCountries');
-	}
-
-	/**
-	 * Get all states
-	 */
-	static async getStates(): Promise<ApiResponse<State[]>> {
-		return apiService.get('/locations/getStates');
-	}
-
-	/**
-	 * Get all cities
-	 */
-	static async getCities(): Promise<ApiResponse<City[]>> {
-		return apiService.get('/locations/getCities');
-	}
+	// Use CommonApiService for shared APIs
+	static getLocationTypes = CommonApiService.getLocationTypes;
+	static getCountries = CommonApiService.getCountries;
+	static getStates = CommonApiService.getStates;
+	static getCities = CommonApiService.getCities;
 }
 
 export class ImpactApiService {

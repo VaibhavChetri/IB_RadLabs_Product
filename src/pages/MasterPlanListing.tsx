@@ -14,16 +14,12 @@ import {
 	ClientByCityOption,
 	MasterPlanRow,
 } from '../services/transitPlanApi';
+import { CommonApiService, TransitTypeOption } from '../services/commonApi';
 import { Pencil, Trash2 } from 'lucide-react';
 
 type DropdownOption = { label: string; value: string };
 
-const transitTypeOptions: DropdownOption[] = [
-	{ label: 'All', value: '' },
-	{ label: 'Dispatch', value: '1' },
-	{ label: 'Pickup', value: '2' },
-	{ label: 'Dispatch & Pickup', value: '3' },
-];
+// Transit types will be loaded from API
 
 const MasterPlanListing: React.FC = () => {
 	const { user } = useSelector((s: RootState) => s.auth);
@@ -31,6 +27,7 @@ const MasterPlanListing: React.FC = () => {
 
 	const [facilities, setFacilities] = useState<DropdownOption[]>([]);
 	const [clients, setClients] = useState<DropdownOption[]>([]);
+	const [transitTypes, setTransitTypes] = useState<DropdownOption[]>([]);
 	const [filters, setFilters] = useState<{
 		facility_id?: string;
 		client_id?: string;
@@ -64,9 +61,10 @@ const MasterPlanListing: React.FC = () => {
 	// Load dropdowns
 	useEffect(() => {
 		(async () => {
-			const [facRes, cliRes] = await Promise.all([
+			const [facRes, cliRes, transitRes] = await Promise.all([
 				TransitPlanApi.getFacilities(cityId),
-				TransitPlanApi.getClientsByCity(cityId),
+				TransitPlanApi.getClientsByCity(), // Remove cityId parameter
+				CommonApiService.getTransitTypes(),
 			]);
 			setFacilities([
 				{ label: 'All', value: '' },
@@ -77,6 +75,13 @@ const MasterPlanListing: React.FC = () => {
 				...cliRes.data.map((c: ClientByCityOption) => ({
 					label: c.clientName,
 					value: String(c.clientId),
+				})),
+			]);
+			setTransitTypes([
+				{ label: 'All', value: '' },
+				...transitRes.data.map((t: TransitTypeOption) => ({
+					label: t.name,
+					value: String(t.id),
 				})),
 			]);
 		})();
@@ -191,7 +196,7 @@ const MasterPlanListing: React.FC = () => {
 				/>
 				<FloatingDropdown
 					label='Transit Type'
-					options={transitTypeOptions}
+					options={transitTypes}
 					value={filters.transit_type_id ?? ''}
 					onChange={v => handleFilterChange('transit_type_id', v)}
 					className='w-56'

@@ -1,5 +1,6 @@
 import { apiService } from './api';
 import { ApiResponse } from './api';
+import { CommonApiService } from './commonApi';
 
 // Client/Location interfaces based on API response
 export interface ClientLocation {
@@ -171,4 +172,9 @@ export class ClientApiService {
 	static async updateClientStatus(id: number, status: number): Promise<ApiResponse<unknown>> {
 		return apiService.put('/restaurants/updateClientStatus', { id, status });
 	}
+
+	/**
+	 * Get facilities for dropdowns (delegates to CommonApiService)
+	 */
+	static getFacilities = CommonApiService.getFacilities;
 }

@@ -1,14 +1,8 @@
 import { ApiService, ApiResponse } from './api';
+import { CommonApiService } from './commonApi';
 
-export interface FacilityOption {
-	id: number;
-	location: string;
-}
-
-export interface ClientByCityOption {
-	clientId: number;
-	clientName: string;
-}
+// Re-export interfaces from commonApi for backward compatibility
+export type { FacilityOption, ClientByCityOption } from './commonApi';
 
 export interface MasterPlanRow {
 	id: number;
@@ -38,21 +32,9 @@ export interface MasterPlanListingResponse {
 const api = ApiService.getInstance();
 
 export const TransitPlanApi = {
-	async getFacilities(cityId: number): Promise<ApiResponse<FacilityOption[]>> {
-		return api.get(`/locations/getLocations?location_type=2&city_id=${cityId}&limit=1000`);
-	},
-
-	async getClientsByCity(cityId: number): Promise<ApiResponse<ClientByCityOption[]>> {
-		// Note: this endpoint returns { status_code, result: [] } directly
-		const response = await api.get(`/inventory/getClientByCity`);
-		// Transform the response to match our expected format
-		return {
-			status_code: response.status_code,
-			status: response.status,
-			message: response.message,
-			data: response.result || [],
-		};
-	},
+	// Use CommonApiService for shared APIs
+	getFacilities: CommonApiService.getFacilities,
+	getClientsByCity: CommonApiService.getClientsByCity,
 
 	async getMasterPlanListing(params: {
 		pageNumber: number;

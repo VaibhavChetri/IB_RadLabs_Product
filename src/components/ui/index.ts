@@ -7,6 +7,9 @@ export { Snackbar } from './Snackbar';
 export { SearchButton } from './SearchButton';
 export { ModernFilter } from './ModernFilter';
 export { FilterChips } from './FilterChips';
+export { TimeInput } from './TimeInput';
+export { Card } from './Card';
+export { BorderlessDropdown } from './BorderlessDropdown';
 export { Button, IconButton, ButtonGroup, FAB } from './Button';
 export { Table } from './DataDisplay';
 

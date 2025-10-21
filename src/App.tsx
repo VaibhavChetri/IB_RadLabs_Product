@@ -10,6 +10,7 @@ import { EditClient } from './pages/EditClient';
 import { ManageClients } from './pages/ManageClients';
 import DisableClients from './pages/DisableClients';
 import MasterPlanListing from './pages/MasterPlanListing';
+import CreateMasterPlan from './pages/CreateMasterPlan';
 import FloatingLabelDemo from './pages/FloatingLabelDemo';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import TokenManager from './utils/tokenManager';
@@ -100,6 +101,7 @@ function App() {
 											path='/transit-plan/master-plan/listing'
 											element={<MasterPlanListing />}
 										/>
+										<Route path='/transit-plan/master-plan/create' element={<CreateMasterPlan />} />
 										<Route path='/floating-demo' element={<FloatingLabelDemo />} />
 									</Routes>
 								</Layout>

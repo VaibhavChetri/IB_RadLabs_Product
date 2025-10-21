@@ -28,6 +28,17 @@ This folder contains documentation for all **Transit Plan** related features and
   - Snackbar notifications
   - Responsive design
 
+### 🏗️ **Component Architecture**
+- **File**: `03-Component-Architecture-CreateMasterPlan.md`
+- **Description**: Detailed component structure and file flow for developers
+- **Covers**:
+  - Component hierarchy and responsibilities
+  - File structure and data flow
+  - Props interfaces and state management
+  - Development guidelines and debugging tips
+  - Performance considerations
+  - Import dependencies and relationships
+
 ## 🎯 Key Features Documented
 
 ### ✅ **Implemented Features**

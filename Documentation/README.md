@@ -39,6 +39,7 @@ Reusable UI components and design system:
 
 ### 🔌 **API Reference** (`/06-API-Reference/`)
 API documentation and integration guides:
+- **Master Plan Creation API** - Complete API documentation for master plan creation
 - **API Endpoints** - Complete list of available API endpoints
 - **API Authentication** - Authentication and authorization
 - **API Error Handling** - Error handling patterns and responses
@@ -155,7 +156,7 @@ Each documentation file should include:
 | Transit Plan | ✅ Complete | Recent | High |
 | Menu Management | ✅ Complete | Recent | Medium |
 | UI Components | ✅ Complete | Recent | High |
-| API Reference | 🔄 In Progress | - | Low |
+| API Reference | ✅ Complete | Recent | Medium |
 
 ---
 

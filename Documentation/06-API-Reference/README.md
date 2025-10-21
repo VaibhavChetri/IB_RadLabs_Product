@@ -5,27 +5,40 @@ This folder contains comprehensive **API documentation** and integration guides 
 
 ## 📁 Contents
 
+### ✨ **Master Plan Creation API**
+- **File**: `01-Master-Plan-Creation-API.md`
+- **Description**: Complete API documentation for Master Plan Creation
+- **Covers**:
+  - POST `/transit-plan/create-master-transit-plan` endpoint
+  - Request/response payload structures
+  - Data validation rules and error handling
+  - Frontend integration patterns
+  - Time format conversion logic
+  - Testing examples and cURL commands
+
 ### 🚧 **Coming Soon**
-- **API Endpoints** - Complete list of available API endpoints
-- **Authentication** - Authentication and authorization patterns
+- **Authentication APIs** - Authentication and authorization patterns
+- **Client Management APIs** - Client CRUD operations
+- **Location APIs** - Location and facility management
+- **Menu Management APIs** - Menu system APIs
 - **Error Handling** - API error handling and response formats
 - **Data Models** - Request/response data structures
 - **Testing** - API testing strategies and tools
 
-## 🎯 Planned Documentation
+## 🎯 Available Documentation
 
-### ✅ **API Endpoints**
-- Client Management APIs
-- Transit Plan APIs
-- Menu Management APIs
-- Authentication APIs
-- Location APIs
+### ✅ **Transit Plan APIs**
+- Master Plan Creation API with complete endpoint documentation
+- Request/response examples with validation rules
+- Frontend integration patterns and code examples
+- Error handling scenarios and troubleshooting
 
 ### 🔧 **Integration Guides**
 - API service layer patterns
 - Error handling strategies
 - Authentication flows
 - Data transformation patterns
+- Time format conversion utilities
 
 ## 🚀 Quick Start
 

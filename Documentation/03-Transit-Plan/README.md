@@ -16,6 +16,18 @@ This folder contains documentation for all **Transit Plan** related features and
   - Search functionality
   - Performance optimizations
 
+### ✨ **Master Plan Creation**
+- **File**: `02-Master-Plan-Creation.md`
+- **Description**: Comprehensive guide for creating master plans with dynamic dispatch/pickup sections
+- **Covers**:
+  - Dynamic form management
+  - Time input with 12-hour to 24-hour conversion
+  - API integration for plan submission
+  - LocalStorage persistence
+  - Real-time validation
+  - Snackbar notifications
+  - Responsive design
+
 ## 🎯 Key Features Documented
 
 ### ✅ **Implemented Features**

@@ -21,6 +21,7 @@ Client-related features and functionality:
 ### 🚛 **Transit Plan** (`/03-Transit-Plan/`)
 Transit plan management and operations:
 - **Master Plan Listing** - Transit plan listing dashboard with filters and pagination
+- **Master Plan Creation** - Dynamic form for creating master plans with dispatch/pickup sections
 - **Transit Plan API** - API endpoints and data structures
 - **Transit Plan Workflow** - Business logic and user workflows
 

@@ -103,7 +103,7 @@ function App() {
 											element={<MasterPlanListing />}
 										/>
 										<Route path='/transit-plan/master-plan/create' element={<CreateMasterPlan />} />
-										<Route path='/transit-plan/master-plan/edit/:id' element={<EditMasterPlan />} />
+										<Route path='/transit-plan/master-plan/edit' element={<EditMasterPlan />} />
 										<Route path='/floating-demo' element={<FloatingLabelDemo />} />
 									</Routes>
 								</Layout>

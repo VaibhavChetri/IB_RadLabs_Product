@@ -57,7 +57,7 @@ export const TimeInput: React.FC<TimeInputProps> = ({
 				onChange(`${hour}:${minute} ${period}`);
 			}
 		}
-	}, [hour, minute, period, onChange]);
+	}, [hour, minute, period]);
 
 	const handleHourChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		let val = e.target.value.replace(/\D/g, '').slice(0, 2);

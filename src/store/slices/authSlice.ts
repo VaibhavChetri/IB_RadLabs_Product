@@ -19,7 +19,6 @@ export interface AuthState {
 	isAuthenticated: boolean;
 	isLoading: boolean;
 	isInitialized: boolean; // NEW: Track if auth has been checked on app load
-	editMasterPlanData?: any; // NEW: Store master plan data for editing
 }
 
 const initialState: AuthState = {
@@ -27,7 +26,6 @@ const initialState: AuthState = {
 	isAuthenticated: false,
 	isLoading: false,
 	isInitialized: false, // NEW: Start as not initialized
-	editMasterPlanData: null, // NEW: Initialize edit data
 };
 
 export const authSlice = createSlice({
@@ -66,12 +64,6 @@ export const authSlice = createSlice({
 		initializeAuth: state => {
 			state.isInitialized = true; // NEW: Mark as initialized even if no auth found
 		},
-		setEditMasterPlanData: (state, action: PayloadAction<any>) => {
-			state.editMasterPlanData = action.payload;
-		},
-		clearEditMasterPlanData: state => {
-			state.editMasterPlanData = null;
-		},
 	},
 });
 
@@ -83,6 +75,4 @@ export const {
 	updateUser,
 	restoreAuth,
 	initializeAuth,
-	setEditMasterPlanData,
-	clearEditMasterPlanData,
 } = authSlice.actions;

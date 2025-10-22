@@ -1,23 +1,94 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store';
-import { clearEditMasterPlanData } from '../store/slices/authSlice';
+import {
+	clearEditMasterPlanData,
+	updateEditMasterPlanData,
+	setEditMasterPlanData,
+} from '../store/slices/transitPlanSlice';
 import { PageHeader, Button, Snackbar } from '../components/ui';
-import { MasterPlanForm } from '../components/MasterPlanForm';
 import { TransitSection } from '../components/TransitSection';
 import { TransitPlanApi } from '../services/transitPlanApi';
+import { CommonApiService, VehicleOption } from '../services/commonApi';
 import { useNavigate } from 'react-router-dom';
 
 const EditMasterPlan: React.FC = () => {
 	const navigate = useNavigate();
 	const dispatch = useDispatch();
-	const { editMasterPlanData } = useSelector((state: RootState) => state.auth);
+	const { editMasterPlanData } = useSelector((state: RootState) => state.transitPlan);
 	const [submitting, setSubmitting] = useState(false);
 	const [snackbar, setSnackbar] = useState({
 		open: false,
 		message: '',
 		type: 'success' as 'success' | 'error' | 'info',
 	});
+	const [vehicles, setVehicles] = useState<VehicleOption[]>([]);
+
+	// Fetch vehicles data and restore edit data from localStorage
+	useEffect(() => {
+		const loadVehicles = async () => {
+			try {
+				const vehiclesRes = await CommonApiService.getVehicles();
+				setVehicles(vehiclesRes.data || []);
+			} catch (error) {
+				console.error('Error loading vehicles:', error);
+			}
+		};
+		loadVehicles();
+
+		// Restore edit data from localStorage if Redux is empty
+		if (!editMasterPlanData) {
+			const savedData = localStorage.getItem('editMasterPlanData');
+			if (savedData) {
+				try {
+					const parsedData = JSON.parse(savedData);
+					dispatch(setEditMasterPlanData(parsedData));
+				} catch (error) {
+					console.error('Error parsing saved edit data:', error);
+				}
+			}
+		}
+	}, [dispatch, editMasterPlanData]);
+
+	// Save edit data to localStorage whenever it changes
+	useEffect(() => {
+		if (editMasterPlanData) {
+			localStorage.setItem('editMasterPlanData', JSON.stringify(editMasterPlanData));
+		}
+	}, [editMasterPlanData]);
+
+	// No local state needed - update Redux directly
+
+	// Memoize the update callback
+	const handleUpdateCallback = useCallback(
+		(id: string, field: string, value: string | number) => {
+			console.log('🔄 Update callback called:', { id, field, value });
+			if (field === 'vehicleType') {
+				// When vehicle type changes, update vehicle_id, driver_name, and driver_phone
+				const selectedVehicle = vehicles.find(v => String(v.id) === String(value));
+				console.log('🚗 Selected vehicle:', selectedVehicle);
+				if (selectedVehicle) {
+					dispatch(updateEditMasterPlanData({ field: 'vehicle_id', value: selectedVehicle.id }));
+					dispatch(
+						updateEditMasterPlanData({ field: 'driver_name', value: selectedVehicle.driver_name })
+					);
+					dispatch(
+						updateEditMasterPlanData({ field: 'driver_phone', value: selectedVehicle.driver_phone })
+					);
+				}
+			} else {
+				// Map other field names from TransitEntry to Redux field names
+				const fieldMapping: Record<string, string> = {
+					date: 'transit_date',
+					time: 'transit_time',
+				};
+				const reduxField = fieldMapping[field] || field;
+				console.log('📝 Updating field:', { field, reduxField, value });
+				dispatch(updateEditMasterPlanData({ field: reduxField, value }));
+			}
+		},
+		[dispatch, vehicles]
+	);
 
 	if (!editMasterPlanData) {
 		return (
@@ -44,7 +115,7 @@ const EditMasterPlan: React.FC = () => {
 
 		// If already in 24-hour format, return as-is
 		if (time12hr.includes(':') && !time12hr.includes(' ')) {
-			return `${time12hr}:00`;
+			return time12hr.includes(':00') ? time12hr : `${time12hr}:00`;
 		}
 
 		const [time, period] = time12hr.split(' ');
@@ -68,18 +139,19 @@ const EditMasterPlan: React.FC = () => {
 		try {
 			const payload = {
 				id: editMasterPlanData.id,
-				vehicleId: editMasterPlanData.vehicle_id,
+				vehicleId: editMasterPlanData.vehicle_id!,
 				driverName: editMasterPlanData.driver_name,
 				driverPhone: editMasterPlanData.driver_phone,
-				restaurantId: editMasterPlanData.restaurant_id,
-				cityId: String(editMasterPlanData.city_id),
-				transitTypeId: editMasterPlanData.transit_type_id,
+				restaurantId: editMasterPlanData.restaurant_id!,
+				cityId: String(editMasterPlanData.city_id!),
+				transitTypeId: editMasterPlanData.transit_type_id!,
 				transitDate: editMasterPlanData.transit_date,
 				transitTime: convertTimeFormat(editMasterPlanData.transit_time),
-				facilityId: editMasterPlanData.facility_id,
+				facilityId: editMasterPlanData.facility_id!,
 			};
 
 			console.log('Update payload:', payload);
+			console.log('Current Redux state:', editMasterPlanData);
 			const response = await TransitPlanApi.updateMasterPlan(payload);
 			console.log('Update response:', response);
 
@@ -92,13 +164,18 @@ const EditMasterPlan: React.FC = () => {
 			// Clear Redux and navigate back
 			setTimeout(() => {
 				dispatch(clearEditMasterPlanData());
+				localStorage.removeItem('editMasterPlanData');
 				navigate('/transit-plan/master-plan/listing');
 			}, 1500);
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error('Update error:', error);
+			const errorMessage =
+				error instanceof Error && 'response' in error
+					? (error as any).response?.data?.message || 'Failed to update master plan'
+					: 'Failed to update master plan';
 			setSnackbar({
 				open: true,
-				message: error.response?.data?.message || 'Failed to update master plan',
+				message: errorMessage,
 				type: 'error',
 			});
 		} finally {
@@ -108,7 +185,6 @@ const EditMasterPlan: React.FC = () => {
 
 	const transitType = editMasterPlanData.type || 'Unknown';
 	const isDispatch = transitType.toLowerCase().includes('dispatch');
-	const isPickup = transitType.toLowerCase().includes('pickup');
 
 	const transitEntry = {
 		id: '1',
@@ -145,37 +221,27 @@ const EditMasterPlan: React.FC = () => {
 				/>
 
 				{/* Display using same components as Create */}
-				{isDispatch && (
-					<TransitSection
-						type='dispatch'
-						transits={[transitEntry]}
-						label='Dispatch'
-						color='bg-blue-100 text-blue-800'
-						vehicles={[]}
-						onAdd={() => {}}
-						onRemove={() => {}}
-						onUpdate={() => {}}
-					/>
-				)}
-
-				{isPickup && (
-					<TransitSection
-						type='pickup'
-						transits={[transitEntry]}
-						label='Pickup'
-						color='bg-green-100 text-green-800'
-						vehicles={[]}
-						onAdd={() => {}}
-						onRemove={() => {}}
-						onUpdate={() => {}}
-					/>
-				)}
+				<TransitSection
+					type={transitType.toLowerCase().includes('dispatch') ? 'dispatch' : 'pickup'}
+					transits={[transitEntry]}
+					label={transitType}
+					color={isDispatch ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}
+					vehicles={vehicles}
+					onAdd={() => {
+						// No-op: Edit mode doesn't support adding new entries
+					}}
+					onRemove={() => {
+						// No-op: Edit mode doesn't support removing entries
+					}}
+					onUpdate={handleUpdateCallback}
+				/>
 
 				{/* Update Button */}
 				<div className='flex justify-end gap-4 mt-6'>
 					<Button
 						onClick={() => {
 							dispatch(clearEditMasterPlanData());
+							localStorage.removeItem('editMasterPlanData');
 							navigate('/transit-plan/master-plan/listing');
 						}}
 						className='px-6 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400'

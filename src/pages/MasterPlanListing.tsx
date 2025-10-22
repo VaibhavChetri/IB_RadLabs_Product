@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { RootState } from '../store';
-import { setEditMasterPlanData } from '../store/slices/authSlice';
+import { setEditMasterPlanData } from '../store/slices/transitPlanSlice';
 import {
 	FloatingDropdown,
 	MultiSelectDropdown,
@@ -131,7 +131,7 @@ const MasterPlanListing: React.FC = () => {
 							onClick={() => {
 								// Store raw row data in Redux for editing
 								dispatch(setEditMasterPlanData(row));
-								navigate(`/transit-plan/master-plan/edit/${row.id}`);
+								navigate('/transit-plan/master-plan/edit');
 							}}
 						>
 							<Pencil className='h-4 w-4 text-green-600' />

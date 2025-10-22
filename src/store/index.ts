@@ -4,6 +4,7 @@ import { authSlice } from './slices/authSlice';
 import { dashboardSlice } from './slices/dashboardSlice';
 import apiReducer from './slices/apiSlice';
 import clientReducer from './slices/clientSlice';
+import transitPlanReducer from './slices/transitPlanSlice';
 
 export const store = configureStore({
 	reducer: {
@@ -12,6 +13,7 @@ export const store = configureStore({
 		dashboard: dashboardSlice.reducer,
 		api: apiReducer,
 		client: clientReducer,
+		transitPlan: transitPlanReducer,
 	},
 	middleware: getDefaultMiddleware =>
 		getDefaultMiddleware({

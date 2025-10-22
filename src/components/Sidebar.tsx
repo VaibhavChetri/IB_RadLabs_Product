@@ -41,7 +41,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
 	const isActiveRoute = (href?: string) => {
 		if (!href) return false;
-		return location.pathname === href;
+		// For dynamic routes, check if current path starts with the href
+		// e.g., /transit-plan/master-plan/edit matches /transit-plan/master-plan/edit/123
+		return location.pathname === href || location.pathname.startsWith(href + '/');
 	};
 
 	const hasActiveChild = (item: MenuItem): boolean => {

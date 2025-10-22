@@ -11,6 +11,7 @@ import { ManageClients } from './pages/ManageClients';
 import DisableClients from './pages/DisableClients';
 import MasterPlanListing from './pages/MasterPlanListing';
 import CreateMasterPlan from './pages/CreateMasterPlan';
+import EditMasterPlan from './pages/EditMasterPlan';
 import FloatingLabelDemo from './pages/FloatingLabelDemo';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import TokenManager from './utils/tokenManager';
@@ -102,6 +103,7 @@ function App() {
 											element={<MasterPlanListing />}
 										/>
 										<Route path='/transit-plan/master-plan/create' element={<CreateMasterPlan />} />
+										<Route path='/transit-plan/master-plan/edit/:id' element={<EditMasterPlan />} />
 										<Route path='/floating-demo' element={<FloatingLabelDemo />} />
 									</Routes>
 								</Layout>

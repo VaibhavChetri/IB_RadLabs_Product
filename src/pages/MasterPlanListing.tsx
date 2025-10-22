@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { RootState } from '../store';
+import { setEditMasterPlanData } from '../store/slices/authSlice';
 import {
 	FloatingDropdown,
 	MultiSelectDropdown,
@@ -24,6 +26,8 @@ type DropdownOption = { label: string; value: string };
 const MasterPlanListing: React.FC = () => {
 	const { user } = useSelector((s: RootState) => s.auth);
 	const cityId = user?.city_id ?? 3;
+	const navigate = useNavigate();
+	const dispatch = useDispatch();
 
 	const [facilities, setFacilities] = useState<DropdownOption[]>([]);
 	const [clients, setClients] = useState<DropdownOption[]>([]);
@@ -119,9 +123,17 @@ const MasterPlanListing: React.FC = () => {
 				label: 'Actions',
 				title: 'Actions',
 				width: '110px',
-				render: (_: unknown, _row: MasterPlanRow) => (
+				render: (_: unknown, row: MasterPlanRow) => (
 					<div className='flex items-center gap-2'>
-						<button className='p-1.5 rounded hover:bg-gray-100' title='Edit'>
+						<button
+							className='p-1.5 rounded hover:bg-gray-100'
+							title='Edit'
+							onClick={() => {
+								// Store raw row data in Redux for editing
+								dispatch(setEditMasterPlanData(row));
+								navigate(`/transit-plan/master-plan/edit/${row.id}`);
+							}}
+						>
 							<Pencil className='h-4 w-4 text-green-600' />
 						</button>
 						<button className='p-1.5 rounded hover:bg-gray-100' title='Delete'>
@@ -171,7 +183,7 @@ const MasterPlanListing: React.FC = () => {
 	);
 
 	return (
-		<div className='min-h-screen bg-white p-4'>
+		<>
 			<div className='mb-6'>
 				<h1 className='text-2xl font-semibold text-gray-900 mb-2'>
 					Master Plan Listing - {user?.city_id === 3 ? 'Mumbai' : 'City'}
@@ -242,7 +254,7 @@ const MasterPlanListing: React.FC = () => {
 				onItemsPerPageChange={setItemsPerPage}
 				className='mt-4'
 			/>
-		</div>
+		</>
 	);
 };
 

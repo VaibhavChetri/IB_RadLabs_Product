@@ -10,6 +10,7 @@ export { FilterChips } from './FilterChips';
 export { TimeInput } from './TimeInput';
 export { Card } from './Card';
 export { BorderlessDropdown } from './BorderlessDropdown';
+export { default as PageHeader } from './PageHeader';
 export { Button, IconButton, ButtonGroup, FAB } from './Button';
 export { Table } from './DataDisplay';
 

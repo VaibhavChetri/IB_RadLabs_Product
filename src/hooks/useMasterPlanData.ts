@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { CommonApiService } from '../services/commonApi';
@@ -26,19 +26,46 @@ export interface MasterPlanData {
 // Re-export types for components
 export type { VehicleOption } from '../services/commonApi';
 
-export const useMasterPlanData = () => {
+export const useMasterPlanData = (isEditMode: boolean = false) => {
 	const [loading, setLoading] = useState(true);
 	const [facilities, setFacilities] = useState<FacilityOption[]>([]);
 	const [clients, setClients] = useState<ClientByCityOption[]>([]);
 	const [vehicles, setVehicles] = useState<VehicleOption[]>([]);
 	const [transitTypes, setTransitTypes] = useState<TransitTypeOption[]>([]);
 
-	// Get cityId from Redux auth state
+	// Get cityId from Redux auth state - memoize to prevent unnecessary re-renders
 	const user = useSelector((state: RootState) => state.auth.user);
+	const cityId = useMemo(() => user?.city_id, [user?.city_id]);
+
+	// Get edit data from Redux state when in edit mode
+	const editMasterPlanData = useSelector((state: RootState) => state.auth.editMasterPlanData);
 
 	const [data, setData] = useState<MasterPlanData>(() => {
-		// Try to restore from localStorage
-		const saved = localStorage.getItem('masterPlanData');
+		// If in edit mode and we have Redux data, transform it to the expected format
+		if (isEditMode && editMasterPlanData) {
+			// Transform single row data to arrays for TransitSection components
+			const transitEntry = {
+				id: '1',
+				date: editMasterPlanData.transit_date || new Date().toISOString().split('T')[0],
+				time: editMasterPlanData.transit_time || '',
+				vehicleType: String(editMasterPlanData.vehicle_id || ''),
+			};
+
+			return {
+				facilityId: String(editMasterPlanData.facility_id || ''),
+				clientId: String(editMasterPlanData.restaurant_id || ''),
+				dispatchTransits: editMasterPlanData.type?.toLowerCase().includes('dispatch')
+					? [transitEntry]
+					: [],
+				pickupTransits: editMasterPlanData.type?.toLowerCase().includes('pickup')
+					? [transitEntry]
+					: [],
+			};
+		}
+
+		// Try to restore from localStorage with different keys for create/edit
+		const storageKey = isEditMode ? 'masterPlanEditData' : 'masterPlanData';
+		const saved = localStorage.getItem(storageKey);
 		if (saved) {
 			try {
 				return JSON.parse(saved);
@@ -60,10 +87,17 @@ export const useMasterPlanData = () => {
 		};
 	});
 
-	// Save data to localStorage whenever it changes
-	useEffect(() => {
-		localStorage.setItem('masterPlanData', JSON.stringify(data));
-	}, [data]);
+	// Save data to localStorage whenever it changes - temporarily disabled to fix infinite loop
+	// useEffect(() => {
+	// 	const storageKey = isEditMode ? 'masterPlanEditData' : 'masterPlanData';
+	// 	const dataString = JSON.stringify(data);
+	//
+	// 	// Only save if data has actually changed
+	// 	if (dataString !== prevDataRef.current) {
+	// 		localStorage.setItem(storageKey, dataString);
+	// 		prevDataRef.current = dataString;
+	// 	}
+	// }, [data.facilityId, data.clientId, JSON.stringify(data.dispatchTransits), JSON.stringify(data.pickupTransits), isEditMode]);
 
 	useEffect(() => {
 		const loadData = async () => {
@@ -91,9 +125,9 @@ export const useMasterPlanData = () => {
 		loadData();
 	}, []);
 
-	const updateData = (updates: Partial<MasterPlanData>) => {
+	const updateData = useCallback((updates: Partial<MasterPlanData>) => {
 		setData(prev => ({ ...prev, ...updates }));
-	};
+	}, []);
 
 	const addTransit = (type: 'dispatch' | 'pickup') => {
 		const newId = Date.now().toString();
@@ -184,8 +218,8 @@ export const useMasterPlanData = () => {
 		const dispatchType = transitTypes.find(t => t.name?.toLowerCase().includes('dispatch'));
 		const pickupType = transitTypes.find(t => t.name?.toLowerCase().includes('pickup'));
 
-		// Get cityId from Redux auth state
-		const cityId = user?.city_id || 3; // Fallback to 3 if not available
+		// Use memoized cityId
+		const finalCityId = cityId || 3; // Fallback to 3 if not available
 
 		const input = [];
 
@@ -229,14 +263,15 @@ export const useMasterPlanData = () => {
 
 		return {
 			restaurantId: parseInt(data.clientId),
-			cityId: cityId,
+			cityId: finalCityId,
 			facilityId: parseInt(data.facilityId),
 			input: input,
 		};
 	};
 
 	const clearSavedData = () => {
-		localStorage.removeItem('masterPlanData');
+		const storageKey = isEditMode ? 'masterPlanEditData' : 'masterPlanData';
+		localStorage.removeItem(storageKey);
 		setData({
 			facilityId: '',
 			clientId: '',

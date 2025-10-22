@@ -6,6 +6,7 @@ export type { FacilityOption, ClientByCityOption } from './commonApi';
 
 export interface MasterPlanRow {
 	id: number;
+	vehicle_id?: number;
 	vehicle_number: string | null;
 	transit_date: string;
 	transit_time: string;
@@ -15,6 +16,8 @@ export interface MasterPlanRow {
 	city_name: string;
 	vehicle_type: string;
 	restaurant_name: string;
+	restaurant_id?: number;
+	facility_id?: number;
 	type: string; // Dispatch | Pickup | Dispatch & Pickup
 	facility: string;
 }
@@ -54,21 +57,22 @@ export const TransitPlanApi = {
 		return api.get(`/plan/getMasterPlanListing?${searchParams.toString()}`);
 	},
 
-	async createMasterPlan(payload: {
+	async getMasterPlanById(id: number): Promise<ApiResponse<any>> {
+		return api.get(`/transit-plan/get-master-plan/${id}`);
+	},
+
+	async updateMasterPlan(payload: {
+		id: number;
+		vehicleId: number;
+		driverName: string;
+		driverPhone: string;
 		restaurantId: number;
-		cityId: number;
+		cityId: string;
+		transitTypeId: number;
+		transitDate: string;
+		transitTime: string;
 		facilityId: number;
-		input: Array<{
-			transitTypeId: number;
-			data: Array<{
-				vehicleId: number;
-				transitDate: string;
-				transitTime: string;
-				driverName: string;
-				driverPhone: string;
-			}>;
-		}>;
 	}): Promise<ApiResponse<any>> {
-		return api.post('/transit-plan/create-master-transit-plan', payload);
+		return api.put('/transit-plan/edit-master-transit-plan', payload);
 	},
 };

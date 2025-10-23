@@ -24,6 +24,54 @@ export interface MasterPlanRow {
 	city_id?: number;
 }
 
+export interface TransitPlanRow extends Record<string, unknown> {
+	id: number;
+	transit_date: string;
+	transit_time?: string; // API might use different field name
+	time?: string; // Alternative field name
+	restaurant_name?: string; // API might use restaurant_name instead of restaurant
+	restaurant?: string;
+	type: string;
+	driver_name?: string; // API might use driver_name instead of driver
+	driver?: string;
+	status?: string;
+	transit_status?: number; // Numeric status (0, 1, 2, etc.)
+	transit_status_label?: string; // Human readable status ("New", "In Progress", etc.)
+	facility_name?: string; // API might use facility_name instead of facility
+	facility?: string;
+	vehicle_type: string;
+	driver_phone: string;
+	vehicle_number?: string | null; // Can be null
+	vehicle_no?: string; // Alternative field name for vehicle number
+	plate_number?: string; // Another alternative
+	initiated_date?: string;
+	total_qty?: number;
+	signature?: string;
+	delay?: string;
+	// Additional fields that might be in the API response
+	created_at?: string;
+	updated_at?: string;
+	restaurant_id?: number;
+	facility_id?: number;
+	driver_id?: number;
+	vehicle_id?: number;
+	// Fields from actual API response
+	creation_date?: string;
+	creation_at?: string;
+	initiated_at?: string;
+	city_name?: string;
+	created_by?: string;
+	initiated_by?: string;
+	clientId?: number;
+	dc?: string | null;
+	dispatch_images?: string | null;
+	pickup_images?: string | null;
+	delivery_images?: string | null;
+	delay_of?: string | null;
+	signature_name?: string | null;
+	email?: string | null;
+}
+
 export interface MasterPlanListingResponse {
 	rows: MasterPlanRow[];
 	pagination: {
@@ -32,6 +80,24 @@ export interface MasterPlanListingResponse {
 		totalItems: number;
 		totalPages: number;
 	};
+}
+
+export interface TransitPlanListingResponse {
+	rows: TransitPlanRow[];
+}
+
+export interface TransitPlanPagination {
+	page: number;
+	limit: number;
+	totalItems: number;
+	totalPages: number;
+}
+
+export interface TransitPlanListingApiResponse {
+	status_code: number;
+	status: string;
+	data: TransitPlanListingResponse;
+	pagination: TransitPlanPagination;
 }
 
 const api = ApiService.getInstance();
@@ -59,7 +125,37 @@ export const TransitPlanApi = {
 		return api.get(`/plan/getMasterPlanListing?${searchParams.toString()}`);
 	},
 
-	async getMasterPlanById(id: number): Promise<ApiResponse<any>> {
+	async getTransitPlanListing(params: {
+		start_date: string;
+		end_date: string;
+		page: number;
+		limit: number;
+		sortField: string;
+		sortOrder: 'asc' | 'desc';
+		transit_status?: number;
+		restaurant_id?: number;
+	}): Promise<TransitPlanListingApiResponse> {
+		const searchParams = new URLSearchParams();
+		searchParams.set('page', String(params.page));
+		searchParams.set('limit', String(params.limit));
+		searchParams.set('start_date', params.start_date);
+		searchParams.set('end_date', params.end_date);
+		searchParams.set('sortField', params.sortField);
+		searchParams.set('sortOrder', params.sortOrder);
+
+		if (params.transit_status !== undefined) {
+			searchParams.set('transit_status', String(params.transit_status));
+		}
+		if (params.restaurant_id !== undefined) {
+			searchParams.set('restaurant_id', String(params.restaurant_id));
+		}
+
+		return api.get(
+			`/transit-plan/get-transit-plan-listing?${searchParams.toString()}`
+		) as unknown as Promise<TransitPlanListingApiResponse>;
+	},
+
+	async getMasterPlanById(id: number): Promise<ApiResponse<MasterPlanRow>> {
 		return api.get(`/transit-plan/get-master-plan/${id}`);
 	},
 
@@ -77,7 +173,7 @@ export const TransitPlanApi = {
 				driverPhone: string;
 			}>;
 		}>;
-	}): Promise<ApiResponse<any>> {
+	}): Promise<ApiResponse<{ id: number; message: string }>> {
 		return api.post('/transit-plan/create-master-transit-plan', payload);
 	},
 
@@ -92,7 +188,7 @@ export const TransitPlanApi = {
 		transitDate: string;
 		transitTime: string;
 		facilityId: number;
-	}): Promise<ApiResponse<any>> {
+	}): Promise<ApiResponse<{ id: number; message: string }>> {
 		return api.put('/transit-plan/edit-master-transit-plan', payload);
 	},
 };

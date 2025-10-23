@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { SearchButton, FloatingDropdown, Pagination, Button } from '../components/ui';
+import { SearchButton, FloatingDropdown, Pagination, Button, PageHeader } from '../components/ui';
 import { Table } from '../components/ui/DataDisplay';
 import { useApi } from '../hooks/useApi';
 import {
@@ -449,21 +449,19 @@ export const ManageClients: React.FC = () => {
 			<div className='max-w-7xl mx-auto'>
 				{/* Header */}
 				<div className='flex items-center justify-between mb-6'>
-					<div>
-						<h1 className='text-3xl font-bold text-foreground'>Manage Clients</h1>
-						<div className='flex items-center gap-4 mt-2'>
-							<span className='text-sm text-gray-600'>
-								📍{' '}
-								{shouldShowCityFilter
-									? 'All Cities'
-									: user?.city_id
-										? cities.find(c => c.value === user.city_id?.toString())?.label || 'Mumbai'
-										: 'Mumbai'}
-							</span>
-							<span className='text-sm text-gray-500'>•</span>
-							<span className='text-sm text-gray-600'>🏢 {pagination.totalCount} locations</span>
-						</div>
-					</div>
+					<PageHeader
+						title='Manage Clients'
+						locationName={
+							shouldShowCityFilter
+								? 'All Cities'
+								: user?.city_id
+									? cities.find(c => c.value === user.city_id?.toString())?.label || 'Mumbai'
+									: 'Mumbai'
+						}
+						totalItems={pagination.totalCount}
+						itemType='locations'
+						icon='🏢'
+					/>
 					<Button
 						onClick={() => navigate('/clients/add')}
 						className='px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors'

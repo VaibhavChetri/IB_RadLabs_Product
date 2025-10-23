@@ -25,6 +25,18 @@ This folder contains documentation for all **UI Components** and design system e
   - API integration patterns
   - Testing strategies
 
+### 📋 **Universal Listing Page Template**
+- **File**: `05-Universal-Listing-Page-Template.md`
+- **Description**: Comprehensive template for creating any listing page
+- **Covers**:
+  - Page header structure and styling
+  - Filter section with dropdowns and search
+  - Table component with columns and pagination
+  - State management patterns
+  - API integration examples
+  - Responsive design considerations
+  - Accessibility features
+
 ## 🎯 Key Components Documented
 
 ### ✅ **Core Components**
@@ -44,14 +56,16 @@ This folder contains documentation for all **UI Components** and design system e
 ### For **Component Developers**
 1. Read [Reusable Components Architecture](./04-Reusable-Components-Architecture.md)
 2. Review [UI Components Guide](./03-UI-Components.md)
-3. Understand component composition patterns
-4. Follow performance optimization guidelines
+3. Check [Universal Listing Page Template](./05-Universal-Listing-Page-Template.md) for page-level patterns
+4. Understand component composition patterns
+5. Follow performance optimization guidelines
 
 ### For **Feature Developers**
 1. Check available components in UI Components guide
-2. Review usage examples
-3. Understand component props and interfaces
-4. Follow accessibility guidelines
+2. Use [Universal Listing Page Template](./05-Universal-Listing-Page-Template.md) for new listing pages
+3. Review usage examples
+4. Understand component props and interfaces
+5. Follow accessibility guidelines
 
 ## 🎨 Design System
 

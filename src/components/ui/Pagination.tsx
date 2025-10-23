@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
 
 export interface PaginationProps {
 	currentPage: number;
@@ -26,6 +26,49 @@ export const Pagination: React.FC<PaginationProps> = ({
 	const endItem = Math.min(currentPage * itemsPerPage, totalItems);
 
 	const itemsPerPageOptions = [5, 10, 25, 50, totalItems];
+
+	// Generate page numbers with ellipsis logic
+	const generatePageNumbers = () => {
+		const pages: (number | string)[] = [];
+		const maxVisiblePages = 7; // Show up to 7 page numbers
+
+		if (totalPages <= maxVisiblePages) {
+			// Show all pages if total is small
+			for (let i = 1; i <= totalPages; i++) {
+				pages.push(i);
+			}
+		} else {
+			// Smart pagination with ellipsis
+			pages.push(1); // Always show first page
+
+			if (currentPage <= 4) {
+				// Near the beginning
+				for (let i = 2; i <= 5; i++) {
+					pages.push(i);
+				}
+				pages.push('...');
+				pages.push(totalPages);
+			} else if (currentPage >= totalPages - 3) {
+				// Near the end
+				pages.push('...');
+				for (let i = totalPages - 4; i <= totalPages; i++) {
+					pages.push(i);
+				}
+			} else {
+				// In the middle
+				pages.push('...');
+				for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+					pages.push(i);
+				}
+				pages.push('...');
+				pages.push(totalPages);
+			}
+		}
+
+		return pages;
+	};
+
+	const pageNumbers = generatePageNumbers();
 
 	return (
 		<div className={`flex items-center justify-between ${className}`}>
@@ -71,28 +114,57 @@ export const Pagination: React.FC<PaginationProps> = ({
 					: `${startItem}-${endItem} of ${totalItems}`}
 			</div>
 
-			{/* Navigation arrows - only show when there are multiple pages */}
+			{/* Navigation - only show when there are multiple pages */}
 			{totalPages > 1 && (
-				<div className='flex items-center gap-2'>
+				<div className='flex items-center gap-1'>
+					{/* Previous button */}
 					<button
 						onClick={() => onPageChange(currentPage - 1)}
 						disabled={currentPage === 1}
-						className={`p-1 rounded transition-colors ${
+						className={`p-2 rounded-md transition-colors ${
 							currentPage === 1
 								? 'text-gray-300 cursor-not-allowed'
 								: 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
 						}`}
+						title='Previous page'
 					>
 						<ChevronLeft className='w-4 h-4' />
 					</button>
+
+					{/* Page numbers */}
+					<div className='flex items-center gap-1'>
+						{pageNumbers.map((page, index) => (
+							<React.Fragment key={index}>
+								{page === '...' ? (
+									<span className='px-2 py-1 text-gray-500'>
+										<MoreHorizontal className='w-4 h-4' />
+									</span>
+								) : (
+									<button
+										onClick={() => onPageChange(page as number)}
+										className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
+											currentPage === page
+												? 'bg-green-600 text-white'
+												: 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
+										}`}
+									>
+										{page}
+									</button>
+								)}
+							</React.Fragment>
+						))}
+					</div>
+
+					{/* Next button */}
 					<button
 						onClick={() => onPageChange(currentPage + 1)}
 						disabled={currentPage === totalPages}
-						className={`p-1 rounded transition-colors ${
+						className={`p-2 rounded-md transition-colors ${
 							currentPage === totalPages
 								? 'text-gray-300 cursor-not-allowed'
 								: 'text-gray-600 hover:text-gray-800 hover:bg-gray-100'
 						}`}
+						title='Next page'
 					>
 						<ChevronRight className='w-4 h-4' />
 					</button>

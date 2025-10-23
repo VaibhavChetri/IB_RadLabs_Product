@@ -244,8 +244,7 @@ export const componentVariants = {
 		variant: {
 			primary: 'bg-primary text-primary-foreground hover:bg-primary/90',
 			secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/90',
-			outline:
-				'border border-border bg-background hover:bg-background-secondary',
+			outline: 'border border-border bg-background hover:bg-background-secondary',
 			ghost: 'hover:bg-background-secondary',
 			link: 'text-primary underline-offset-4 hover:underline',
 			destructive: 'bg-error text-error-foreground hover:bg-error/90',
@@ -267,6 +266,21 @@ export const componentVariants = {
 			default: 'bg-background border-border',
 			elevated: 'bg-background border-border shadow-z4',
 			outlined: 'bg-background border-2 border-border',
+		},
+	},
+	badge: {
+		variant: {
+			status: {
+				scheduled: 'bg-info-100 text-info-800 border-info-200',
+				inProgress: 'bg-warning-100 text-warning-800 border-warning-200',
+				completed: 'bg-success-100 text-success-800 border-success-200',
+				default: 'bg-neutral-100 text-neutral-800 border-neutral-200',
+			},
+			type: {
+				dispatch: 'bg-transparent text-info-600 border-transparent',
+				pickup: 'bg-transparent text-secondary-600 border-transparent',
+				default: 'bg-transparent text-neutral-600 border-transparent',
+			},
 		},
 	},
 } as const;

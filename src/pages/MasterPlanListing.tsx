@@ -9,6 +9,7 @@ import {
 	Table,
 	Pagination,
 	SearchButton,
+	PageHeader,
 } from '../components/ui';
 import {
 	TransitPlanApi,
@@ -184,12 +185,13 @@ const MasterPlanListing: React.FC = () => {
 
 	return (
 		<>
-			<div className='mb-6'>
-				<h1 className='text-2xl font-semibold text-gray-900 mb-2'>
-					Master Plan Listing - {user?.city_id === 3 ? 'Mumbai' : 'City'}
-				</h1>
-				<p className='text-sm text-gray-600'>{totalItems} master plans found</p>
-			</div>
+			<PageHeader
+				title='Master Plan Listing'
+				locationName={user?.city_id === 3 ? 'Mumbai' : 'City'}
+				totalItems={totalItems}
+				itemType='master plans'
+				icon='📋'
+			/>
 
 			<div className='bg-white p-4 shadow-sm rounded-lg flex flex-wrap gap-4 items-center mb-6'>
 				<FloatingDropdown

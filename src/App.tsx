@@ -10,6 +10,7 @@ import { EditClient } from './pages/EditClient';
 import { ManageClients } from './pages/ManageClients';
 import DisableClients from './pages/DisableClients';
 import MasterPlanListing from './pages/MasterPlanListing';
+import TransitPlanListing from './pages/TransitPlanListing';
 import CreateMasterPlan from './pages/CreateMasterPlan';
 import EditMasterPlan from './pages/EditMasterPlan';
 import FloatingLabelDemo from './pages/FloatingLabelDemo';
@@ -102,6 +103,7 @@ function App() {
 											path='/transit-plan/master-plan/listing'
 											element={<MasterPlanListing />}
 										/>
+										<Route path='/transit-plan/listing' element={<TransitPlanListing />} />
 										<Route path='/transit-plan/master-plan/create' element={<CreateMasterPlan />} />
 										<Route path='/transit-plan/master-plan/edit' element={<EditMasterPlan />} />
 										<Route path='/floating-demo' element={<FloatingLabelDemo />} />

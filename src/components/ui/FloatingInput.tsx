@@ -9,7 +9,7 @@ export interface FloatingInputProps {
 	value: string;
 	onChange: (value: string) => void;
 	placeholder?: string;
-	type?: 'text' | 'email' | 'password' | 'number';
+	type?: 'text' | 'email' | 'password' | 'number' | 'date';
 	disabled?: boolean;
 	error?: boolean;
 	errorMessage?: string;

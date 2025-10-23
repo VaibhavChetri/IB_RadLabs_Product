@@ -28,6 +28,18 @@ This folder contains documentation for all **Transit Plan** related features and
   - Snackbar notifications
   - Responsive design
 
+### 🚛 **Transit Plan Listing**
+- **File**: `05-Transit-Plan-Listing.md`
+- **Description**: Complete implementation guide for the Transit Plan Listing dashboard
+- **Covers**:
+  - Standardized PageHeader component usage
+  - Date range filtering with FloatingInput
+  - Advanced pagination with individual page numbers
+  - Status and Type badges with color coding
+  - Dynamic column visibility management
+  - API integration with POST endpoint
+  - Responsive design and loading states
+
 ### 🏗️ **Component Architecture**
 - **File**: `03-Component-Architecture-CreateMasterPlan.md`
 - **Description**: Detailed component structure and file flow for developers
@@ -58,10 +70,10 @@ This folder contains documentation for all **Transit Plan** related features and
 ## 🚀 Quick Start
 
 ### For **Developers**
-1. Read [Master Plan Listing Implementation](./Master-plan-listing.md)
-2. Check the API integration patterns
-3. Review component usage examples
-4. Follow troubleshooting guide if needed
+1. Read [Master Plan Listing Implementation](./01-Master-Plan-Listing.md)
+2. Check [Transit Plan Listing Implementation](./05-Transit-Plan-Listing.md)
+3. Review API integration patterns
+4. Follow troubleshooting guides if needed
 
 ### For **Feature Updates**
 1. Understand current implementation

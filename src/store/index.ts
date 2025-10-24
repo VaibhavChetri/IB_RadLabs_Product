@@ -5,6 +5,7 @@ import { dashboardSlice } from './slices/dashboardSlice';
 import apiReducer from './slices/apiSlice';
 import clientReducer from './slices/clientSlice';
 import transitPlanReducer from './slices/transitPlanSlice';
+import inventoryReducer from './slices/inventorySlice';
 
 export const store = configureStore({
 	reducer: {
@@ -14,6 +15,7 @@ export const store = configureStore({
 		api: apiReducer,
 		client: clientReducer,
 		transitPlan: transitPlanReducer,
+		inventory: inventoryReducer,
 	},
 	middleware: getDefaultMiddleware =>
 		getDefaultMiddleware({

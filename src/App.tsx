@@ -12,6 +12,7 @@ import DisableClients from './pages/DisableClients';
 import MasterPlanListing from './pages/MasterPlanListing';
 import TransitPlanListing from './pages/TransitPlanListing';
 import SentTransitPlanListing from './pages/SentTransitPlanListing';
+import SentInventoryListing from './pages/SentInventoryListing';
 import ClientDispatchDetails from './pages/ClientDispatchDetails';
 import CreateMasterPlan from './pages/CreateMasterPlan';
 import EditMasterPlan from './pages/EditMasterPlan';
@@ -107,6 +108,7 @@ function App() {
 										/>
 										<Route path='/transit-plan/listing' element={<TransitPlanListing />} />
 										<Route path='/transit-plan/sent/plan' element={<SentTransitPlanListing />} />
+										<Route path='/transit-plan/sent/inventory' element={<SentInventoryListing />} />
 										<Route
 											path='/transit-plan/sent/client-details/:clientLocationId/:facilityId'
 											element={<ClientDispatchDetails />}

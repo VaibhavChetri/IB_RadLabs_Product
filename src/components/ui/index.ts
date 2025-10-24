@@ -13,7 +13,7 @@ export { BorderlessDropdown } from './BorderlessDropdown';
 export { Badge } from './Badge';
 export { PageHeader } from './PageHeader';
 export { Button, IconButton, ButtonGroup, FAB } from './Button';
-export { Table } from './DataDisplay';
+export { Table, Accordion } from './DataDisplay';
 
 // Re-export types for convenience
 export type { FloatingInputProps } from './FloatingInput';

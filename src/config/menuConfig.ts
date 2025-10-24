@@ -230,7 +230,7 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 						id: 'sent-inventory-listing',
 						name: 'Sent Inventory Listing',
 						icon: Package,
-						href: '/transit-plan/sent/listing',
+						href: '/transit-plan/sent/inventory',
 					},
 				],
 			},

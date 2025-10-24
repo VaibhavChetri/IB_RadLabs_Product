@@ -233,7 +233,7 @@ export const useMasterPlanData = (isEditMode: boolean = false) => {
 						const vehicle = vehicles.find(v => v.id.toString() === transit.vehicleType);
 						return {
 							vehicleId: parseInt(transit.vehicleType),
-							transitDate: transit.date,
+							transitDate: new Date().toISOString().split('T')[0], // Always use today's date
 							transitTime: convertTimeFormat(transit.time), // Convert to "HH:MM:SS" format
 							driverName: vehicle?.driver_name || '',
 							driverPhone: vehicle?.driver_phone || '',
@@ -252,7 +252,7 @@ export const useMasterPlanData = (isEditMode: boolean = false) => {
 						const vehicle = vehicles.find(v => v.id.toString() === transit.vehicleType);
 						return {
 							vehicleId: parseInt(transit.vehicleType),
-							transitDate: transit.date,
+							transitDate: new Date().toISOString().split('T')[0], // Always use today's date
 							transitTime: convertTimeFormat(transit.time), // Convert to "HH:MM:SS" format
 							driverName: vehicle?.driver_name || '',
 							driverPhone: vehicle?.driver_phone || '',

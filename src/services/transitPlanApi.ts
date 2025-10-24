@@ -100,6 +100,68 @@ export interface TransitPlanListingApiResponse {
 	pagination: TransitPlanPagination;
 }
 
+// Sent Transit Plan Interfaces
+export interface RestaurantOption {
+	clientId: number;
+	clientName: string;
+}
+
+export interface SentTransitPlanRow extends Record<string, unknown> {
+	id: number;
+	transit_id: string;
+	transitDate: string;
+	updated_at: string;
+	transit_time: string;
+	clientLocationName: string;
+	transit_type_id: number;
+	transitType: string;
+	driver_name: string;
+	driver_phone: string;
+	facilityName: string;
+	restaurantName: string;
+	restaurantId: number;
+	facilityId: number;
+	clientLocationId: number;
+	transit_status: number;
+	dc: string | null;
+	transit_status_label: string;
+}
+
+export interface SentTransitPlanApiResponse {
+	status_code: number;
+	status: string;
+	result: SentTransitPlanRow[];
+	pagination: {
+		page: string;
+		limit: number;
+		totalItems: number;
+		totalPages: number;
+	};
+}
+
+// Client SKU Map Interfaces
+export interface ClientSkuMapItem {
+	clientName: string;
+	price: string;
+	clientId: number;
+	containerType: string;
+	containerTypeId: number;
+	status: string;
+	platesWashedPerCycleByClient: number;
+	distanceFromWarehouse: number;
+	srcingDistance: number;
+	weight_bagasse: string;
+	srcQtyTransportedOneTripEv: number;
+	qtyTransportedOneTrip: number;
+	numberOfClamshell: number;
+	electricityConsumedPerCycle: string;
+	waterConsumedPerCycle: number;
+	disposableWeight: number;
+	combine_sku: number;
+	impactId: number;
+	impactName: string;
+}
+
 const api = ApiService.getInstance();
 
 export const TransitPlanApi = {
@@ -190,5 +252,66 @@ export const TransitPlanApi = {
 		facilityId: number;
 	}): Promise<ApiResponse<{ id: number; message: string }>> {
 		return api.put('/transit-plan/edit-master-transit-plan', payload);
+	},
+
+	// Sent Transit Plan APIs
+	async getRestaurants(
+		cityId: number
+	): Promise<{ status: string; status_code: number; result: RestaurantOption[] }> {
+		return api.get(`/restaurants/getRestaurants?cityId=${cityId}`) as unknown as Promise<{
+			status: string;
+			status_code: number;
+			result: RestaurantOption[];
+		}>;
+	},
+
+	async getCurrentPlanDetails(params: {
+		start_date: string;
+		end_date: string;
+		location_id?: string;
+		facility_id?: number;
+		transit_type_id?: number;
+		page: number;
+		limit: number;
+	}): Promise<SentTransitPlanApiResponse> {
+		const searchParams = new URLSearchParams();
+		searchParams.set('start_date', params.start_date);
+		searchParams.set('end_date', params.end_date);
+		searchParams.set('page', String(params.page));
+		searchParams.set('limit', String(params.limit));
+
+		if (params.location_id !== undefined) {
+			searchParams.set('location_id', params.location_id);
+		}
+		if (params.facility_id !== undefined) {
+			searchParams.set('facility_id', String(params.facility_id));
+		}
+		if (params.transit_type_id !== undefined) {
+			searchParams.set('transit_type_id', String(params.transit_type_id));
+		}
+
+		return api.get(
+			`/transit-plan/getCurrentPlanDetails?${searchParams.toString()}`
+		) as unknown as Promise<SentTransitPlanApiResponse>;
+	},
+
+	async getClientSkuMap(clientId: number, facilityId: number): Promise<ClientSkuMapItem[]> {
+		const response = await api.get(
+			`/inventory/getClientSkuMap?clientId=${clientId}&facilityId=${facilityId}`
+		);
+		return response.data || [];
+	},
+
+	async uploadImage(file: File): Promise<any> {
+		const formData = new FormData();
+		formData.append('file', file);
+
+		const response = await api.post('/image/uploadImage', formData, {
+			headers: {
+				'Content-Type': 'multipart/form-data',
+			},
+		});
+
+		return response;
 	},
 };

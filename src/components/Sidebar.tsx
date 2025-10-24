@@ -135,17 +135,27 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 					<div className='mt-1 space-y-1 relative'>
 						{/* Vertical line from parent to all children */}
 						<div
-							className={`absolute top-0 bottom-0 w-px bg-primary/40 ${level === 0 ? 'left-3' : 'left-6'}`}
+							className={`absolute top-0 bottom-0 w-px ${
+								hasActiveChildMenu ? 'bg-orange-500' : 'bg-primary/40'
+							} ${level === 0 ? 'left-3' : 'left-6'}`}
 						></div>
-						{item.children?.map((child, _index) => (
-							<div key={child.id} className='relative'>
-								{/* Horizontal connector to each child */}
-								<div
-									className={`absolute top-4 w-3 h-px bg-primary/40 ${level === 0 ? 'left-3' : 'left-6'}`}
-								></div>
-								{renderMenuItem(child, level + 1)}
-							</div>
-						))}
+						{item.children?.map((child, _index) => {
+							const childHasActiveChild = hasActiveChild(child);
+							const childIsActive = isActiveRoute(child.href);
+							const isChildBranchActive = childIsActive || childHasActiveChild;
+
+							return (
+								<div key={child.id} className='relative'>
+									{/* Horizontal connector to each child */}
+									<div
+										className={`absolute top-4 w-3 h-px ${
+											isChildBranchActive ? 'bg-orange-500' : 'bg-primary/40'
+										} ${level === 0 ? 'left-3' : 'left-6'}`}
+									></div>
+									{renderMenuItem(child, level + 1)}
+								</div>
+							);
+						})}
 					</div>
 				)}
 			</div>

@@ -79,13 +79,13 @@ const CreateMasterPlan: React.FC = () => {
 					type: 'error',
 				});
 			}
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error('❌ Error creating master plan:', error);
 			setSnackbar({
 				open: true,
 				message:
-					error.response?.data?.message ||
-					error.message ||
+					(error as any)?.response?.data?.message ||
+					(error as Error)?.message ||
 					'An error occurred while creating the master plan',
 				type: 'error',
 			});
@@ -96,7 +96,7 @@ const CreateMasterPlan: React.FC = () => {
 
 	return (
 		<div className='min-h-screen bg-white p-6'>
-			<div className='max-w-6xl mx-auto'>
+			<div className='max-w-[1920px] mx-auto  flex flex-col gap-6'>
 				<MasterPlanForm
 					facilities={facilities}
 					clients={clients}
@@ -106,27 +106,29 @@ const CreateMasterPlan: React.FC = () => {
 					onClientChange={value => updateData({ clientId: value })}
 				/>
 
-				<TransitSection
-					type='dispatch'
-					transits={data.dispatchTransits}
-					label={dispatchType?.name || 'Dispatch'}
-					color='bg-blue-100 text-blue-800'
-					vehicles={vehicles}
-					onAdd={() => addTransit('dispatch')}
-					onRemove={id => removeTransit('dispatch', id)}
-					onUpdate={(id, field, value) => updateTransit('dispatch', id, field, value)}
-				/>
+				<div className='shadow-lg rounded-lg p-4 bg-white'>
+					<TransitSection
+						type='dispatch'
+						transits={data.dispatchTransits}
+						label={dispatchType?.name || 'Dispatch'}
+						vehicles={vehicles}
+						onAdd={() => addTransit('dispatch')}
+						onRemove={id => removeTransit('dispatch', id)}
+						onUpdate={(id, field, value) => updateTransit('dispatch', id, field, value)}
+					/>
+				</div>
 
-				<TransitSection
-					type='pickup'
-					transits={data.pickupTransits}
-					label={pickupType?.name || 'Pickup'}
-					color='bg-green-100 text-green-800'
-					vehicles={vehicles}
-					onAdd={() => addTransit('pickup')}
-					onRemove={id => removeTransit('pickup', id)}
-					onUpdate={(id, field, value) => updateTransit('pickup', id, field, value)}
-				/>
+				<div className='shadow-lg rounded-lg p-4 bg-white'>
+					<TransitSection
+						type='pickup'
+						transits={data.pickupTransits}
+						label={pickupType?.name || 'Pickup'}
+						vehicles={vehicles}
+						onAdd={() => addTransit('pickup')}
+						onRemove={id => removeTransit('pickup', id)}
+						onUpdate={(id, field, value) => updateTransit('pickup', id, field, value)}
+					/>
+				</div>
 
 				{/* Summary and Submit */}
 				<div className='bg-white p-6 rounded-lg shadow-sm border border-gray-200'>

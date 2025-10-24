@@ -19,6 +19,7 @@ export interface AuthState {
 	isAuthenticated: boolean;
 	isLoading: boolean;
 	isInitialized: boolean; // NEW: Track if auth has been checked on app load
+	editMasterPlanData?: any; // NEW: Store edit data for master plan
 }
 
 const initialState: AuthState = {
@@ -26,6 +27,7 @@ const initialState: AuthState = {
 	isAuthenticated: false,
 	isLoading: false,
 	isInitialized: false, // NEW: Start as not initialized
+	editMasterPlanData: null, // NEW: Initialize edit data
 };
 
 export const authSlice = createSlice({

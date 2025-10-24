@@ -47,48 +47,6 @@ export const TransitRow: React.FC<TransitRowProps> = ({
 				</button>
 			</td>
 
-			<td className='px-3 py-3 text-right min-w-[100px]'>
-				<div className='flex items-center justify-start gap-1'>
-					<span className='text-sm text-gray-900 whitespace-nowrap'>
-						{transit.date
-							? new Date(transit.date).toLocaleDateString('en-US', {
-									month: '2-digit',
-									day: '2-digit',
-									year: '2-digit',
-								})
-							: new Date().toLocaleDateString('en-US', {
-									month: '2-digit',
-									day: '2-digit',
-									year: '2-digit',
-								})}
-					</span>
-					<div className='relative'>
-						<input
-							type='date'
-							value={transit.date}
-							onChange={e => {
-								console.log('Date changed:', e.target.value);
-								onUpdate('date', e.target.value);
-							}}
-							className='absolute inset-0 w-full h-full opacity-0 cursor-pointer'
-						/>
-						<svg
-							className='w-4 h-4 text-gray-400 cursor-pointer flex-shrink-0'
-							fill='none'
-							stroke='currentColor'
-							viewBox='0 0 24 24'
-						>
-							<path
-								strokeLinecap='round'
-								strokeLinejoin='round'
-								strokeWidth={2}
-								d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'
-							/>
-						</svg>
-					</div>
-				</div>
-			</td>
-
 			<td className='px-3 py-3 text-right'>
 				<div className='flex justify-start'>
 					<TimeInput value={transit.time} onChange={(time: string) => onUpdate('time', time)} />

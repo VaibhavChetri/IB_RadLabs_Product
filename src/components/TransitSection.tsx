@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button } from './ui';
+import { Button, Badge } from './ui';
 import { TransitRow } from './TransitRow';
 import type { TransitEntry, VehicleOption } from '../hooks/useMasterPlanData';
 
@@ -7,7 +7,6 @@ interface TransitSectionProps {
 	type: 'dispatch' | 'pickup';
 	transits: TransitEntry[];
 	label: string;
-	color: string;
 	vehicles: VehicleOption[];
 	onAdd: () => void;
 	onRemove: (id: string) => void;
@@ -18,7 +17,6 @@ export const TransitSection: React.FC<TransitSectionProps> = ({
 	type,
 	transits,
 	label,
-	color,
 	vehicles,
 	onAdd,
 	onRemove,
@@ -28,11 +26,13 @@ export const TransitSection: React.FC<TransitSectionProps> = ({
 		<div className='mb-8'>
 			{/* Header Row */}
 			<div className='flex items-center justify-between mb-4'>
-				<span
-					className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${color}`}
+				<Badge
+					variant='type'
+					type={type === 'dispatch' ? 'dispatch' : 'pickup'}
+					icon={type === 'dispatch' ? '🚛' : '🚚'}
 				>
 					{label}
-				</span>
+				</Badge>
 				<Button
 					variant='outline'
 					size='sm'
@@ -49,11 +49,10 @@ export const TransitSection: React.FC<TransitSectionProps> = ({
 			{/* Auto-layout Table */}
 			<div className='overflow-x-auto'>
 				<table className='w-full text-sm text-gray-700 border border-gray-200 rounded-lg table-auto'>
-					<thead className='bg-gray-50 text-gray-600 uppercase text-xs'>
+					<thead className='text-gray-600 uppercase text-xs border-b border-gray-200'>
 						<tr>
 							<th className='px-3 py-2 text-left w-16'>Sl. No</th>
 							<th className='px-3 py-2 text-center w-20'>Actions</th>
-							<th className='px-3 py-2 text-left'>Date</th>
 							<th className='px-3 py-2 text-left'>Time</th>
 							<th className='px-3 py-2 text-left'>Vehicle Type</th>
 						</tr>

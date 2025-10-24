@@ -197,7 +197,7 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 				children: [
 					{
 						id: 'create-transit-master-plan',
-						name: 'Create Transit Master Plan',
+						name: 'Create Plan',
 						icon: MapPin,
 						href: '/transit-plan/master-plan/create',
 					},

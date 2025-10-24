@@ -10,6 +10,7 @@ import {
 	Pagination,
 	SearchButton,
 	PageHeader,
+	Badge,
 } from '../components/ui';
 import {
 	TransitPlanApi,
@@ -21,6 +22,31 @@ import { CommonApiService, TransitTypeOption } from '../services/commonApi';
 import { Pencil, Trash2 } from 'lucide-react';
 
 type DropdownOption = { label: string; value: string };
+
+// Type Badge Component for Dispatch/Pickup
+const TypeBadge: React.FC<{ type: string }> = ({ type }) => {
+	const normalizedType = type.toLowerCase();
+
+	if (normalizedType.includes('dispatch')) {
+		return (
+			<Badge variant='type' type='dispatch' icon='🚛'>
+				Dispatch
+			</Badge>
+		);
+	} else if (normalizedType.includes('pickup')) {
+		return (
+			<Badge variant='type' type='pickup' icon='🚚'>
+				Pickup
+			</Badge>
+		);
+	} else {
+		return (
+			<Badge variant='type' type='default'>
+				{type}
+			</Badge>
+		);
+	}
+};
 
 // Transit types will be loaded from API
 
@@ -153,7 +179,13 @@ const MasterPlanListing: React.FC = () => {
 			},
 			{ key: 'transit_time', label: 'Time', title: 'Time' },
 			{ key: 'restaurant_name', label: 'Client', title: 'Client' },
-			{ key: 'type', label: 'Type', title: 'Type' },
+			{
+				key: 'type',
+				label: 'Type',
+				title: 'Type',
+				render: (_: unknown, row: MasterPlanRow) =>
+					row.type ? <TypeBadge type={row.type} /> : <span className='text-gray-400'>-</span>,
+			},
 			{ key: 'driver_name', label: 'Driver', title: 'Driver' },
 			{ key: 'vehicle_type', label: 'Vehicle', title: 'Vehicle' },
 			{ key: 'vehicle_number', label: 'Vehicle #', title: 'Vehicle #' },

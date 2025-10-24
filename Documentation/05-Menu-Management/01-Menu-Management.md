@@ -83,7 +83,7 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
         children: [
           {
             id: 'create-transit-master-plan',
-            name: 'Create Transit Master Plan',
+            name: 'Create Plan',
             icon: MapPin,
             href: '/transit-plan/master-plan/create',
           },
@@ -189,7 +189,7 @@ const hierarchicalPayload = {
       status: 1,
       grandchildren: [
         {
-          name: "Create Transit Master Plan",
+          name: "Create Plan",
           slug: "create-transit-master-plan",
           parent_id: null,    // Will be set to child's ID after creation
           sort_order: 1,

@@ -1,6 +1,9 @@
 import jsPDF from 'jspdf';
 import { getCityAddress } from '../config/cityConfig';
 
+// -----------------------------
+// Types
+// -----------------------------
 export interface DeliveryChallanData {
 	dcNumber: string;
 	date: string;
@@ -18,10 +21,9 @@ export interface DeliveryChallanData {
 	}>;
 	signatureName?: string;
 	vehicleNumber?: string;
-	clientType?: 'piramal' | 'concentric' | 'default'; // Client type flag from backend
+	clientType?: 'piramal' | 'concentric' | 'default';
 }
 
-// API Response structure from getSentCount
 export interface DCApiResponse {
 	status: string;
 	status_code: number;
@@ -31,297 +33,269 @@ export interface DCApiResponse {
 		clientId: number;
 		facilityId: number;
 		clientName: string;
-		containerTypeId: number;
 		sku: string;
 		count: number;
-		DC: number;
 		facilityName: string;
-		created_at: string;
 		dispatch_date_time: string;
-		adhoc: number;
-		water: number;
-		chemical: number;
-		disposable: number;
-		co2: number;
-		electricity: number;
-		weightInGms: number;
-	}>;
-	total: number[];
-	totalCount: number;
-	days: Array<{
-		date: string;
-		day: string;
 	}>;
 }
 
+// -----------------------------
+// Class: DeliveryChallanGenerator
+// -----------------------------
 export class DeliveryChallanGenerator {
 	private doc: jsPDF;
+	private layoutType: 'piramal' | 'concentric' | 'default';
 	private pageWidth: number;
 	private pageHeight: number;
-	private margin: number;
-	private clientType: 'piramal' | 'concentric' | 'default';
+	private margin = 25;
 
-	constructor() {
-		this.doc = new jsPDF();
-		this.pageWidth = this.doc.internal.pageSize.getWidth();
-		this.pageHeight = this.doc.internal.pageSize.getHeight();
-		this.margin = 20;
-		this.clientType = 'default';
+	constructor(layoutType: 'piramal' | 'concentric' | 'default' = 'default') {
+		const { width, height } = DeliveryChallanGenerator.getPageSize(layoutType);
+		this.doc = new jsPDF({ unit: 'pt', format: [width, height] });
+		this.layoutType = layoutType;
+		this.pageWidth = width;
+		this.pageHeight = height;
 	}
 
-	generateDeliveryChallan(data: DeliveryChallanData): void {
-		// Determine page size based on client type
-		const pageSize = this.getPageSize(data.clientType || 'default');
+	static getPageSize(type: 'piramal' | 'concentric' | 'default') {
+		switch (type) {
+			case 'piramal':
+				return { width: 595.28, height: 981.89 }; // Tall custom
+			case 'concentric':
+				return { width: 595.28, height: 841.89 }; // A4 standard
+			default:
+				return { width: 400, height: 500 }; // Compact receipt-style
+		}
+	}
 
-		// Create PDF with custom page size
-		this.doc = new jsPDF({
-			orientation: 'portrait',
-			unit: 'pt',
-			format: [pageSize.width, pageSize.height],
-		});
-
-		this.pageWidth = this.doc.internal.pageSize.getWidth();
-		this.pageHeight = this.doc.internal.pageSize.getHeight();
-		this.clientType = data.clientType || 'default';
-
-		// Set font
-		this.doc.setFont('helvetica');
-
-		// Compact Header Section with Logo
-		this.drawCompactHeader(data);
-
-		// Compact Company & Client Info
-		this.drawCompactCompanyInfo(data);
-
-		// Compact Document Details
-		this.drawCompactDocumentDetails(data);
-
-		// Compact Items Table
-		this.drawCompactItemsTable(data);
-
-		// Compact Footer
-		this.drawCompactFooter(data);
-
-		// Download the PDF
+	public generate(data: DeliveryChallanData): void {
+		switch (this.layoutType) {
+			case 'piramal':
+				this.renderPiramalLayout(data);
+				break;
+			case 'concentric':
+				this.renderConcentricLayout(data);
+				break;
+			default:
+				this.renderCompactLayout(data);
+				break;
+		}
 		this.doc.save(`DC-${data.dcNumber}.pdf`);
 	}
 
-	private getPageSize(clientType: 'piramal' | 'concentric' | 'default'): {
-		width: number;
-		height: number;
-	} {
-		switch (clientType) {
-			case 'piramal':
-				// Piramal: Custom size (similar to A4 but taller)
-				return { width: 595.28, height: 981.89 };
-			case 'concentric':
-				// Concentric: A4 size
-				return { width: 595.28, height: 841.89 };
-			case 'default':
-			default:
-				// Default: Compact size
-				return { width: 595.28, height: 681.89 };
-		}
+	// -----------------------------
+	// 1️⃣ Compact Layout (Default)
+	// -----------------------------
+	private renderCompactLayout(data: DeliveryChallanData): void {
+		let y = this.drawHeader(data, 35, 8); // Spacious header
+		y = this.drawClientAndDetails(data, y + 10, 7);
+		const yAfterTable = this.drawTable(data, y + 10, 8);
+		this.drawFooter(data, yAfterTable, 8);
 	}
 
-	private drawCompactHeader(_data: DeliveryChallanData): void {
-		// Add logo from public folder
+	// -----------------------------
+	// 2️⃣ Concentric Layout (A4 Standard)
+	// -----------------------------
+	private renderConcentricLayout(data: DeliveryChallanData): void {
+		let y = this.drawHeader(data, 35, 10); // Spacious header
+		y = this.drawClientAndDetails(data, y + 10, 9);
+		const yAfterTable = this.drawTable(data, y + 10, 10);
+		this.drawFooter(data, yAfterTable, 9);
+	}
+
+	// -----------------------------
+	// 3️⃣ Piramal Layout (Tall Custom)
+	// -----------------------------
+	private renderPiramalLayout(data: DeliveryChallanData): void {
+		let y = this.drawHeader(data, 35, 14); // Larger header font
+		y = this.drawClientAndDetails(data, y + 15, 12); // More spacing, larger font
+		const yAfterTable = this.drawTable(data, y + 15, 14); // Larger table rows
+		this.drawFooter(data, yAfterTable, 12); // Larger footer
+	}
+
+	// -----------------------------
+	// Shared Drawing Helpers
+	// -----------------------------
+	private drawHeader(data: DeliveryChallanData, yStart: number, font: number): number {
+		const margin = this.margin;
+		const challanLabel = 'DELIVERY CHALLAN';
+		const companyName = 'INFINITYBOX PRIVATE LIMITED';
+
+		// --- Logo (Large, centered-left, airy spacing) ---
 		try {
-			this.doc.addImage('/IBlogo.jpeg', 'JPEG', this.margin, 5, 25, 15);
-		} catch (error) {
-			// Fallback if logo fails to load
-			this.doc.setFontSize(12);
+			// Adjust the logo size here for brand prominence
+			const logoWidth = 60;
+			const logoHeight = 30;
+			const logoY = yStart - 10;
+			this.doc.addImage('/IBlogo.jpeg', 'JPEG', margin, logoY, logoWidth, logoHeight);
+		} catch {
 			this.doc.setFont('helvetica', 'bold');
-			this.doc.text('INFINITYBOX', this.margin, 15);
+			this.doc.setFontSize(font + 4);
+			this.doc.text('INFINITYBOX', margin, yStart);
 		}
 
-		// Company name next to logo
-		this.doc.setFontSize(14);
+		// --- Company Name and Delivery Challan ---
+		const nameY = yStart + 35; // push below logo
 		this.doc.setFont('helvetica', 'bold');
-		this.doc.text('INFINITYBOX PRIVATE LIMITED', this.margin + 30, 12);
+		this.doc.setFontSize(font + 2);
+		this.doc.text(companyName, margin, nameY);
 
-		// Delivery Challan - simple text, no black background
-		this.doc.setFontSize(12);
-		this.doc.setFont('helvetica', 'bold');
-		this.doc.text('DELIVERY CHALLAN', this.pageWidth - 50, 15);
-	}
+		const challanWidth = this.doc.getTextWidth(challanLabel);
+		this.doc.text(challanLabel, this.pageWidth - margin - challanWidth, nameY);
 
-	private drawCompactCompanyInfo(data: DeliveryChallanData): void {
-		const yStart = 18; // Reduced gap - closer to company name
-
-		// Company Address - formatted in 3 lines exactly below company name
-		this.doc.setFontSize(8);
+		// --- Address below company name ---
 		this.doc.setFont('helvetica', 'normal');
-		const companyAddress = getCityAddress(data.cityId);
+		this.doc.setFontSize(font);
+		const addressLines = [
+			'Gala No 2 AK Containe, Patkar Compound,',
+			'Tulshet Pada, Bhandup (West), Mumbai - 400078',
+		];
 
-		// Format address in 3 lines with restricted width
-		const addressLines = this.formatAddressInThreeLines(companyAddress);
-		addressLines.forEach((line, index) => {
-			this.doc.text(line, this.margin + 30, yStart + index * 3);
+		let y = nameY + font + 5;
+		addressLines.forEach(line => {
+			this.doc.text(line, margin, y);
+			y += font + 2;
 		});
 
-		// To Section - compact with styling
-		this.doc.setFontSize(9);
-		this.doc.setFont('helvetica', 'bold');
-		this.doc.text('To:', this.margin, yStart + 12);
-		this.doc.setFont('helvetica', 'normal');
-		this.doc.text(data.clientName, this.margin + 12, yStart + 12);
+		// add some breathing room after address
+		return y + 10;
+	}
 
-		// Add a subtle line separator
-		this.doc.setDrawColor(200, 200, 200);
-		this.doc.line(this.margin, yStart + 16, this.pageWidth - this.margin, yStart + 16);
+	private drawClientAndDetails(data: DeliveryChallanData, y: number, font: number): number {
+		// --- To section ---
+		this.doc.setFont('helvetica', 'bold');
+		this.doc.setFontSize(font);
+		this.doc.text(`To: ${data.clientName}`, this.margin, y);
+
+		y += font + 8;
+
+		// --- DC Info ---
+		this.doc.setFont('helvetica', 'normal');
+		const col1X = this.margin;
+		const col2X = this.pageWidth / 2;
+
+		this.doc.text(`DC No: ${data.dcNumber}`, col1X, y);
+		this.doc.text(`Date: ${data.date}`, col2X, y);
+
+		y += font + 5;
+		this.doc.text(`Time: ${data.time}`, col1X, y);
+
+		// Add a light divider line
+		this.doc.setDrawColor(220);
+		this.doc.line(this.margin, y + 10, this.pageWidth - this.margin, y + 10);
+
+		return y + 20; // return next Y for table
+	}
+
+	private drawTable(data: DeliveryChallanData, yStart: number, rowHeight: number): number {
+		const colWidths = this.getColumnWidths();
+		const headers = ['#', 'Items & Description', 'Qty'];
+		const tableWidth = colWidths.reduce((a, b) => a + b, 0);
+
+		// Table header
+		this.doc.setFont('helvetica', 'bold');
+		this.doc.setFontSize(rowHeight);
+		let x = this.margin;
+		headers.forEach((header, i) => {
+			this.doc.text(header, x + 2, yStart);
+			x += colWidths[i];
+		});
+
+		// Header line
+		this.doc.setDrawColor(0, 0, 0);
+		this.doc.line(this.margin, yStart + 5, this.margin + tableWidth, yStart + 5);
+
+		// Table rows
+		this.doc.setFont('helvetica', 'normal');
+		let y = yStart + rowHeight + 5;
+
+		data.items.forEach((item, idx) => {
+			let xPos = this.margin;
+
+			// Row number
+			this.doc.text(String(idx + 1), xPos + 2, y);
+			xPos += colWidths[0];
+
+			// Item name with text wrapping
+			const wrapped = this.doc.splitTextToSize(item.name, colWidths[1] - 10);
+			this.doc.text(wrapped, xPos + 2, y);
+			xPos += colWidths[1];
+
+			// Quantity
+			this.doc.text(String(item.quantity), xPos + 2, y);
+
+			y += rowHeight + 2;
+		});
+
+		return y; // return final vertical position
+	}
+
+	private drawFooter(data: DeliveryChallanData, yStart: number, font: number): void {
+		// Give the footer some breathing space below the table
+		const topGap = 25;
+		const y = yStart + topGap;
+
+		this.doc.setFont('helvetica', 'bold');
+		this.doc.setFontSize(font);
+
+		// Receiver's signature area - left side
+		this.doc.text("Receiver's Signature:", this.margin, y);
+		this.doc.line(this.margin + 90, y - 2, this.margin + 180, y - 2);
+
+		// Time field for receiver - middle
+		this.doc.text('Time:', this.margin + 200, y);
+		this.doc.line(this.margin + 230, y - 2, this.margin + 300, y - 2);
+
+		// Optional soft divider line to mark page bottom
+		this.doc.setDrawColor(220);
+		this.doc.line(
+			this.margin,
+			this.pageHeight - 40,
+			this.pageWidth - this.margin,
+			this.pageHeight - 40
+		);
+	}
+
+	// -----------------------------
+	// Helper Methods
+	// -----------------------------
+	private getColumnWidths(): number[] {
+		switch (this.layoutType) {
+			case 'piramal':
+				return [40, 400, 60]; // Wider columns for tall layout
+			case 'concentric':
+				return [35, 350, 50]; // Standard A4 columns
+			default:
+				return [25, 250, 40]; // Compact columns
+		}
 	}
 
 	private formatAddressInThreeLines(address: string): string[] {
 		// Split address into components
 		const parts = address.split(',').map(part => part.trim());
 
-		// Extract city and pincode (usually at the end)
-		const lastPart = parts[parts.length - 1];
-		const cityPincodeMatch = lastPart.match(/(.+?)\s*-\s*(\d+)$/);
-
-		let cityPincode = lastPart;
-		let middleParts = parts.slice(1, -1); // Start from index 1, not 0
-
-		if (cityPincodeMatch) {
-			cityPincode = `${cityPincodeMatch[1].trim()} - ${cityPincodeMatch[2]}`;
+		if (parts.length < 3) {
+			// If less than 3 parts, pad with empty strings
+			return [parts[0] || '', parts[1] || '', parts[2] || ''];
 		}
 
-		// First line: Numbers/Unit (first part only)
+		// First line: numbers/unit (Gala No 2 AK Containe)
 		const firstLine = parts[0];
 
-		// Second line: Address (middle parts only, excluding first and last)
-		const secondLine = middleParts.join(', ');
+		// Last line: city and pincode (Mumbai - 400078)
+		const lastLine = parts[parts.length - 1];
 
-		// Third line: City and Pincode
-		const thirdLine = cityPincode;
+		// Middle line: address details (Patkar Compound, Tulshet Pada, Bhandup (West))
+		const middleLine = parts.slice(1, -1).join(', ');
 
-		return [firstLine, secondLine, thirdLine];
-	}
-
-	private drawCompactDocumentDetails(data: DeliveryChallanData): void {
-		const yStart = 40;
-
-		// Document details in a compact grid
-		this.doc.setFontSize(8);
-		this.doc.setFont('helvetica', 'bold');
-
-		// Create a compact info box
-		this.doc.setFillColor(245, 245, 245);
-		this.doc.rect(this.margin, yStart, this.pageWidth - 2 * this.margin, 12, 'F');
-
-		// DC Number
-		this.doc.text('DC No:', this.margin + 2, yStart + 4);
-		this.doc.setFont('helvetica', 'normal');
-		this.doc.text(data.dcNumber, this.margin + 20, yStart + 4);
-
-		// Date
-		this.doc.setFont('helvetica', 'bold');
-		this.doc.text('Date:', this.margin + 2, yStart + 8);
-		this.doc.setFont('helvetica', 'normal');
-		this.doc.text(data.date, this.margin + 20, yStart + 8);
-
-		// Time
-		this.doc.setFont('helvetica', 'bold');
-		this.doc.text('Time:', this.margin + 80, yStart + 4);
-		this.doc.setFont('helvetica', 'normal');
-		this.doc.text(data.time, this.margin + 95, yStart + 4);
-
-		// Vehicle Number (if available)
-		if (data.vehicleNumber) {
-			this.doc.setFont('helvetica', 'bold');
-			this.doc.text('Vehicle:', this.margin + 80, yStart + 8);
-			this.doc.setFont('helvetica', 'normal');
-			this.doc.text(data.vehicleNumber, this.margin + 95, yStart + 8);
-		}
-	}
-
-	private drawCompactItemsTable(data: DeliveryChallanData): void {
-		const yStart = 55;
-		const tableWidth = this.pageWidth - 2 * this.margin;
-		const colWidths = [15, 140, 25]; // #, Items & Description, Qty
-		const rowHeight = 6;
-
-		// Table header - simple, no background color (environmentally friendly)
-		this.doc.setFontSize(8);
-		this.doc.setFont('helvetica', 'bold');
-
-		let xPos = this.margin;
-		const headers = ['#', 'Items & Description', 'Qty'];
-
-		headers.forEach((header, index) => {
-			this.doc.text(header, xPos + 2, yStart + 4);
-			xPos += colWidths[index];
-		});
-
-		// Add underline for header
-		this.doc.setDrawColor(0, 0, 0);
-		this.doc.line(this.margin, yStart + 6, this.pageWidth - this.margin, yStart + 6);
-
-		// Table rows with compact styling
-		this.doc.setFont('helvetica', 'normal');
-
-		data.items.forEach((item, index) => {
-			const rowY = yStart + (index + 1) * rowHeight + 2;
-
-			// Alternate row colors for better readability (light gray)
-			if (index % 2 === 0) {
-				this.doc.setFillColor(250, 250, 250);
-				this.doc.rect(this.margin, rowY - 2, tableWidth, rowHeight, 'F');
-			}
-
-			xPos = this.margin;
-
-			// Row data
-			this.doc.text(item.id.toString(), xPos + 2, rowY + 2);
-			xPos += colWidths[0];
-
-			// Wrap long descriptions
-			const description = this.doc.splitTextToSize(item.name, colWidths[1] - 4);
-			this.doc.text(description, xPos + 2, rowY + 2);
-			xPos += colWidths[1];
-
-			// Quantity
-			this.doc.text(item.quantity.toString(), xPos + 2, rowY + 2);
-		});
-
-		// Table border
-		this.doc.setDrawColor(0, 0, 0);
-		this.doc.rect(this.margin, yStart, tableWidth, (data.items.length + 1) * rowHeight + 2);
-	}
-
-	private drawCompactFooter(data: DeliveryChallanData): void {
-		const tableEndY = 55 + (data.items.length + 1) * 6;
-		const yStart = tableEndY + 8;
-
-		// Compact signature section
-		this.doc.setFontSize(8);
-		this.doc.setFont('helvetica', 'bold');
-
-		// Receiver's signature
-		this.doc.text("RECEIVER'S SIGN:", this.margin, yStart);
-		this.doc.line(this.margin + 35, yStart - 1, this.margin + 80, yStart - 1);
-
-		// Time
-		this.doc.text('Time:', this.margin + 90, yStart);
-		this.doc.line(this.margin + 105, yStart - 1, this.margin + 140, yStart - 1);
-
-		// Company signature
-		this.doc.text('For INFINITY BOX:', this.margin, yStart + 8);
-		this.doc.line(this.margin + 35, yStart + 7, this.margin + 80, yStart + 7);
-
-		if (data.signatureName) {
-			this.doc.setFont('helvetica', 'normal');
-			this.doc.text(data.signatureName, this.margin + 35, yStart + 12);
-		}
-
-		// Add a subtle border around the entire document
-		this.doc.setDrawColor(200, 200, 200);
-		this.doc.rect(5, 5, this.pageWidth - 10, this.pageHeight - 10);
+		return [firstLine, middleLine, lastLine];
 	}
 }
 
-// Helper function to convert API response to PDF data
+// -----------------------------
+// Conversion Helper
+// -----------------------------
 export const convertApiResponseToDCData = (
 	apiResponse: DCApiResponse,
 	rowData: {
@@ -334,33 +308,29 @@ export const convertApiResponseToDCData = (
 		signature_name?: string;
 		vehicle_number?: string;
 	}
-): DeliveryChallanData => {
-	// Client type will come from backend flags, not hardcoded detection
-	return {
-		dcNumber: `IB-${rowData.facilityId}-${rowData.id}`,
-		date: rowData.transitDate || new Date().toISOString().split('T')[0],
-		time: rowData.transit_time || '15:00:00',
-		clientName: rowData.restaurantName || 'Unknown Client',
-		facilityId: rowData.facilityId || 115,
-		cityId: rowData.city_id || 3,
-		clientType: 'default', // Will be overridden by backend flag
-		items: apiResponse.result.map((item, index) => ({
-			id: index + 1,
-			name: item.sku, // Use 'sku' field from API
-			quantity: item.count, // Use 'count' field from API
-			rate: undefined, // Not available in API
-			amount: undefined, // Not available in API
+): DeliveryChallanData => ({
+	dcNumber: `IB-${rowData.facilityId}-${rowData.id}`,
+	date: rowData.transitDate || new Date().toISOString().split('T')[0],
+	time: rowData.transit_time || '15:00:00',
+	clientName: rowData.restaurantName || 'Unknown Client',
+	facilityId: rowData.facilityId,
+	cityId: rowData.city_id,
+	clientType: 'default', // TODO: Integrate backend flag for clientType
+	items: apiResponse.result
+		.filter(item => item.count > 0) // Remove items with zero quantity
+		.map((item, i) => ({
+			id: i + 1,
+			name: item.sku,
+			quantity: item.count,
 		})),
-		signatureName: rowData.signature_name,
-		vehicleNumber: rowData.vehicle_number,
-	};
-};
+	signatureName: rowData.signature_name,
+	vehicleNumber: rowData.vehicle_number,
+});
 
-// Client type will be provided by backend flags
-// No hardcoded detection needed
-
-// Export a simple function to generate DC
-export const generateDeliveryChallanPDF = (data: DeliveryChallanData): void => {
-	const generator = new DeliveryChallanGenerator();
-	generator.generateDeliveryChallan(data);
+// -----------------------------
+// Public API
+// -----------------------------
+export const generateDeliveryChallanPDF = (data: DeliveryChallanData) => {
+	const generator = new DeliveryChallanGenerator(data.clientType || 'default');
+	generator.generate(data);
 };

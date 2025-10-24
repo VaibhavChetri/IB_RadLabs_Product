@@ -299,10 +299,10 @@ export const TransitPlanApi = {
 		const response = await api.get(
 			`/inventory/getClientSkuMap?clientId=${clientId}&facilityId=${facilityId}`
 		);
-		return response.data || [];
+		return response.result || [];
 	},
 
-	async uploadImage(file: File): Promise<any> {
+	async uploadImage(file: File): Promise<unknown> {
 		const formData = new FormData();
 		formData.append('file', file);
 
@@ -312,6 +312,63 @@ export const TransitPlanApi = {
 			},
 		});
 
+		return response;
+	},
+
+	async sendB2BInventory(payload: {
+		containers: Array<{ container_type_id: number; count: number }>;
+		facility_id: number;
+		transit_date: string;
+		client_location_id: number;
+		transit_id: string;
+		adhoc: number;
+	}): Promise<{
+		status: string;
+		status_code: number;
+		message: string;
+		dc_number: string;
+	}> {
+		const response = await api.post('/inventory/sendB2BInventory', payload);
+		console.log('🔍 sendB2BInventory response:', response);
+		return response;
+	},
+
+	async initiateTransitPlan(payload: {
+		transitId: number;
+		vehicleNumber: string;
+		signatureName: string;
+		dispatchConditionIds: string;
+		dispatchImages: {
+			challanPic: unknown[];
+			signaturePic: string;
+			loadedVehiclePic: Array<{ path: string }>;
+		};
+		pickupImages: null;
+		containerTypes: unknown[];
+	}): Promise<{
+		status: string;
+		status_code: number;
+		message: string;
+		data: unknown[];
+	}> {
+		const response = await api.post('/transit-plan/initiate-transit-plan', payload);
+		console.log('🔍 initiateTransitPlan response:', response);
+		return response;
+	},
+
+	async getSentCount(params: {
+		location_id: number;
+		client_id: number;
+		start_date: string;
+		end_date: string;
+		transit_time: string;
+		transit_type_id: number;
+	}): Promise<unknown> {
+		// Manually construct query string to avoid URL encoding issues with time format
+		const queryString = `location_id=${params.location_id}&client_id=${params.client_id}&start_date=${params.start_date}&end_date=${params.end_date}&transit_time=${params.transit_time}&transit_type_id=${params.transit_type_id}`;
+
+		const response = await api.get(`/inventory/getSentCount?${queryString}`);
+		console.log('🔍 getSentCount response:', response);
 		return response;
 	},
 };

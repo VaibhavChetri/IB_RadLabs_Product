@@ -2,10 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
-import { FloatingInput, Button, PageHeader, Snackbar } from '../components/ui';
+import { Button, PageHeader, Snackbar } from '../components/ui';
 import { TransitPlanApi, ClientSkuMapItem } from '../services/transitPlanApi';
+import ContainerTypesSection from '../components/ContainerTypesSection';
+import DispatchFormSection from '../components/DispatchFormSection';
+import { useLocalStorage } from '../hooks/useLocalStorage';
+import { useFileUpload } from '../hooks/useFileUpload';
 
-const ClientDetails: React.FC = () => {
+const ClientDispatchDetails: React.FC = () => {
 	const { clientLocationId, facilityId } = useParams<{
 		clientLocationId: string;
 		facilityId: string;
@@ -16,6 +20,7 @@ const ClientDetails: React.FC = () => {
 
 	const [clientName, setClientName] = useState<string>('');
 	const [clientId, setClientId] = useState<number>(0);
+	const [transitPlanRow, setTransitPlanRow] = useState<any>(null); // Store the full row object
 	const [skuMapData, setSkuMapData] = useState<ClientSkuMapItem[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [submitting, setSubmitting] = useState(false);
@@ -23,38 +28,45 @@ const ClientDetails: React.FC = () => {
 	// Form state
 	const [adhocTransportation, setAdhocTransportation] = useState(false);
 	const [dispatchVehicleNumber, setDispatchVehicleNumber] = useState('');
-	const [photograph, setPhotograph] = useState<File | null>(null);
-	const [imageUrl, setImageUrl] = useState<string>('');
-	const [localPreviewUrl, setLocalPreviewUrl] = useState<string>('');
-	const [uploadedImageUrl, setUploadedImageUrl] = useState<string>('');
-	const [uploadingImage, setUploadingImage] = useState(false);
 	const [signatureName, setSignatureName] = useState('');
 	const [containerCounts, setContainerCounts] = useState<Record<number, number>>({});
 
 	// Local storage key for this client
 	const storageKey = `client-details-${clientLocationId}-${facilityId}`;
 
-	// Save data to localStorage
-	const saveToLocalStorage = React.useCallback(() => {
-		const dataToSave = {
+	// Custom hooks
+	const { saveToLocalStorage, loadFromLocalStorage, clearLocalStorage } = useLocalStorage(storageKey);
+	const {
+		photograph,
+		imageUrl,
+		localPreviewUrl,
+		fileBase64,
+		uploadedImageUrl,
+		uploadingImage,
+		handleFileUpload,
+		resetFileUpload,
+	} = useFileUpload();
+
+	// Auto-save function
+	const autoSave = React.useCallback(() => {
+		saveToLocalStorage({
 			adhocTransportation,
 			dispatchVehicleNumber,
 			signatureName,
 			containerCounts,
 			uploadedImageUrl,
+			fileBase64,
 			photographName: photograph?.name,
-			timestamp: Date.now(),
-		};
-		localStorage.setItem(storageKey, JSON.stringify(dataToSave));
-		console.log('💾 Saved to localStorage:', dataToSave);
+		});
 	}, [
 		adhocTransportation,
 		dispatchVehicleNumber,
 		signatureName,
 		containerCounts,
 		uploadedImageUrl,
+		fileBase64,
 		photograph,
-		storageKey,
+		saveToLocalStorage,
 	]);
 
 	// Load data from localStorage
@@ -82,15 +94,21 @@ const ClientDetails: React.FC = () => {
 
 				if (parsed.photographName) {
 					// Create a mock file object for display purposes
-					const mockFile = new File([''], parsed.photographName, { type: 'image/jpeg' });
+					const mockFile = new File([''], parsed.photographName, {
+						type: parsed.photographName.endsWith('.svg') ? 'image/svg+xml' : 'image/jpeg',
+					});
 					setPhotograph(mockFile);
 					console.log('📸 Restored photograph file:', parsed.photographName);
 				}
 
-				// Set image preview if we have uploaded image URL
-				if (parsed.uploadedImageUrl) {
+				// Set image preview - prioritize base64 for true local preview
+				if (parsed.fileBase64) {
+					setImageUrl(parsed.fileBase64);
+					setFileBase64(parsed.fileBase64);
+					console.log('🖼️ Restored local image preview from base64');
+				} else if (parsed.uploadedImageUrl) {
 					setImageUrl(parsed.uploadedImageUrl);
-					console.log('🖼️ Restored image preview URL:', parsed.uploadedImageUrl);
+					console.log('🖼️ Fallback to uploaded image URL:', parsed.uploadedImageUrl);
 				}
 
 				console.log('✅ Successfully loaded from localStorage');
@@ -113,12 +131,20 @@ const ClientDetails: React.FC = () => {
 	// Initialize data from navigation state and localStorage
 	useEffect(() => {
 		if (location.state) {
-			const { clientName: name, clientId: id } = location.state as {
+			const {
+				clientName: name,
+				clientId: id,
+				transitPlanRow: row,
+			} = location.state as {
 				clientName: string;
 				clientId: number;
+				transitPlanRow: any;
 			};
 			setClientName(name);
 			setClientId(id);
+			setTransitPlanRow(row);
+
+			console.log('📋 Transit Plan Row received:', row);
 
 			// Try to load from localStorage first
 			const loadedFromStorage = loadFromLocalStorage();
@@ -129,25 +155,29 @@ const ClientDetails: React.FC = () => {
 				setSignatureName(firstName);
 				console.log('👤 Setting default signature name:', firstName);
 			}
+		} else {
+			// Handle page refresh scenario - redirect back to listing
+			console.log('⚠️ No navigation state found, redirecting to listing page');
+			navigate('/transit-plan/sent/plan');
 		}
-	}, [location.state, user?.name, storageKey, loadFromLocalStorage]);
+	}, [location.state, user?.name, storageKey, loadFromLocalStorage, navigate]);
 
 	// Fetch SKU map data
 	useEffect(() => {
 		const fetchSkuMapData = async () => {
-			if (!clientLocationId || !facilityId) return;
+			if (!transitPlanRow?.clientLocationId || !transitPlanRow?.facilityId) return;
 
 			setLoading(true);
 			try {
 				console.log(
 					'🔍 Fetching SKU map for clientLocationId:',
-					clientLocationId,
+					transitPlanRow.clientLocationId,
 					'facilityId:',
-					facilityId
+					transitPlanRow.facilityId
 				);
 				const data = await TransitPlanApi.getClientSkuMap(
-					parseInt(clientLocationId),
-					parseInt(facilityId)
+					transitPlanRow.clientLocationId,
+					transitPlanRow.facilityId
 				);
 				console.log('🔍 SKU map data received:', data);
 				setSkuMapData(data);
@@ -189,23 +219,36 @@ const ClientDetails: React.FC = () => {
 		};
 
 		fetchSkuMapData();
-	}, [clientLocationId, facilityId, storageKey]);
+	}, [transitPlanRow, storageKey]);
 
-	// Cleanup local preview URL on unmount
+	// Cleanup local preview URL when component unmounts
 	useEffect(() => {
 		return () => {
 			if (localPreviewUrl) {
 				URL.revokeObjectURL(localPreviewUrl);
 			}
 		};
-	}, [localPreviewUrl]);
+	}, []); // Only run on unmount
 
 	// Auto-save when form data changes (but not on initial load)
 	useEffect(() => {
 		if (clientLocationId && facilityId && clientName) {
 			saveToLocalStorage();
 		}
-	}, [clientLocationId, facilityId, clientName, storageKey, saveToLocalStorage]);
+	}, [
+		clientLocationId,
+		facilityId,
+		clientName,
+		storageKey,
+		saveToLocalStorage,
+		adhocTransportation,
+		dispatchVehicleNumber,
+		signatureName,
+		containerCounts,
+		uploadedImageUrl,
+		fileBase64,
+		photograph,
+	]);
 
 	const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
 		console.log('📁 File input changed:', event.target.files);
@@ -216,8 +259,19 @@ const ClientDetails: React.FC = () => {
 
 			// Create local preview URL immediately
 			const newLocalPreviewUrl = URL.createObjectURL(file);
+			console.log('🖼️ Created new local preview URL:', newLocalPreviewUrl);
 			setLocalPreviewUrl(newLocalPreviewUrl);
 			setImageUrl(newLocalPreviewUrl);
+			console.log('🖼️ Set imageUrl to:', newLocalPreviewUrl);
+
+			// Convert file to base64 for persistent local storage
+			const reader = new FileReader();
+			reader.onload = e => {
+				const base64 = e.target?.result as string;
+				setFileBase64(base64);
+				console.log('📁 Converted file to base64, length:', base64.length);
+			};
+			reader.readAsDataURL(file);
 
 			setUploadingImage(true);
 
@@ -279,40 +333,138 @@ const ClientDetails: React.FC = () => {
 		}));
 	};
 
+	const handleTestApi = () => {
+		if (!transitPlanRow) {
+			console.log('❌ No transit plan row data available');
+			return;
+		}
+
+		// Generate payload for API 1: sendB2BInventory
+		const containersPayload = Object.entries(containerCounts)
+			.filter(([_, count]) => count > 0)
+			.map(([containerTypeId, count]) => ({
+				container_type_id: parseInt(containerTypeId),
+				count: count,
+			}));
+
+		const sendB2BPayload = {
+			containers: containersPayload,
+			facility_id: transitPlanRow.facilityId,
+			transit_date: transitPlanRow.transitDate,
+			client_location_id: transitPlanRow.clientLocationId,
+			transit_id: transitPlanRow.transit_id,
+			adhoc: adhocTransportation ? 1 : 0,
+		};
+
+		// Generate payload for API 2: initiateTransitPlan
+		const initiateTransitPayload = {
+			transitId: transitPlanRow.id,
+			vehicleNumber: dispatchVehicleNumber,
+			signatureName: signatureName,
+			dispatchConditionIds: '',
+			dispatchImages: {
+				challanPic: [],
+				signaturePic: '',
+				loadedVehiclePic: uploadedImageUrl ? [{ path: uploadedImageUrl }] : [],
+			},
+			pickupImages: null,
+			containerTypes: [],
+		};
+
+		console.log('🧪 TEST API PAYLOADS:');
+		console.log('📦 API 1 - sendB2BInventory:', sendB2BPayload);
+		console.log('🚛 API 2 - initiateTransitPlan:', initiateTransitPayload);
+		console.log('📋 Transit Plan Row:', transitPlanRow);
+		console.log('📊 Container Counts:', containerCounts);
+		console.log('🖼️ Uploaded Image URL:', uploadedImageUrl);
+	};
+
 	const handleSubmit = async () => {
+		if (!transitPlanRow) {
+			setSnackbar({
+				open: true,
+				message: 'No transit plan data available',
+				type: 'error',
+			});
+			return;
+		}
+
 		setSubmitting(true);
 		try {
-			console.log('🚀 Testing image upload API...');
+			console.log('🚀 Starting dispatch submission...');
 
-			let imageResponse = null;
-			if (photograph) {
-				console.log('📸 Uploading image:', photograph.name);
-				imageResponse = await TransitPlanApi.uploadImage(photograph);
-				console.log('📸 Image upload response:', imageResponse);
+			// Generate payload for API 1: sendB2BInventory
+			const containersPayload = Object.entries(containerCounts)
+				.filter(([_, count]) => count > 0)
+				.map(([containerTypeId, count]) => ({
+					container_type_id: parseInt(containerTypeId),
+					count: count,
+				}));
+
+			const sendB2BPayload = {
+				containers: containersPayload,
+				facility_id: transitPlanRow.facilityId,
+				transit_date: transitPlanRow.transitDate,
+				client_location_id: transitPlanRow.clientLocationId,
+				transit_id: transitPlanRow.transit_id,
+				adhoc: adhocTransportation ? 1 : 0,
+			};
+
+			console.log('📦 Calling sendB2BInventory API...', sendB2BPayload);
+			const inventoryResponse = await TransitPlanApi.sendB2BInventory(sendB2BPayload);
+			console.log('📦 sendB2BInventory response:', inventoryResponse);
+			console.log('📦 inventoryResponse.status_code:', inventoryResponse.status_code);
+			console.log('📦 inventoryResponse.status:', inventoryResponse.status);
+
+			if (inventoryResponse.status_code !== 200) {
+				throw new Error(inventoryResponse.message || 'Failed to send inventory');
 			}
 
-			console.log('🚀 Submit data:', {
-				clientId,
-				facilityId,
-				adhocTransportation,
-				dispatchVehicleNumber,
-				photograph: photograph?.name,
-				signatureName,
-				containerCounts,
-				imageResponse,
-			});
+			// Generate payload for API 2: initiateTransitPlan
+			console.log('🔍 Debug transitPlanRow:', transitPlanRow);
+			console.log('🔍 Debug transitPlanRow.id:', transitPlanRow.id);
+			console.log('🔍 Debug dispatchVehicleNumber:', dispatchVehicleNumber);
+			console.log('🔍 Debug signatureName:', signatureName);
+			console.log('🔍 Debug uploadedImageUrl:', uploadedImageUrl);
 
-			// Clear localStorage only after successful submission
+			const initiateTransitPayload = {
+				transitId: transitPlanRow.id,
+				vehicleNumber: dispatchVehicleNumber,
+				signatureName: signatureName,
+				dispatchConditionIds: '',
+				dispatchImages: {
+					challanPic: [],
+					signaturePic: '',
+					loadedVehiclePic: uploadedImageUrl ? [{ path: uploadedImageUrl }] : [],
+				},
+				pickupImages: null,
+				containerTypes: [],
+			};
+
+			console.log('🚛 Calling initiateTransitPlan API...', initiateTransitPayload);
+			const transitResponse = await TransitPlanApi.initiateTransitPlan(initiateTransitPayload);
+			console.log('🚛 initiateTransitPlan response:', transitResponse);
+
+			if (transitResponse.status_code !== 200) {
+				throw new Error(transitResponse.message || 'Failed to initiate transit plan');
+			}
+
+			// Clear localStorage after successful submission
 			localStorage.removeItem(storageKey);
 			console.log('🗑️ Cleared localStorage after successful submission');
 
 			setSnackbar({
 				open: true,
-				message: `Form submitted successfully! Local data cleared.`,
+				message: `Dispatch completed successfully! DC Number: ${inventoryResponse.dc_number}`,
 				type: 'success',
 			});
+
+			// Navigate back to listing after a short delay
+			setTimeout(() => {
+				navigate('/transit-plan/sent/plan');
+			}, 2000);
 		} catch (error) {
-			console.error('❌ Error:', error);
+			console.error('❌ Error during dispatch submission:', error);
 			setSnackbar({
 				open: true,
 				message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -463,28 +615,46 @@ const ClientDetails: React.FC = () => {
 											<div className='border border-gray-200 rounded-lg p-4 bg-gray-50'>
 												{/* Show file info for debugging */}
 												<div className='text-xs text-gray-500 mb-2'>
-													File: {photograph?.name} | Type: {photograph?.type} | Size:{' '}
-													{photograph?.size} bytes
+													File: {photograph?.name} | Type: {photograph?.type}
+													{photograph?.size && photograph.size > 0 && (
+														<> | Size: {photograph.size} bytes</>
+													)}
 												</div>
 
-												<img
-													src={imageUrl}
-													alt='Container photo preview'
-													className='max-w-full h-48 object-contain mx-auto'
-													onError={e => {
-														console.error('❌ Image load error:', e);
-														console.error('❌ Failed URL:', imageUrl);
-														console.error('❌ File type:', photograph?.type);
-														console.error('❌ File name:', photograph?.name);
-														e.currentTarget.style.display = 'none';
-														const errorDiv = e.currentTarget.nextElementSibling as HTMLElement;
-														if (errorDiv) errorDiv.style.display = 'block';
-													}}
-													onLoad={() => {
-														console.log('✅ Image loaded successfully:', imageUrl);
-														console.log('✅ File type:', photograph?.type);
-													}}
-												/>
+												{photograph?.type === 'image/svg+xml' ? (
+													<div
+														className='max-w-full h-48 flex items-center justify-center'
+														dangerouslySetInnerHTML={{
+															__html: fileBase64
+																? DOMPurify.sanitize(
+																		atob(fileBase64.split(',')[1]).replace(
+																			'<svg',
+																			'<svg style="max-width: 100%; max-height: 100%; width: auto; height: auto;"'
+																		)
+																	)
+																: 'SVG content not available',
+														}}
+													/>
+												) : (
+													<img
+														src={imageUrl}
+														alt='Container photo preview'
+														className='max-w-full h-48 object-contain mx-auto'
+														onError={e => {
+															console.error('❌ Image load error:', e);
+															console.error('❌ Failed URL:', imageUrl);
+															console.error('❌ File type:', photograph?.type);
+															console.error('❌ File name:', photograph?.name);
+															e.currentTarget.style.display = 'none';
+															const errorDiv = e.currentTarget.nextElementSibling as HTMLElement;
+															if (errorDiv) errorDiv.style.display = 'block';
+														}}
+														onLoad={() => {
+															console.log('✅ Image loaded successfully:', imageUrl);
+															console.log('✅ File type:', photograph?.type);
+														}}
+													/>
+												)}
 												<div className='hidden text-center text-gray-500'>
 													<p>⚠️ Image preview not available</p>
 													<p className='text-xs'>
@@ -496,6 +666,7 @@ const ClientDetails: React.FC = () => {
 														<li>• Invalid image URL</li>
 														<li>• Network connectivity issues</li>
 														<li>• Unsupported file format</li>
+														<li>• SVG files may not display in some browsers</li>
 													</ul>
 												</div>
 											</div>
@@ -511,31 +682,10 @@ const ClientDetails: React.FC = () => {
 				<div className='flex justify-end space-x-4 mt-6'>
 					<Button
 						variant='outline'
-						onClick={() => {
-							saveToLocalStorage();
-							setSnackbar({
-								open: true,
-								message: 'Data saved manually',
-								type: 'success',
-							});
-						}}
-						className='px-4 py-2 text-xs'
+						onClick={handleTestApi}
+						className='px-4 py-2 text-sm bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'
 					>
-						Save Now
-					</Button>
-					<Button
-						variant='outline'
-						onClick={() => {
-							localStorage.removeItem(storageKey);
-							setSnackbar({
-								open: true,
-								message: 'Local data cleared',
-								type: 'info',
-							});
-						}}
-						className='px-4 py-2 text-xs'
-					>
-						Clear Data
+						🧪 Test API
 					</Button>
 					<Button
 						variant='outline'
@@ -566,4 +716,4 @@ const ClientDetails: React.FC = () => {
 	);
 };
 
-export default ClientDetails;
+export default ClientDispatchDetails;

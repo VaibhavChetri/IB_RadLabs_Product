@@ -13,6 +13,12 @@ import {
 	PageHeader,
 } from '../components/ui';
 import { TransitPlanApi, SentTransitPlanRow, RestaurantOption } from '../services/transitPlanApi';
+import {
+	generateDeliveryChallanPDF,
+	DeliveryChallanData,
+	convertApiResponseToDCData,
+	DCApiResponse,
+} from '../services/deliveryChallanGenerator';
 
 type DropdownOption = { label: string; value: string };
 
@@ -52,6 +58,9 @@ const SentTransitPlanListing: React.FC = () => {
 	const cityId = user?.city_id ?? 3;
 	const navigate = useNavigate();
 
+	// Local storage key for this page
+	const storageKey = 'sent-transit-plan-filters';
+
 	const [startDate, setStartDate] = useState<string>('');
 	const [endDate, setEndDate] = useState<string>('');
 	const [restaurants, setRestaurants] = useState<DropdownOption[]>([]);
@@ -78,6 +87,74 @@ const SentTransitPlanListing: React.FC = () => {
 		'transit_status_label',
 	]);
 
+	// Save filters to localStorage
+	const saveFiltersToStorage = useCallback(() => {
+		const filters = {
+			startDate,
+			endDate,
+			selectedClientId,
+			visibleColumns,
+			itemsPerPage,
+			sortBy,
+			sortOrder,
+			timestamp: Date.now(),
+		};
+		localStorage.setItem(storageKey, JSON.stringify(filters));
+		console.log('💾 Saved filters to localStorage:', filters);
+	}, [
+		startDate,
+		endDate,
+		selectedClientId,
+		visibleColumns,
+		itemsPerPage,
+		sortBy,
+		sortOrder,
+		storageKey,
+	]);
+
+	// Load filters from localStorage
+	const loadFiltersFromStorage = useCallback(() => {
+		try {
+			const savedFilters = localStorage.getItem(storageKey);
+			if (savedFilters) {
+				const parsed = JSON.parse(savedFilters);
+				console.log('📂 Loaded filters from localStorage:', parsed);
+
+				// Only restore if data is recent (within 24 hours)
+				const isRecent = Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000;
+				if (isRecent) {
+					setStartDate(parsed.startDate || '');
+					setEndDate(parsed.endDate || '');
+					setSelectedClientId(parsed.selectedClientId || '');
+					setVisibleColumns(
+						parsed.visibleColumns || [
+							'actions',
+							'serial',
+							'restaurantName',
+							'transit_time',
+							'transitDate',
+							'transitType',
+							'driver_name',
+							'driver_phone',
+							'facilityName',
+							'transit_status_label',
+						]
+					);
+					setItemsPerPage(parsed.itemsPerPage || 10);
+					setSortBy(parsed.sortBy || 'transitDate');
+					setSortOrder(parsed.sortOrder || 'desc');
+					console.log('✅ Filters restored from localStorage');
+					return true;
+				} else {
+					console.log('⏰ Saved filters are too old, using defaults');
+				}
+			}
+		} catch (error) {
+			console.error('❌ Error loading filters from localStorage:', error);
+		}
+		return false;
+	}, [storageKey]);
+
 	// Load restaurants dropdown
 	useEffect(() => {
 		const loadRestaurants = async () => {
@@ -100,21 +177,47 @@ const SentTransitPlanListing: React.FC = () => {
 		loadRestaurants();
 	}, [cityId]);
 
-	// Handle sorting
+	// Handle sorting - client-side sorting
 	const handleSort = (key: string, order: 'asc' | 'desc') => {
 		setSortBy(key);
 		setSortOrder(order);
 		setPageNumber(1);
-		fetchData();
+
+		// Client-side sorting
+		const sortedRows = [...rows].sort((a, b) => {
+			let aValue = a[key as keyof SentTransitPlanRow];
+			let bValue = b[key as keyof SentTransitPlanRow];
+
+			// Handle different data types
+			if (typeof aValue === 'string' && typeof bValue === 'string') {
+				aValue = aValue.toLowerCase();
+				bValue = bValue.toLowerCase();
+			}
+
+			if (aValue < bValue) {
+				return order === 'asc' ? -1 : 1;
+			}
+			if (aValue > bValue) {
+				return order === 'asc' ? 1 : -1;
+			}
+			return 0;
+		});
+
+		setRows(sortedRows);
 	};
 
-	// Set default date range
+	// Set default date range or load from localStorage
 	useEffect(() => {
-		const today = new Date();
-		const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-		setStartDate(formatDateForInput(thirtyDaysAgo));
-		setEndDate(formatDateForInput(today));
-	}, []);
+		const loadedFromStorage = loadFiltersFromStorage();
+
+		// Only set default dates if no data was loaded from localStorage
+		if (!loadedFromStorage) {
+			const today = new Date();
+			const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+			setStartDate(formatDateForInput(thirtyDaysAgo));
+			setEndDate(formatDateForInput(today));
+		}
+	}, [loadFiltersFromStorage]);
 
 	const fetchData = useCallback(async () => {
 		console.log('🔍 SentTransitPlanListing: Starting fetchData...');
@@ -152,15 +255,33 @@ const SentTransitPlanListing: React.FC = () => {
 		if (startDate && endDate) {
 			fetchData();
 		}
+	}, [startDate, endDate, selectedClientId, pageNumber, itemsPerPage, fetchData]);
+
+	// Auto-save filters when they change
+	useEffect(() => {
+		if (startDate && endDate) {
+			const filters = {
+				startDate,
+				endDate,
+				selectedClientId,
+				visibleColumns,
+				itemsPerPage,
+				sortBy,
+				sortOrder,
+				timestamp: Date.now(),
+			};
+			localStorage.setItem(storageKey, JSON.stringify(filters));
+			console.log('💾 Auto-saved filters to localStorage:', filters);
+		}
 	}, [
 		startDate,
 		endDate,
 		selectedClientId,
-		pageNumber,
+		visibleColumns,
 		itemsPerPage,
 		sortBy,
 		sortOrder,
-		fetchData,
+		storageKey,
 	]);
 
 	// Define all available columns
@@ -171,20 +292,81 @@ const SentTransitPlanListing: React.FC = () => {
 				label: 'Actions',
 				title: 'Actions',
 				width: '80px',
-				render: (_: unknown, row: SentTransitPlanRow) => (
-					<div className='flex items-center justify-center'>
-						<button
-							className='p-1.5 rounded hover:bg-gray-100 text-blue-600'
-							title='DC Generated'
-							onClick={() => {
-								console.log('DC Generated for:', row.id);
-								// TODO: Implement DC generation functionality
-							}}
-						>
-							<span className='text-sm font-bold'>DC</span>
-						</button>
-					</div>
-				),
+				render: (_: unknown, row: SentTransitPlanRow) => {
+					// Only show DC button when status is completed
+					const isCompleted =
+						row.transit_status_label?.toLowerCase().includes('complete') ||
+						row.transit_status_label?.toLowerCase().includes('done');
+
+					if (!isCompleted) {
+						return <div className='flex items-center justify-center text-gray-400'>-</div>;
+					}
+
+					return (
+						<div className='flex items-center justify-center'>
+							<button
+								className='group px-2 py-1.5 bg-green-100 hover:bg-green-200 text-green-700 rounded-md transition-colors duration-200 flex items-center gap-1 cursor-pointer'
+								title='Download DC Document'
+								onClick={async () => {
+									try {
+										console.log('📄 DC Download for:', row.id);
+
+										// First, get the data from API
+										const params = {
+											location_id: row.facilityId || 115,
+											client_id: row.clientLocationId,
+											start_date: row.transitDate,
+											end_date: row.transitDate,
+											transit_time: row.transit_time || '15:00:00',
+											transit_type_id: row.transit_type_id,
+										};
+
+										console.log('📄 DC API params:', params);
+										const response = await TransitPlanApi.getSentCount(params);
+										console.log('📄 DC API response:', response);
+
+										// Convert API response to PDF data
+										const apiResponse = response as DCApiResponse;
+										const dcData = convertApiResponseToDCData(apiResponse, {
+											id: row.id,
+											facilityId: row.facilityId || 115,
+											city_id: Number(row.city_id) || 3,
+											restaurantName: row.restaurantName || 'Unknown Client',
+											transitDate: row.transitDate || new Date().toISOString().split('T')[0],
+											transit_time: row.transit_time || '15:00:00',
+											signature_name: row.signature_name as string | undefined,
+											vehicle_number: row.vehicle_number as string | undefined,
+										});
+
+										// Override client type with backend flag (when available)
+										// TODO: Add clientType field to API response
+										// dcData.clientType = apiResponse.clientType || 'default';
+
+										// Generate and download PDF
+										generateDeliveryChallanPDF(dcData);
+									} catch (error) {
+										console.error('❌ DC Download error:', error);
+									}
+								}}
+							>
+								<span className='text-xs font-semibold'>DC</span>
+								<svg
+									className='w-3 h-3 group-hover:scale-110 transition-transform duration-200'
+									fill='none'
+									stroke='currentColor'
+									viewBox='0 0 24 24'
+								>
+									<path
+										strokeLinecap='round'
+										strokeLinejoin='round'
+										strokeWidth={2}
+										d='M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
+									/>
+								</svg>
+							</button>
+						</div>
+					);
+				},
 			},
 			{
 				key: 'serial',
@@ -199,24 +381,56 @@ const SentTransitPlanListing: React.FC = () => {
 				label: 'Client',
 				title: 'Client',
 				sortable: true,
-				render: (_: unknown, row: SentTransitPlanRow) => (
-					<button
-						className='text-blue-600 hover:text-blue-800 hover:underline cursor-pointer'
-						onClick={() => {
-							navigate(
-								`/transit-plan/sent/client-details/${row.clientLocationId}/${row.facilityId}`,
-								{
-									state: {
-										clientName: row.restaurantName,
-										clientId: row.restaurantId,
-									},
-								}
-							);
-						}}
-					>
-						{row.restaurantName || '-'}
-					</button>
-				),
+				render: (_: unknown, row: SentTransitPlanRow) => {
+					const clientName = row.restaurantName || '-';
+
+					// Determine status icon
+					const getStatusIcon = () => {
+						const status = row.transit_status_label?.toLowerCase();
+						if (status?.includes('complete') || status?.includes('done')) {
+							return <span className='text-green-600 ml-2'>✅</span>;
+						} else if (status?.includes('new') || status?.includes('scheduled')) {
+							return <span className='text-blue-600 ml-2'>⏰</span>;
+						} else if (status?.includes('progress') || status?.includes('ongoing')) {
+							return <span className='text-orange-600 ml-2'>⚡</span>;
+						}
+						return null;
+					};
+
+					// Show hyperlink only if transit_status is 0
+					if (row.transit_status === 0) {
+						return (
+							<div className='flex items-center'>
+								<button
+									className='text-blue-600 hover:text-blue-800 underline cursor-pointer font-medium transition-colors duration-200'
+									onClick={() => {
+										navigate(
+											`/transit-plan/sent/client-details/${row.clientLocationId}/${row.facilityId}`,
+											{
+												state: {
+													clientName: row.restaurantName,
+													clientId: row.restaurantId,
+													transitPlanRow: row, // Pass the full row object
+												},
+											}
+										);
+									}}
+								>
+									{clientName}
+								</button>
+								{getStatusIcon()}
+							</div>
+						);
+					}
+
+					// Show plain text for other statuses
+					return (
+						<div className='flex items-center'>
+							<span className='text-gray-600'>{clientName}</span>
+							{getStatusIcon()}
+						</div>
+					);
+				},
 			},
 			{
 				key: 'transit_time',

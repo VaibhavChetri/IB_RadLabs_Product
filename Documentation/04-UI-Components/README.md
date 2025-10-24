@@ -37,21 +37,88 @@ This folder contains documentation for all **UI Components** and design system e
   - Responsive design considerations
   - Accessibility features
 
+### 🎛️ **Accordion Table Pattern**
+- **File**: `06-Accordion-Table-Pattern.md`
+- **Description**: Reusable accordion table component for hierarchical data display
+- **Covers**:
+  - Single accordion behavior with smooth animations
+  - Visual connection between rows and expanded content
+  - Multiple content patterns (simple text, grid, table-like)
+  - Accessibility considerations with ARIA attributes
+  - Performance optimization for large datasets
+  - Customization options and best practices
+
 ## 🎯 Key Components Documented
 
-### ✅ **Core Components**
-- **SearchButton**: Reusable search button with consistent styling
-- **FloatingDropdown**: Dropdown with floating labels
-- **MultiSelectDropdown**: Multi-selection dropdown with search
+### ✅ **Form Components** (`01-Form-Components.md`)
+- **FloatingInput**: Material UI-style input with floating labels
+- **FloatingDropdown**: Dropdown with floating labels and search
+- **MultiSelectDropdown**: Multi-selection dropdown with chips
+- **Date Filters**: Date input components for filtering
+- **Form Validation**: Error handling and validation patterns
+
+### 📊 **Data Display Components** (`02-Data-Display-Components.md`)
 - **Table**: Data table with sorting and pagination
 - **Pagination**: Page navigation component
+- **Accordion**: Collapsible content component
+- **Data Visualization**: Charts and graphs
 
-### 🔧 **Advanced Components**
-- **ModernFilter**: Advanced filter component with pill-based interface
+### 🎛️ **UI Components** (`03-UI-Components.md`)
+- **SearchButton**: Reusable search button with loading states
+- **ModernFilter**: Advanced filter component with pill interface
 - **FilterChips**: Chip-based filter component
-- **Form Components**: Input, dropdown, and validation components
+- **PageHeader**: Consistent page headers with actions
+- **Snackbar**: Toast notifications
+
+### 🏗️ **Architecture Patterns** (`04-Reusable-Components-Architecture.md`)
+- **Component Composition**: Building complex components
+- **State Management**: Redux and local state patterns
+- **Performance Optimization**: Memoization and lazy loading
+- **API Integration**: Service layer patterns
+
+### 📋 **Page Templates** (`05-Universal-Listing-Page-Template.md`)
+- **Listing Pages**: Complete template for data tables
+- **Filter Sections**: Standardized filter layouts
+- **Pagination**: Consistent pagination patterns
+- **Responsive Design**: Mobile-first approaches
+
+### 🎛️ **Specialized Patterns** (`06-Accordion-Table-Pattern.md`)
+- **Accordion Tables**: Hierarchical data display
+- **Single Accordion**: One-at-a-time expansion
+- **Smooth Animations**: CSS transition patterns
+- **Visual Connections**: Row-content relationships
+
+### 📅 **Date Filter Patterns** (`07-Date-Filter-Patterns.md`)
+- **Date Range Filters**: From/To date selection
+- **Single Date Filters**: Specific date selection
+- **Date Presets**: Quick selection options (Today, Last 7 Days, etc.)
+- **Validation Patterns**: Date range validation and error handling
+- **State Management**: Local, Redux, and URL-based state patterns
+- **API Integration**: Debounced and batch API calls
 
 ## 🚀 Quick Start
+
+### 🔍 **Quick Component Reference**
+
+| Component | File | Use Case | Key Features |
+|-----------|------|----------|--------------|
+| **FloatingInput** | `01-Form-Components.md` | Date filters, text inputs | Floating labels, validation |
+| **FloatingDropdown** | `01-Form-Components.md` | Single selection dropdowns | Search, floating labels |
+| **MultiSelectDropdown** | `01-Form-Components.md` | Multi-selection filters | Chips, search, count display |
+| **Date Filters** | `07-Date-Filter-Patterns.md` | Date range filtering | Presets, validation, API integration |
+| **Table** | `02-Data-Display-Components.md` | Data display | Sorting, pagination, columns |
+| **Accordion Table** | `06-Accordion-Table-Pattern.md` | Hierarchical data | Single accordion, animations |
+| **SearchButton** | `03-UI-Components.md` | Filter actions | Loading states, disabled states |
+| **PageHeader** | `03-UI-Components.md` | Page titles | Actions, breadcrumbs, counts |
+
+### 📋 **Common Patterns**
+
+| Pattern | File | When to Use |
+|---------|------|-------------|
+| **Listing Page** | `05-Universal-Listing-Page-Template.md` | Data tables with filters |
+| **Form Layout** | `01-Form-Components.md` | User input forms |
+| **Accordion Display** | `06-Accordion-Table-Pattern.md` | Expandable row details |
+| **Filter Section** | `05-Universal-Listing-Page-Template.md` | Date + dropdown filters |
 
 ### For **Component Developers**
 1. Read [Reusable Components Architecture](./04-Reusable-Components-Architecture.md)

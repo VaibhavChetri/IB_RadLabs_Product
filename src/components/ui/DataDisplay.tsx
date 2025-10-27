@@ -96,7 +96,7 @@ export const Table = <T extends Record<string, unknown>>({
 								<th
 									key={column.key}
 									className={cn(
-										'px-6 py-2 text-left font-bold text-gray-900',
+										'px-3 py-2 text-left font-bold text-gray-900',
 										sizeClasses[size],
 										column.align === 'center' && 'text-center',
 										column.align === 'right' && 'text-right',
@@ -147,13 +147,14 @@ export const Table = <T extends Record<string, unknown>>({
 											<td
 												key={column.key}
 												className={cn(
-													'px-6 py-2 font-semibold text-gray-900',
+													'px-3 py-2 font-semibold text-gray-900',
 													sizeClasses[size],
 													column.align === 'center' && 'text-center',
 													column.align === 'right' && 'text-right',
 													column.fixed === 'left' && 'sticky left-0 bg-white z-10',
 													column.fixed === 'right' && 'sticky right-0 bg-white z-10'
 												)}
+												style={{ width: column.width, minWidth: column.width }}
 											>
 												{renderedValue as React.ReactNode}
 											</td>

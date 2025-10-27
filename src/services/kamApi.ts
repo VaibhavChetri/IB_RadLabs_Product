@@ -68,7 +68,10 @@ export class KamApiService {
 			closing: number;
 		}>
 	) {
-		return apiService.put('/billing/updateEverydayClientInventory', payload);
+		const requestBody = { clients: payload };
+		console.log('📤 Sending to API:', requestBody);
+		console.log('📦 Request body structure:', JSON.stringify(requestBody));
+		return apiService.put('/billing/updateEverydayClientInventory', requestBody);
 	}
 
 	static async getEverydayClientInventoryValues(params: {

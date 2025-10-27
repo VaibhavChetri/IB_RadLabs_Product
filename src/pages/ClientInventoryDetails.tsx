@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { RootState } from '../store';
-import { FloatingInput, PageHeader, Button, Snackbar } from '../components/ui';
+import { FloatingInput, PageHeader, Button, Snackbar, Table } from '../components/ui';
 import { KamApiService, ClientInventoryRow } from '../services/kamApi';
 import { setClientInventory, setClientInventoryLoading } from '../store/slices/kamSlice';
 
@@ -23,11 +23,11 @@ const ClientInventoryDetails: React.FC = () => {
 	const { user } = useSelector((state: RootState) => state.auth);
 
 	const clientName = (location.state as { clientName: string })?.clientName || `Client ${clientId}`;
+	const selectedDateFromState = (location.state as { selectedDate?: string })?.selectedDate;
 
 	const { data, loading } = useSelector((state: RootState) => state.kam.clientInventory);
 
-	const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
-	const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+	const selectedDate = selectedDateFromState || new Date().toISOString().split('T')[0];
 	const [editedData, setEditedData] = useState<EditedData>({});
 	const [snackbar, setSnackbar] = useState<{
 		open: boolean;
@@ -50,15 +50,15 @@ const ClientInventoryDetails: React.FC = () => {
 		}
 	}, [clientId]);
 
-	const fetchData = async () => {
+	const fetchData = useCallback(async () => {
 		if (!clientId) return;
 
 		dispatch(setClientInventoryLoading(true));
 		try {
 			const response = await KamApiService.getEverydayClientInventory({
 				client_id: Number(clientId),
-				start_date: startDate,
-				end_date: endDate,
+				start_date: selectedDate,
+				end_date: selectedDate,
 			});
 			dispatch(setClientInventory(response.data));
 		} catch (error) {
@@ -71,11 +71,69 @@ const ClientInventoryDetails: React.FC = () => {
 		} finally {
 			dispatch(setClientInventoryLoading(false));
 		}
-	};
+	}, [clientId, selectedDate, dispatch]);
+
+	const columns = [
+		{
+			key: 'containerType',
+			title: 'Container Type',
+			width: '250px',
+		},
+		{
+			key: 'openingStock',
+			title: 'Opening',
+			render: (_: unknown, row: ClientInventoryRow) => (
+				<input
+					type='number'
+					value={
+						editedData[row.id]?.openingStock?.toString() || row.openingStock?.toString() || '0'
+					}
+					onChange={e => handleInputChange(row.id, 'openingStock', Number(e.target.value))}
+					className='w-24 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+				/>
+			),
+		},
+		{
+			key: 'dispatch',
+			title: 'Dispatch',
+			render: (_: unknown, row: ClientInventoryRow) => (
+				<input
+					type='number'
+					value={editedData[row.id]?.dispatch?.toString() || row.dispatch?.toString() || '0'}
+					onChange={e => handleInputChange(row.id, 'dispatch', Number(e.target.value))}
+					className='w-24 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+				/>
+			),
+		},
+		{
+			key: 'returned',
+			title: 'Returned',
+			render: (_: unknown, row: ClientInventoryRow) => (
+				<input
+					type='number'
+					value={editedData[row.id]?.returned?.toString() || row.returned?.toString() || '0'}
+					onChange={e => handleInputChange(row.id, 'returned', Number(e.target.value))}
+					className='w-24 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+				/>
+			),
+		},
+		{
+			key: 'closing',
+			title: 'Closing',
+			render: (_: unknown, row: ClientInventoryRow) => (
+				<input
+					type='number'
+					value={editedData[row.id]?.closing?.toString() || row.closing?.toString() || '0'}
+					disabled
+					className='w-24 px-3 py-2 border border-gray-300 rounded text-sm bg-gray-50 text-gray-500'
+				/>
+			),
+		},
+	];
 
 	useEffect(() => {
 		fetchData();
-	}, [startDate, endDate, clientId]);
+	}, [fetchData]);
 
 	const handleInputChange = (
 		id: number,
@@ -123,24 +181,49 @@ const ClientInventoryDetails: React.FC = () => {
 	const handleSubmit = async () => {
 		if (!clientId) return;
 
+		if (!data || data.length === 0) {
+			console.error('❌ No data available to submit');
+			setSnackbar({
+				open: true,
+				message: 'No inventory data available',
+				type: 'error',
+			});
+			return;
+		}
+
+		console.log('📊 Current data before mapping:', data);
+
 		const payload = data.map(item => {
 			const edited = editedData[item.id];
-			const openingStock = edited?.openingStock ?? item.openingStock ?? 0;
-			const dispatch = edited?.dispatch ?? item.dispatch ?? 0;
-			const returned = edited?.returned ?? item.returned ?? 0;
-			const closing = edited?.closing ?? item.closing ?? 0;
+
+			// Helper function to safely convert to number, defaulting to 0 for empty/null/undefined
+			const safeNumber = (value: number | string | null | undefined): number => {
+				if (value === null || value === undefined || value === '' || isNaN(Number(value))) {
+					return 0;
+				}
+				return Math.max(0, Number(value));
+			};
+
+			const openingStock = safeNumber(edited?.openingStock ?? item.openingStock);
+			const dispatch = safeNumber(edited?.dispatch ?? item.dispatch);
+			const returned = safeNumber(edited?.returned ?? item.returned);
+			const closing = safeNumber(edited?.closing ?? item.closing);
 
 			// Format for API: use snake_case
 			return {
 				id: item.id,
 				client_id: item.clientId,
 				container_type_id: item.containerTypeId,
-				opening_stock: Math.max(0, Number(openingStock)),
-				dispatch: Math.max(0, Number(dispatch)),
-				returned: Math.max(0, Number(returned)),
-				closing: Math.max(0, Number(closing)),
+				opening_stock: openingStock,
+				dispatch: dispatch,
+				returned: returned,
+				closing: closing,
 			};
 		});
+
+		console.log('🚀 Submitting inventory payload:', payload);
+		console.log('📊 Payload length:', payload.length);
+		console.log('📝 Sample item:', payload[0]);
 
 		try {
 			await KamApiService.updateEverydayClientInventory(payload);
@@ -153,11 +236,13 @@ const ClientInventoryDetails: React.FC = () => {
 			setTimeout(() => {
 				navigate('/kam/clients');
 			}, 1500);
-		} catch (error) {
-			console.error('Error updating inventory:', error);
+		} catch (error: any) {
+			console.error('❌ Error updating inventory:', error);
+			console.error('❌ Error details:', error.response?.data || error.message);
+			console.error('❌ Full error object:', error);
 			setSnackbar({
 				open: true,
-				message: 'Failed to update inventory',
+				message: `Failed to update inventory: ${error.message || 'Unknown error'}`,
 				type: 'error',
 			});
 		}
@@ -168,79 +253,15 @@ const ClientInventoryDetails: React.FC = () => {
 			<PageHeader
 				title={clientName}
 				locationName={user?.city_name || 'City'}
-				totalItems={data.length}
+				totalItems={data?.length || 0}
 				itemType='container types'
 				icon='📦'
 			/>
 
-			<div className='bg-white p-4 shadow-sm rounded-lg flex flex-wrap gap-4 items-center mb-6'>
-				<FloatingInput
-					type='date'
-					label='From Date'
-					value={startDate}
-					onChange={setStartDate}
-					className='w-48'
-				/>
-				<FloatingInput
-					type='date'
-					label='To Date'
-					value={endDate}
-					onChange={setEndDate}
-					className='w-48'
-				/>
-			</div>
-
 			{loading ? (
 				<div className='text-center py-8'>Loading...</div>
 			) : (
-				<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
-					{data.map(item => (
-						<div key={item.id} className='bg-white p-6 rounded-lg shadow-sm border border-gray-200'>
-							<h3 className='text-lg font-semibold text-gray-900 mb-4'>{item.containerType}</h3>
-
-							<div className='space-y-4'>
-								<FloatingInput
-									type='number'
-									label='Opening Stock'
-									value={
-										editedData[item.id]?.openingStock?.toString() ||
-										item.openingStock?.toString() ||
-										'0'
-									}
-									onChange={value => handleInputChange(item.id, 'openingStock', Number(value))}
-								/>
-
-								<FloatingInput
-									type='number'
-									label='Dispatch'
-									value={
-										editedData[item.id]?.dispatch?.toString() || item.dispatch?.toString() || '0'
-									}
-									onChange={value => handleInputChange(item.id, 'dispatch', Number(value))}
-								/>
-
-								<FloatingInput
-									type='number'
-									label='Returned'
-									value={
-										editedData[item.id]?.returned?.toString() || item.returned?.toString() || '0'
-									}
-									onChange={value => handleInputChange(item.id, 'returned', Number(value))}
-								/>
-
-								<FloatingInput
-									type='number'
-									label='Closing'
-									value={
-										editedData[item.id]?.closing?.toString() || item.closing?.toString() || '0'
-									}
-									disabled
-									className='bg-gray-50'
-								/>
-							</div>
-						</div>
-					))}
-				</div>
+				<Table columns={columns} data={data || []} />
 			)}
 
 			<div className='flex justify-end mt-6'>

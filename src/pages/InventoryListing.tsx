@@ -31,7 +31,7 @@ const InventoryListing: React.FC = () => {
 	const [clients, setClients] = useState<DropdownOption[]>([]);
 	const [selectedClientId, setSelectedClientId] = useState<string>('');
 	const [pageNumber, setPageNumber] = useState(1);
-	const [itemsPerPage] = useState(10);
+	const [itemsPerPage, setItemsPerPage] = useState(10);
 
 	const allColumns = useMemo(
 		() => [
@@ -43,12 +43,12 @@ const InventoryListing: React.FC = () => {
 				render: (_: unknown, __: InventoryValueRow, index: number) =>
 					(pageNumber - 1) * itemsPerPage + index + 1,
 			},
-			{ key: 'clientName', title: 'Client', sortable: true },
-			{ key: 'containerType', title: 'Container', sortable: true },
-			{ key: 'openingStock', title: 'Opening', sortable: true },
-			{ key: 'dispatch', title: 'Dispatch', sortable: true },
-			{ key: 'returned', title: 'Returned', sortable: true },
-			{ key: 'closing', title: 'Closing', sortable: true },
+			{ key: 'clientName', title: 'Client', sortable: true, width: '200px' },
+			{ key: 'containerType', title: 'Container', sortable: true, width: '150px' },
+			{ key: 'openingStock', title: 'Opening', sortable: true, width: '100px' },
+			{ key: 'dispatch', title: 'Dispatch', sortable: true, width: '100px' },
+			{ key: 'returned', title: 'Returned', sortable: true, width: '100px' },
+			{ key: 'closing', title: 'Closing', sortable: true, width: '100px' },
 			{
 				key: 'has_entered',
 				title: 'Status',
@@ -226,6 +226,7 @@ const InventoryListing: React.FC = () => {
 					totalItems={totalItems}
 					itemsPerPage={itemsPerPage}
 					onPageChange={setPageNumber}
+					onItemsPerPageChange={setItemsPerPage}
 				/>
 			)}
 		</div>

@@ -14,9 +14,18 @@ const ClientListing: React.FC = () => {
 		(state: RootState) => state.kam.clientListing
 	);
 
-	const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+	// Load selected date from localStorage, default to today
+	const [selectedDate, setSelectedDate] = useState(() => {
+		const savedDate = localStorage.getItem('clientListing_selectedDate');
+		return savedDate || new Date().toISOString().split('T')[0];
+	});
 	const [pageNumber, setPageNumber] = useState(1);
 	const [itemsPerPage] = useState(10);
+
+	// Save selected date to localStorage whenever it changes
+	useEffect(() => {
+		localStorage.setItem('clientListing_selectedDate', selectedDate);
+	}, [selectedDate]);
 
 	const fetchData = useCallback(async () => {
 		dispatch(setClientListingLoading(true));
@@ -65,7 +74,7 @@ const ClientListing: React.FC = () => {
 						className='text-blue-600 hover:text-blue-800 underline cursor-pointer font-medium'
 						onClick={() =>
 							navigate(`/kam/clients/${row.clientId}`, {
-								state: { clientName: row.clientName },
+								state: { clientName: row.clientName, selectedDate },
 							})
 						}
 					>

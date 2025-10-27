@@ -57,6 +57,23 @@ GET /billing/getInventoryClientPlan?startDate=2025-10-20&endDate=2025-10-20&page
 - **Default**: Today's date
 - **Behavior**: Single date selection (passed as both startDate and endDate to API)
 
+### Date Storage (localStorage)
+- **Feature**: Selected date is automatically saved to localStorage
+- **Key**: `clientListing_selectedDate`
+- **Purpose**: Allows back-dated entry without losing the selected date
+- **How it works**:
+  1. User selects a date
+  2. Date is saved to localStorage immediately
+  3. User navigates away and comes back
+  4. The same date is still selected (loaded from localStorage)
+  5. User can work on old dates without having to select again
+- **When it clears**: 
+  - When user logs out
+  - When user selects a different date (that becomes the new default)
+- **Default on page load**: 
+  - If a date was selected before, that date loads
+  - If no date was selected, defaults to today
+
 ### Statistics Display
 
 **UI**: Creative gradient card with three metrics displayed side-by-side

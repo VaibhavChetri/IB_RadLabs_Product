@@ -82,4 +82,31 @@ export class InventoryApiService {
 			`/inventory/getSentCount?${searchParams.toString()}`
 		) as unknown as Promise<SentInventoryResponse>;
 	}
+
+	/**
+	 * Get received inventory count
+	 */
+	static async getReceivedCount(params: {
+		location_id: number;
+		date: string;
+		pageNumber: number;
+		pageSize: number;
+	}): Promise<SentInventoryResponse> {
+		const searchParams = new URLSearchParams();
+		searchParams.set('location_id', String(params.location_id));
+		searchParams.set('date', params.date);
+		searchParams.set('pageNumber', String(params.pageNumber));
+		searchParams.set('pageSize', String(params.pageSize));
+
+		return this.api.get(
+			`/inventory/getReceivedCount?${searchParams.toString()}`
+		) as unknown as Promise<SentInventoryResponse>;
+	}
+
+	/**
+	 * Get clients by city
+	 */
+	static async getClientByCity(location_id: number): Promise<any> {
+		return this.api.get(`/inventory/getClientByCity?location_id=${location_id}`);
+	}
 }

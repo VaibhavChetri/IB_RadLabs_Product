@@ -6,6 +6,7 @@ import apiReducer from './slices/apiSlice';
 import clientReducer from './slices/clientSlice';
 import transitPlanReducer from './slices/transitPlanSlice';
 import inventoryReducer from './slices/inventorySlice';
+import kamReducer from './slices/kamSlice';
 
 export const store = configureStore({
 	reducer: {
@@ -16,6 +17,7 @@ export const store = configureStore({
 		client: clientReducer,
 		transitPlan: transitPlanReducer,
 		inventory: inventoryReducer,
+		kam: kamReducer,
 	},
 	middleware: getDefaultMiddleware =>
 		getDefaultMiddleware({

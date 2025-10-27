@@ -276,8 +276,8 @@ export const MenuManagement: React.FC = () => {
 			// Reload menus to reflect the changes
 			await loadMenus();
 
-			// Update Redux state with new permissions for sidebar
-			await updateReduxPermissions();
+			// Refresh login to get updated menu permissions
+			await refreshLoginAndPermissions();
 
 			// Show success message
 			console.log('✅ Permissions saved successfully!');
@@ -287,6 +287,34 @@ export const MenuManagement: React.FC = () => {
 			setPermissionData(null);
 		} catch (error) {
 			console.error('Failed to save permissions:', error);
+		}
+	};
+
+	const refreshLoginAndPermissions = async () => {
+		try {
+			console.log('🔄 Updating permissions in localStorage and Redux...');
+
+			// Import TokenManager
+			const TokenManager = (await import('../utils/tokenManager')).default;
+
+			// Get current permissions from Redux
+			const currentPermissions = user?.menuPermissions || {};
+
+			// Merge with updated permissions from the menu hierarchy
+			const updatedPermissions = await updateReduxPermissions();
+			const mergedPermissions = { ...currentPermissions, ...updatedPermissions };
+
+			console.log('✅ Updated menu permissions:', mergedPermissions);
+
+			// Update localStorage via TokenManager
+			TokenManager.setMenuPermissions(mergedPermissions);
+
+			// Update Redux state
+			await refreshPermissions(mergedPermissions);
+
+			console.log('✅ Menu permissions updated in localStorage and Redux!');
+		} catch (error) {
+			console.error('Failed to refresh permissions:', error);
 		}
 	};
 
@@ -347,23 +375,10 @@ export const MenuManagement: React.FC = () => {
 			}
 
 			console.log('🔄 Updated permissions for Redux:', updatedPermissions);
-
-			// Get current permissions from Redux and merge with updated permissions
-			const currentPermissions = user?.menuPermissions || {};
-			const mergedPermissions = {
-				...currentPermissions,
-				...updatedPermissions,
-			};
-
-			console.log('🔄 Current permissions:', currentPermissions);
-			console.log('🔄 Merged permissions:', mergedPermissions);
-
-			// Update Redux state using the useUserMenus hook
-			await refreshPermissions(mergedPermissions);
-
-			console.log('✅ Redux permissions updated successfully!');
+			return updatedPermissions;
 		} catch (error) {
 			console.error('Failed to update Redux permissions:', error);
+			return {};
 		}
 	};
 

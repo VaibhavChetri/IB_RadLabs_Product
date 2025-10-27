@@ -14,9 +14,15 @@ import TransitPlanListing from './pages/TransitPlanListing';
 import SentTransitPlanListing from './pages/SentTransitPlanListing';
 import SentInventoryListing from './pages/SentInventoryListing';
 import ClientDispatchDetails from './pages/ClientDispatchDetails';
+import ReceivedTransitPlanListing from './pages/ReceivedTransitPlanListing';
+import ReceivedInventoryListing from './pages/ReceivedInventoryListing';
+import ClientPickupDetails from './pages/ClientPickupDetails';
 import CreateMasterPlan from './pages/CreateMasterPlan';
 import EditMasterPlan from './pages/EditMasterPlan';
 import FloatingLabelDemo from './pages/FloatingLabelDemo';
+import ClientListing from './pages/ClientListing';
+import ClientInventoryDetails from './pages/ClientInventoryDetails';
+import InventoryListing from './pages/InventoryListing';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import TokenManager from './utils/tokenManager';
 import { restoreAuth, initializeAuth } from './store/slices/authSlice';
@@ -51,7 +57,9 @@ function App() {
 				userTypeId: userData?.userTypeId || 0,
 				userTypeName: userData?.userTypeName || 'Unknown',
 				city_id: userData?.city_id || undefined,
-				state_id: userData?.state_id || undefined, // Added state_id
+				city_name: userData?.city_name || undefined,
+				state_id: userData?.state_id || undefined,
+				state_name: userData?.state_name || undefined,
 				menuPermissions: menuPermissions || {},
 			};
 			console.log('Restoring user with menu permissions:', user);
@@ -113,9 +121,24 @@ function App() {
 											path='/transit-plan/sent/client-details/:clientLocationId/:facilityId'
 											element={<ClientDispatchDetails />}
 										/>
+										<Route
+											path='/transit-plan/received/plan'
+											element={<ReceivedTransitPlanListing />}
+										/>
+										<Route
+											path='/transit-plan/received/listing'
+											element={<ReceivedInventoryListing />}
+										/>
+										<Route
+											path='/transit-plan/received/details/:clientLocationId/:facilityId'
+											element={<ClientPickupDetails />}
+										/>
 										<Route path='/transit-plan/master-plan/create' element={<CreateMasterPlan />} />
 										<Route path='/transit-plan/master-plan/edit' element={<EditMasterPlan />} />
 										<Route path='/floating-demo' element={<FloatingLabelDemo />} />
+										<Route path='/kam/clients' element={<ClientListing />} />
+										<Route path='/kam/clients/:clientId' element={<ClientInventoryDetails />} />
+										<Route path='/kam/inventory' element={<InventoryListing />} />
 									</Routes>
 								</Layout>
 							</ProtectedRoute>

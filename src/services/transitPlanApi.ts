@@ -371,4 +371,69 @@ export const TransitPlanApi = {
 		console.log('🔍 getSentCount response:', response);
 		return response;
 	},
+
+	// Received Transit Plan APIs
+	async getReceivedPlanDetails(params: {
+		start_date: string;
+		end_date: string;
+		location_id?: string;
+		facility_id?: number;
+		transit_type_id?: number;
+		page: number;
+		limit: number;
+	}): Promise<SentTransitPlanApiResponse> {
+		const searchParams = new URLSearchParams();
+		searchParams.set('start_date', params.start_date);
+		searchParams.set('end_date', params.end_date);
+		searchParams.set('page', String(params.page));
+		searchParams.set('limit', String(params.limit));
+
+		if (params.location_id !== undefined) {
+			searchParams.set('location_id', params.location_id);
+		}
+		if (params.facility_id !== undefined) {
+			searchParams.set('facility_id', String(params.facility_id));
+		}
+		if (params.transit_type_id !== undefined) {
+			searchParams.set('transit_type_id', String(params.transit_type_id));
+		}
+
+		return api.get(
+			`/transit-plan/getCurrentPlanDetails?${searchParams.toString()}`
+		) as unknown as Promise<SentTransitPlanApiResponse>;
+	},
+
+	async receivedB2BInventory(payload: {
+		containers: Array<{ container_type_id: number; count: number }>;
+		facility_id: number;
+		transit_date: string;
+		client_location_id: number;
+		transit_id: string;
+		adhoc: number;
+	}): Promise<{
+		status: string;
+		status_code: number;
+		message: string;
+		dc_number: string;
+	}> {
+		const response = await api.post('/inventory/receivedB2BInventory', payload);
+		console.log('🔍 receivedB2BInventory response:', response);
+		return response;
+	},
+
+	async getReceivedCount(params: {
+		location_id: number;
+		client_id: number;
+		start_date: string;
+		end_date: string;
+		transit_time: string;
+		transit_type_id: number;
+	}): Promise<unknown> {
+		// Manually construct query string to avoid URL encoding issues with time format
+		const queryString = `location_id=${params.location_id}&client_id=${params.client_id}&start_date=${params.start_date}&end_date=${params.end_date}&transit_time=${params.transit_time}&transit_type_id=${params.transit_type_id}`;
+
+		const response = await api.get(`/inventory/getSentCount?${queryString}`);
+		console.log('🔍 getReceivedCount response:', response);
+		return response;
+	},
 };

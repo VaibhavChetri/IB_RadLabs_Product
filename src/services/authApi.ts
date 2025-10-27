@@ -33,6 +33,9 @@ export interface LoginResponse {
 		user_type_id: number;
 		user_type_name: string; // NEW: User type name from backend
 		city_id: number;
+		city_name: string;
+		state_id: number;
+		state_name: string;
 		facility_id: number;
 		created_at: string | null;
 		updated_at: string | null;
@@ -104,7 +107,9 @@ export class AuthApiService {
 					userTypeId: response.data.user.user_type_id,
 					userTypeName: response.data.user.user_type_name, // Use backend-provided user type name
 					city_id: response.data.user.city_id,
+					city_name: response.data.user.city_name, // Use backend-provided city name
 					state_id: response.data.user.state_id,
+					state_name: response.data.user.state_name, // Use backend-provided state name
 				};
 				TokenManager.setUserData(userData);
 				console.log('✅ authApi: User data stored from API response:', userData);

@@ -118,7 +118,7 @@ export const Table = <T extends Record<string, unknown>>({
 						</tr>
 					</thead>
 					<tbody>
-						{data.length === 0 ? (
+						{!data || data.length === 0 ? (
 							<tr>
 								<td
 									colSpan={columns.length}

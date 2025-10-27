@@ -28,7 +28,8 @@ import {
 	MapPin,
 	Package,
 	ArrowRight,
-	ArrowLeft,
+	Briefcase,
+	// ArrowLeft, // Deprecated - Received section commented out
 } from 'lucide-react';
 
 import { MenuItem } from '../types/menu';
@@ -234,24 +235,44 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 					},
 				],
 			},
+			// TODO: Received section is deprecated - information will be captured elsewhere
+			// {
+			// 	id: 'received-inventory',
+			// 	name: 'Received Inventory',
+			// 	icon: ArrowLeft,
+			// 	children: [
+			// 		{
+			// 			id: 'received-transit-plan',
+			// 			name: 'Received Transit Plan',
+			// 			icon: ArrowLeft,
+			// 			href: '/transit-plan/received/plan',
+			// 		},
+			// 		{
+			// 			id: 'received-inventory-listing',
+			// 			name: 'Received Inventory Listing',
+			// 			icon: Package,
+			// 			href: '/transit-plan/received/listing',
+			// 		},
+			// 	],
+			// },
+		],
+	},
+	{
+		id: 'kam',
+		name: 'KAM',
+		icon: Briefcase,
+		children: [
 			{
-				id: 'received-inventory',
-				name: 'Received Inventory',
-				icon: ArrowLeft,
-				children: [
-					{
-						id: 'received-transit-plan',
-						name: 'Received Transit Plan',
-						icon: ArrowLeft,
-						href: '/transit-plan/received/plan',
-					},
-					{
-						id: 'received-inventory-listing',
-						name: 'Received Inventory Listing',
-						icon: Package,
-						href: '/transit-plan/received/listing',
-					},
-				],
+				id: 'kam-clients',
+				name: 'Client',
+				icon: Users,
+				href: '/kam/clients',
+			},
+			{
+				id: 'kam-inventory',
+				name: 'Inventory Client Listing',
+				icon: Package,
+				href: '/kam/inventory',
 			},
 		],
 	},

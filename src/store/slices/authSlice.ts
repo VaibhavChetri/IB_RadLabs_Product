@@ -10,7 +10,9 @@ export interface User {
 	userTypeId?: number; // NEW: User type ID
 	userTypeName?: string; // NEW: User type name
 	city_id?: number; // NEW: User's city ID
+	city_name?: string; // NEW: User's city name
 	state_id?: number; // NEW: User's state ID
+	state_name?: string; // NEW: User's state name
 	menuPermissions?: Record<string, MenuPermission>; // NEW: Menu permissions
 }
 

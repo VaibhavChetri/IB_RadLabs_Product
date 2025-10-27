@@ -32,21 +32,21 @@ export const Login: React.FC = () => {
 			// Handle successful login
 			if (result.status_code === 200 && result.data && result.data.access_token) {
 				// Dispatch login success with user data from the response
-					dispatch(
-						loginSuccess({
-							id: result.data.user.id.toString(),
-							name: `${result.data.user.first_name} ${result.data.user.last_name}`.trim(),
-							email: result.data.user.email,
-							role: result.data.user.user_type_name, // Use backend-provided user type name
-							userTypeId: result.data.user.user_type_id,
-							userTypeName: result.data.user.user_type_name, // Use backend-provided user type name
-							city_id: result.data.user.city_id,
-							city_name: result.data.user.city_name, // Use backend-provided city name
-							state_id: result.data.user.state_id,
-							state_name: result.data.user.state_name, // Use backend-provided state name
-							menuPermissions: result.data.menu_permissions || {},
-						})
-					);
+				dispatch(
+					loginSuccess({
+						id: result.data.user.id.toString(),
+						name: `${result.data.user.first_name} ${result.data.user.last_name}`.trim(),
+						email: result.data.user.email,
+						role: result.data.user.user_type_name, // Use backend-provided user type name
+						userTypeId: result.data.user.user_type_id,
+						userTypeName: result.data.user.user_type_name, // Use backend-provided user type name
+						city_id: result.data.user.city_id,
+						city_name: result.data.user.city_name, // Use backend-provided city name
+						state_id: result.data.user.state_id,
+						state_name: result.data.user.state_name, // Use backend-provided state name
+						menuPermissions: result.data.menu_permissions || {},
+					})
+				);
 				navigate('/');
 			} else {
 				setError('Login failed: Invalid response from server');

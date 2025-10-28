@@ -7,6 +7,8 @@ import clientReducer from './slices/clientSlice';
 import transitPlanReducer from './slices/transitPlanSlice';
 import inventoryReducer from './slices/inventorySlice';
 import kamReducer from './slices/kamSlice';
+import skuMappingReducer from './slices/skuMappingSlice';
+import skuListingReducer from './slices/skuListingSlice';
 
 export const store = configureStore({
 	reducer: {
@@ -18,6 +20,8 @@ export const store = configureStore({
 		transitPlan: transitPlanReducer,
 		inventory: inventoryReducer,
 		kam: kamReducer,
+		skuMapping: skuMappingReducer,
+		skuListing: skuListingReducer,
 	},
 	middleware: getDefaultMiddleware =>
 		getDefaultMiddleware({

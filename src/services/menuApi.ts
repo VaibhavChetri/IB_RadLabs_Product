@@ -11,30 +11,9 @@ export class MenuApiService {
 	/**
 	 * Get user's menu permissions
 	 * Returns hierarchical permission structure for all menus
-	 *
-	 * TODO: Replace with actual API call when backend is ready
-	 * For now, returns mock data for "City Head" user type
 	 */
 	static async getUserMenuPermissions(): Promise<ApiResponse<UserMenuPermissions>> {
-		// TODO: Replace with actual API call
-		// return apiService.get('/user/menu-permissions');
-
-		// Mock response for development - extract menu permissions from login response
-		return new Promise(resolve => {
-			setTimeout(() => {
-				const mockResponse = {
-					status_code: 200,
-					status: 'Success',
-					message: null,
-					data: {
-						user_type: 'City Head',
-						user_type_id: 1,
-						allowedMenus: MOCK_LOGIN_RESPONSE_WITH_MENUS.data.menu_permissions,
-					},
-				};
-				resolve(mockResponse as ApiResponse<UserMenuPermissions>);
-			}, 500); // Simulate API delay
-		});
+		return apiService.get('/menus/permissions');
 	}
 
 	/**

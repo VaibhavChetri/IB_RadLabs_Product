@@ -202,13 +202,70 @@ class TokenManager {
 			this.tokenCheckTimer = null;
 		}
 
-		// Clear localStorage
-		localStorage.removeItem(this.AUTH_TOKEN_KEY);
-		localStorage.removeItem(this.REFRESH_TOKEN_KEY);
-		localStorage.removeItem(this.TOKEN_DATA_KEY);
-		localStorage.removeItem(this.USER_ACTIVITY_KEY);
-		this.clearMenuPermissions(); // Clear menu permissions
-		this.clearUserData(); // Clear user data
+		// Clear all app-specific localStorage keys
+		const appKeys = [
+			'auth_token',
+			'refresh_token',
+			'token_data',
+			'user_activity',
+			'expandedMenus',
+			'menu_permissions',
+			'user_data',
+			'accessToken',
+			'accessTokenv2',
+			'token',
+			'refreshToken',
+			'cityid',
+			'customer',
+			'iconify-count',
+			'iconify-version',
+			'iconify0',
+			'iconify1',
+			'iconify2',
+			'iconify3',
+			'iconify4',
+			'iconify5',
+			'iconify6',
+			'i18nextLng',
+			'masterPlanData',
+			'redux-product',
+			'redux-root',
+			'persist:root',
+			'restaurant_cart',
+			'restaurantid',
+			'selectedClientLocation',
+			'sent-transit-plan-filters',
+			'sku-listing-client-id',
+			'sku-listing-status',
+			'sku-mapping-client',
+			'sku-mapping-rows',
+			'sku-mapping-rows-edit',
+			'sku-listing-refresh-timestamp',
+			'uploadedImages',
+			'userTypeId',
+			'user_activity',
+			'client-',
+			'transit-plan-',
+			'inventory-',
+			'kam-',
+		];
+
+		// Clear specific keys
+		appKeys.forEach(key => {
+			if (key.endsWith('-')) {
+				// Handle prefix keys (like 'client-')
+				Object.keys(localStorage).forEach(k => {
+					if (k.startsWith(key)) {
+						localStorage.removeItem(k);
+					}
+				});
+			} else {
+				localStorage.removeItem(key);
+			}
+		});
+
+		// Also clear sessionStorage
+		sessionStorage.clear();
 
 		// Dispatch logout action
 		store.dispatch(logout());

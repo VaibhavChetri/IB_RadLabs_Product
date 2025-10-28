@@ -15,6 +15,16 @@ This folder contains documentation for the **Menu Management** system and naviga
   - API integration for menu operations
   - Frontend menu rendering
 
+### 🔄 **How Menus Load in Sidebar**
+- **File**: `02-How-Menus-Load-in-Sidebar.md`
+- **Description**: Explains how the menu system loads permissions and renders in sidebar
+- **Covers**:
+  - Login flow with menu permissions
+  - Page load and permission restoration
+  - Sidebar filtering logic
+  - Fresh permissions after bulk updates
+  - Files involved in the flow
+
 ## 🎯 Key Features Documented
 
 ### ✅ **Menu System Features**
@@ -35,9 +45,10 @@ This folder contains documentation for the **Menu Management** system and naviga
 
 ### For **Developers**
 1. Read [Menu Management](./01-Menu-Management.md)
-2. Understand menu configuration structure
-3. Review permission filtering logic
-4. Check API integration patterns
+2. Read [How Menus Load in Sidebar](./02-How-Menus-Load-in-Sidebar.md)
+3. Understand menu configuration structure
+4. Review permission filtering logic
+5. Check API integration patterns
 
 ### For **Menu Updates**
 1. Review current menu structure

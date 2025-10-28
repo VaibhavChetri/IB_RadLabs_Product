@@ -2,6 +2,10 @@
 
 This document provides comprehensive development guidelines, best practices, coding standards, and patterns used in the Client CRUD system.
 
+## 📚 Related Documentation
+
+- **[Persistent Storage Design Pattern](./07-Development-Guidelines/03-Persistent-Storage-Design-Pattern.md)** - Complete guide to localStorage persistence in the application
+
 ## 🎯 Development Principles
 
 ### 1. **Code Quality Standards**

@@ -78,6 +78,25 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 					},
 				],
 			},
+			{
+				id: 'sku-mapping',
+				name: 'SKU Mapping',
+				icon: Package,
+				children: [
+					{
+						id: 'add-sku-mapping',
+						name: 'Add Mapping',
+						icon: Link,
+						href: '/ops-admin/map-sku/add',
+					},
+					{
+						id: 'sku-listing',
+						name: 'SKU Listing',
+						icon: FileText,
+						href: '/ops-admin/map-sku/listing',
+					},
+				],
+			},
 		],
 	},
 	{

@@ -23,9 +23,7 @@ export interface MenuItem {
 
 // User menu permissions response from API
 export interface UserMenuPermissions {
-	user_type: string;
-	user_type_id: number;
-	allowedMenus: Record<string, MenuPermission>;
+	menu_permissions: Record<string, MenuPermission>;
 }
 
 // Menu permission check result

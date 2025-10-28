@@ -6,6 +6,7 @@ import { useApi } from '../hooks/useApi';
 import { useUserMenus } from '../hooks/useUserMenus';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
+import { MenuApiService } from '../services/menuApi';
 
 export const MenuManagement: React.FC = () => {
 	const { refreshPermissions } = useUserMenus();
@@ -17,27 +18,28 @@ export const MenuManagement: React.FC = () => {
 	const [permissionData, setPermissionData] = useState<any>(null);
 	const [permissionLoading, setPermissionLoading] = useState(false);
 
+	const [loading, setLoading] = useState(false);
+
 	// API hooks
-	const menusApi = useApi('menus', MenuManagementApiService.getMenus);
 
 	const buildMenuHierarchy = (flatMenus: Menu[]): Menu[] => {
-		// The API already returns hierarchical data with children populated
-		// Just filter to get root menus (parent_id === null)
 		return flatMenus.filter(menu => menu.parent_id === null);
 	};
 
 	const loadMenus = useCallback(async () => {
+		setLoading(true);
 		try {
-			const response = await menusApi.execute({});
+			const response = await MenuManagementApiService.getMenus();
 			if (response.status_code === 200) {
 				const hierarchicalMenus = buildMenuHierarchy(response.data.menus);
-				console.log('Loaded menus:', hierarchicalMenus);
 				setMenus(hierarchicalMenus);
 			}
 		} catch (error) {
 			console.error('Failed to load menus:', error);
+		} finally {
+			setLoading(false);
 		}
-	}, []); // Remove menusApi dependency to prevent infinite loop
+	}, []);
 
 	const toggleExpanded = (menuId: number) => {
 		setExpandedMenus(prev => {
@@ -273,11 +275,19 @@ export const MenuManagement: React.FC = () => {
 			// Call bulk update API
 			await MenuManagementApiService.bulkUpdateMenuPermissions(allMenuPermissions);
 
+			// Fetch fresh permissions from API
+			const permissionResponse = await MenuApiService.getUserMenuPermissions();
+			const freshPermissions = permissionResponse.data?.menu_permissions || {};
+
+			// Update Redux state with fresh permissions
+			await refreshPermissions(freshPermissions);
+
+			// Update localStorage
+			const TokenManager = (await import('../utils/tokenManager')).default;
+			TokenManager.setMenuPermissions(freshPermissions);
+
 			// Reload menus to reflect the changes
 			await loadMenus();
-
-			// Refresh login to get updated menu permissions
-			await refreshLoginAndPermissions();
 
 			// Show success message
 			console.log('✅ Permissions saved successfully!');
@@ -512,12 +522,12 @@ export const MenuManagement: React.FC = () => {
 					</div>
 				</div>
 
-				{menusApi.loading ? (
+				{loading || permissionLoading ? (
 					<div className='flex items-center justify-center py-8'>
 						<div className='animate-spin rounded-full h-6 w-6 border-b-2 border-primary'></div>
 						<span className='ml-2 text-sm text-foreground-muted'>Loading menus...</span>
 					</div>
-				) : menusApi.error ? (
+				) : null ? (
 					<div className='text-center py-8'>
 						<p className='text-error mb-3'>Failed to load menus</p>
 						<Button onClick={loadMenus} variant='outline' size='sm'>
@@ -581,7 +591,7 @@ export const MenuManagement: React.FC = () => {
 							</button>
 						</div>
 
-						{permissionLoading ? (
+						{loading || permissionLoading ? (
 							<div className='flex items-center justify-center py-12'>
 								<div className='animate-spin rounded-full h-8 w-8 border-b-2 border-primary'></div>
 								<span className='ml-3 text-foreground-muted'>Loading permissions...</span>

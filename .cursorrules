@@ -1,0 +1,200 @@
+# Cursor Rules for IB Dashboard
+
+## 🧠 Coding Principles (Tech Lead Level)
+
+- Always separate **config** from logic — store config files in `src/config/`
+- Define **routes** in `src/config/routes.ts` and render them via `src/routes/index.tsx`
+- Keep components **single-responsibility**; extract reusable logic into `src/hooks/`
+- Use **TypeScript interfaces** for all data structures
+- Keep `App.tsx` minimal — only auth wrapper and router initialization
+- No hardcoded values — store constants in `src/config/constants.ts`
+- Keep all **API endpoints** in `src/services/` — no inline calls
+- Memoize expensive operations with `useMemo` and `useCallback`
+- Add **error boundaries** around route-level components
+- Use **React.lazy** for route components (code splitting)
+- Always add **loading states** for async data
+- Enforce **TypeScript strict mode**
+- Remove all `console.log` before production commits
+- Validate and sanitize all external API data
+- Use **Redux** for global state, `useState` for local UI state
+- Cache API results in Redux to prevent redundant network calls
+- Use **type guards** wherever possible
+- Implement retry logic for failed network requests
+- Provide user-friendly **error messages**
+- Optimize with `React.memo` for heavy components
+- Extract all **magic numbers** to `constants.ts`
+- Add **JSDoc comments** for complex functions or business logic
+- Follow naming conventions:
+  - Components → PascalCase
+  - Functions/variables → camelCase
+- After bulk menu updates, always call `/menus/permissions` to refresh
+- Sync menu permissions in Redux and localStorage after each update
+
+---
+
+## 📘 Documentation Structure
+
+- Each feature lives in its own folder: `Documentation/NN-Feature-Name/`
+- Start with `README.md` — overview and internal links
+- Include `00-Feature-Overview.md` (purpose, context, ownership)
+- Number files sequentially (`01-Pages.md`, `02-API.md`, etc.)
+- Keep a consistent doc pattern: **Overview → Pages → APIs → Architecture**
+- Use **simple English** tone consistent with `08-KAM documentation`
+- Every doc must specify file paths and relevant code structure
+
+---
+
+## 💬 Answer Style
+
+- Every Cursor response must be **ONE clear sentence**
+- If more explanation is needed, prefer bullet points or sequential short lines
+- Avoid long paragraphs or nested technical jargon
+
+---
+
+## ✍️ Documentation Style
+
+Follow the plain-English guide from `Documentation/08-KAM documentation`:
+
+### Key Principles
+
+1. Use simple, everyday words — avoid unnecessary jargon
+2. Write for non-native English speakers
+3. Explain _what it is_ before _how it works_
+4. Keep sentences short and active
+5. Use lists and examples instead of dense text
+6. Favor clarity over conciseness
+7. Always include real-world usage examples
+
+### Keep It Simple
+
+| Complex Term              | Use Instead |
+| ------------------------- | ----------- |
+| initialize                | open        |
+| render                    | show        |
+| trigger an event          | click       |
+| persist data              | save        |
+| component (for user docs) | page        |
+
+---
+
+## 📂 Integration with Planning Mode
+
+When using **Plan Mode**:
+
+1. Read `.cursorrules.md`, `PLANNING.md`, and related docs before generating code.
+2. Summarize understanding and dependencies before writing any file.
+3. Maintain structure and naming as per the rules above.
+4. Use the reusable components defined in `ComponentLibrary.md`.
+5. Never overwrite architecture-level decisions — suggest, don’t replace.
+
+---
+
+## ✅ Quality Checklist Before Finalizing Code
+
+- [ ] Strict TypeScript compliance
+- [ ] No inline API or constants
+- [ ] Modular imports only
+- [ ] Includes proper loading + error states
+- [ ] Reusable component extracted if repeated
+- [ ] File structure follows feature-folder layout
+- [ ] All async calls have retry/error handling
+- [ ] Proper naming conventions
+- [ ] Documentation updated in feature folder
+- [ ] One-sentence summary ready for commit message
+
+## 🧭 Planning Behavior
+
+- Before writing any code, Cursor must enter _analysis mode_ and describe its understanding of:
+  1. Problem scope
+  2. Dependencies (APIs, components, Redux slices)
+  3. Files it will read or modify
+- Only after this summary is approved should code generation begin.
+- All generated plans must specify affected directories and new file names.
+
+---
+
+## 🧰 Refactor Policy
+
+- Never rewrite a whole file unless architecture changes justify it.
+- Always summarize detected issues first (structure, naming, logic, complexity).
+- Apply refactor in small, atomic commits.
+- Maintain file imports and type safety.
+- Respect project folder conventions; never create ad-hoc folders.
+- For UI refactors, follow component–hook–service separation strictly.
+- Always reference `.cursorrules.md` and `REFRACTOR_GUIDE.md` before code changes.
+
+---
+
+## 🧩 File Awareness and Context Lock
+
+- Always load `.cursorrules.md`, `PLANNING.md`, `REFRACTOR_GUIDE.md`, and `ComponentLibrary.md` into context before any planning or generation.
+- Treat these as _persistent project memory_.
+- Summarize which of these files were read at the start of every plan.
+- Never generate code that contradicts these standards.
+
+## 🧠 Review Discipline
+
+- Every PR or auto-commit must include a short summary explaining **why** the change exists.
+- Cursor should always suggest test coverage improvements when logic changes.
+- All complex logic must have at least one inline code comment explaining intent.
+- If a pattern breaks an existing standard, Cursor must highlight it in plan mode instead of silently proceeding.
+
+---
+
+## 🧮 Testing & Validation
+
+- Every new feature requires a corresponding test file under `__tests__` or `/tests/` following the same folder hierarchy.
+- Unit tests should validate both **data shape** (TypeScript interfaces) and **UI behavior** (React Testing Library).
+- Mocks for API calls should be created using MSW or Jest mocks.
+- Cursor must always include at least one example test case in plan proposals.
+- All utilities and hooks must include a minimal test scaffold even if skipped.
+
+---
+
+## ⚙️ Performance & Security Standards
+
+- Cursor must flag any O(n²) loops over large datasets for review.
+- Never manipulate the DOM directly — always use React state or refs.
+- Always escape user input and sanitize HTML.
+- Any new API request must include timeout, error handling, and retry logic.
+- Sensitive tokens, keys, and URLs must come from `.env` files — never commit secrets.
+
+---
+
+## 🧩 Collaboration Protocol
+
+- When adding new files or folders, update the relevant `README.md` in the feature directory.
+- For new utilities, update `/Documentation/UtilitiesIndex.md`.
+- Cursor must ensure cross-team discoverability: each new feature gets logged in `/Documentation/FeatureRegistry.md`.
+- Every plan must end with a short “handover note” — what was changed, why, and next steps.
+
+---
+
+## 🧱 Commit & Versioning Rules
+
+- Commit messages follow Conventional Commits (`feat:`, `fix:`, `refactor:`, `docs:`, `test:`).
+- Major structure or schema changes must increment the minor version in `/package.json`.
+- Cursor must write human-readable, one-line summaries for each commit, using the `Answer Style` rule.
+
+---
+
+## 🧩 Self-Audit Before Completion
+
+Before finalizing any output, Cursor must:
+
+1. Re-read `.cursorrules.md` and `PLANNING.md`
+2. Check if new files follow folder architecture
+3. Ensure all constants, configs, and hooks are placed correctly
+4. Add one-line documentation updates where necessary
+5. End the task with a one-sentence summary of the change
+
+## 🚫 Auto-Commit & Approval Policy
+
+- Cursor must **never auto-commit**, push, or merge any code changes without explicit human approval.
+- All generated code must be staged for **manual review** first.
+- Cursor can propose commit messages but must not execute the commit.
+- Always wait for explicit confirmation such as **"commit now"**, **"merge approved"**, or **"proceed with commit"** before committing.
+- If working in plan mode, Cursor must stop at the final “ready-to-commit” stage and request user validation.
+- Any deviation from this rule is treated as a violation of `.cursorrules.md`.
+- The user (tech lead) retains full control over commits, merges, and version bumps.

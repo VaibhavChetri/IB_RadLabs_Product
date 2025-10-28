@@ -88,30 +88,37 @@ export const SkuMappingTable: React.FC<SkuMappingTableProps> = ({
 		row: SkuMappingRow,
 		field: string,
 		onChange: (field: string, value: any) => void
-	) => (
-		<input
-			type={
-				field.includes('price') ||
-				field.includes('weight') ||
-				field.includes('distance') ||
-				field.includes('cycle') ||
-				field.includes('Count') ||
-				field.includes('Qty')
-					? 'number'
-					: 'text'
-			}
-			value={String(row[field as keyof SkuMappingRow] || '')}
-			onChange={e => onChange(field, e.target.value)}
-			className='w-full h-[44px] px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-green-400 focus:ring-1 focus:ring-green-200'
-		/>
-	);
+	) => {
+		const fieldValue = row[field as keyof SkuMappingRow];
+		const stringValue = String(fieldValue || '');
+		return (
+			<input
+				type={
+					field.includes('price') ||
+					field.includes('weight') ||
+					field.includes('distance') ||
+					field.includes('cycle') ||
+					field.includes('Count') ||
+					field.includes('Qty')
+						? 'number'
+						: 'text'
+				}
+				value={stringValue}
+				onChange={e => onChange(field, e.target.value)}
+				className='w-full h-[44px] px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-green-400 focus:ring-1 focus:ring-green-200'
+			/>
+		);
+	};
 
 	const renderCheckbox = (row: SkuMappingRow, onChange: (field: string, value: any) => void) => (
 		<div className='flex justify-center'>
 			<input
 				type='checkbox'
 				checked={row.selectSku || false}
-				onChange={e => onChange('selectSku', e.target.checked)}
+				onChange={e => {
+					console.log('☑️ Checkbox onChange:', { checked: e.target.checked });
+					onChange('selectSku', e.target.checked);
+				}}
 				className='w-4 h-4'
 			/>
 		</div>
@@ -253,7 +260,6 @@ export const SkuMappingTable: React.FC<SkuMappingTableProps> = ({
 							{customColumns.map(col => (
 								<div key={col.key}>
 									{col.render(row, impactType, row.id, (field: string, value: any) => {
-										console.log('🔄 Calling updateRow with impactType:', impactType);
 										updateRow(impactType, row.id, field, value);
 									})}
 								</div>

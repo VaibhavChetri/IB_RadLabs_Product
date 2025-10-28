@@ -1,4 +1,15 @@
 import { configureStore } from '@reduxjs/toolkit';
+import {
+	persistReducer,
+	persistStore,
+	FLUSH,
+	REHYDRATE,
+	PAUSE,
+	PERSIST,
+	PURGE,
+	REGISTER,
+} from 'redux-persist';
+import storage from 'redux-persist/lib/storage';
 import { themeSlice } from './slices/themeSlice';
 import { authSlice } from './slices/authSlice';
 import { dashboardSlice } from './slices/dashboardSlice';
@@ -9,27 +20,57 @@ import inventoryReducer from './slices/inventorySlice';
 import kamReducer from './slices/kamSlice';
 import skuMappingReducer from './slices/skuMappingSlice';
 import skuListingReducer from './slices/skuListingSlice';
+import { combineReducers } from '@reduxjs/toolkit';
+
+// Configure redux-persist for SKU Listing
+const skuListingPersistConfig = {
+	key: 'skuListing',
+	storage,
+	whitelist: ['selectedClientId', 'selectedStatus'], // Only persist these fields
+};
+
+// Configure redux-persist for SKU Mapping
+const skuMappingPersistConfig = {
+	key: 'skuMapping',
+	storage,
+	whitelist: [
+		'waterInefficiencyRows',
+		'singleUsePpRows',
+		'clamshellRows',
+		'electricityConsumed',
+		'waterConsumed',
+		'srcingDistance',
+		'qtyTransportedOneTrip',
+		'selectedClientId',
+		'selectedClient',
+	],
+};
+
+// Combine all reducers
+const rootReducer = combineReducers({
+	theme: themeSlice.reducer,
+	auth: authSlice.reducer,
+	dashboard: dashboardSlice.reducer,
+	api: apiReducer,
+	client: clientReducer,
+	transitPlan: transitPlanReducer,
+	inventory: inventoryReducer,
+	kam: kamReducer,
+	skuMapping: persistReducer(skuMappingPersistConfig, skuMappingReducer),
+	skuListing: persistReducer(skuListingPersistConfig, skuListingReducer),
+});
 
 export const store = configureStore({
-	reducer: {
-		theme: themeSlice.reducer,
-		auth: authSlice.reducer,
-		dashboard: dashboardSlice.reducer,
-		api: apiReducer,
-		client: clientReducer,
-		transitPlan: transitPlanReducer,
-		inventory: inventoryReducer,
-		kam: kamReducer,
-		skuMapping: skuMappingReducer,
-		skuListing: skuListingReducer,
-	},
+	reducer: rootReducer,
 	middleware: getDefaultMiddleware =>
 		getDefaultMiddleware({
 			serializableCheck: {
-				ignoredActions: ['persist/PERSIST'],
+				ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
 			},
 		}),
 });
+
+export const persistor = persistStore(store);
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

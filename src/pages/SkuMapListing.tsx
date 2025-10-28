@@ -1,8 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Edit2 } from 'lucide-react';
 import { Button, Snackbar, Table } from '../components/ui';
-import { FloatingDropdown } from '../components/ui/FloatingDropdown';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Plus } from 'lucide-react';
 import { SkuApiService, ClientSkuMapping } from '../services/skuApi';
@@ -15,6 +13,7 @@ import {
 	setMappings,
 	setLoading,
 } from '../store/slices/skuListingSlice';
+import { SkuListingFilters, getSkuListingTableColumns } from '../features/sku-mapping';
 
 export const SkuMapListing: React.FC = () => {
 	const navigate = useNavigate();
@@ -32,53 +31,8 @@ export const SkuMapListing: React.FC = () => {
 		type: 'success' as 'success' | 'error' | 'info',
 	});
 
-	useEffect(() => {
-		// Clean up other menus' localStorage
-		localStorage.removeItem('sku-mapping-client');
-		localStorage.removeItem('sku-mapping-rows');
-		localStorage.removeItem('sku-mapping-rows-edit');
-
-		loadClients();
-		// Restore selected client from localStorage
-		const storedClientId = localStorage.getItem('sku-listing-client-id');
-		if (storedClientId) {
-			dispatch(setSelectedClientId(Number(storedClientId)));
-		}
-		const storedStatus = localStorage.getItem('sku-listing-status');
-		if (storedStatus) {
-			dispatch(setSelectedStatus(storedStatus));
-		}
-	}, [location_id, dispatch]);
-
-	// Trigger refresh when navigating back from edit page
-	useEffect(() => {
-		const timestamp = localStorage.getItem('sku-listing-refresh-timestamp');
-		if (timestamp) {
-			localStorage.removeItem('sku-listing-refresh-timestamp');
-			// Force reload mappings
-			if (selectedClientId) {
-				loadMappings();
-			}
-		}
-	}, [location.pathname, selectedClientId]);
-
-	useEffect(() => {
-		if (selectedClientId) {
-			loadMappings();
-			localStorage.setItem('sku-listing-client-id', selectedClientId.toString());
-		} else {
-			dispatch(setMappings([]));
-		}
-	}, [selectedClientId, selectedStatus]);
-
-	useEffect(() => {
-		// Save status to localStorage when it changes
-		if (selectedStatus) {
-			localStorage.setItem('sku-listing-status', selectedStatus);
-		}
-	}, [selectedStatus]);
-
-	const loadClients = async () => {
+	// Define functions first
+	const loadClients = useCallback(async () => {
 		if (!location_id) return;
 
 		try {
@@ -97,9 +51,9 @@ export const SkuMapListing: React.FC = () => {
 		} finally {
 			dispatch(setLoading(false));
 		}
-	};
+	}, [location_id, dispatch]);
 
-	const loadMappings = async () => {
+	const loadMappings = useCallback(async () => {
 		if (!selectedClientId) return;
 
 		try {
@@ -128,27 +82,45 @@ export const SkuMapListing: React.FC = () => {
 		} finally {
 			dispatch(setLoading(false));
 		}
-	};
+	}, [selectedClientId, selectedStatus, dispatch]);
+
+	// useEffect hooks after function declarations
+	useEffect(() => {
+		loadClients();
+		// Note: selectedClientId and selectedStatus are now automatically
+		// persisted and rehydrated by redux-persist - no manual localStorage needed
+	}, [location_id, dispatch, loadClients]);
+
+	// Trigger refresh when navigating back from edit page
+	useEffect(() => {
+		const timestamp = localStorage.getItem('sku-listing-refresh-timestamp');
+		if (timestamp) {
+			localStorage.removeItem('sku-listing-refresh-timestamp');
+			// Force reload mappings
+			if (selectedClientId) {
+				loadMappings();
+			}
+		}
+	}, [location.pathname, selectedClientId, loadMappings]);
+
+	useEffect(() => {
+		if (selectedClientId) {
+			loadMappings();
+			// Note: selectedClientId is automatically persisted by redux-persist
+		} else {
+			dispatch(setMappings([]));
+		}
+	}, [selectedClientId, selectedStatus, loadMappings, dispatch]);
 
 	const handleClientChange = (clientId: string) => {
 		const numClientId = clientId ? Number(clientId) : null;
 		dispatch(setSelectedClientId(numClientId));
-		// Update localStorage
-		if (numClientId) {
-			localStorage.setItem('sku-listing-client-id', numClientId.toString());
-		} else {
-			localStorage.removeItem('sku-listing-client-id');
-		}
+		// Note: Persistence is now handled by Redux Persist automatically
 	};
 
 	const handleStatusChange = (status: string) => {
 		dispatch(setSelectedStatus(status));
-		// Update localStorage
-		if (status) {
-			localStorage.setItem('sku-listing-status', status);
-		} else {
-			localStorage.removeItem('sku-listing-status');
-		}
+		// Note: Persistence is now handled by Redux Persist automatically
 	};
 
 	const handleEdit = (mapping: ClientSkuMapping) => {
@@ -178,120 +150,19 @@ export const SkuMapListing: React.FC = () => {
 				</div>
 
 				{/* Filters */}
-				<div className='bg-background rounded-lg border border-border p-4 mb-6'>
-					<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-						<FloatingDropdown
-							label='Select Client'
-							placeholder='Choose a client'
-							value={selectedClientId?.toString() || ''}
-							onChange={handleClientChange}
-							options={clients.map(client => ({
-								value: client.clientId.toString(),
-								label: client.clientName,
-							}))}
-						/>
-						<FloatingDropdown
-							label='Status'
-							placeholder='Filter by status'
-							value={selectedStatus}
-							onChange={handleStatusChange}
-							options={[
-								{ value: '', label: 'All' },
-								{ value: 'Enabled', label: 'Enabled' },
-								{ value: 'Disabled', label: 'Disabled' },
-							]}
-						/>
-					</div>
-				</div>
+				<SkuListingFilters
+					clients={clients}
+					selectedClientId={selectedClientId}
+					selectedStatus={selectedStatus}
+					onClientChange={handleClientChange}
+					onStatusChange={handleStatusChange}
+				/>
 
 				{/* Table */}
 				{selectedClientId && mappings.length > 0 ? (
 					<div className='overflow-x-auto'>
 						<Table
-							columns={[
-								{
-									key: 'actions',
-									title: 'Actions',
-									render: (value: unknown, row: any, _index: number) =>
-										row ? (
-											<button
-												onClick={() => handleEdit(row)}
-												className='p-1.5 rounded hover:bg-gray-100'
-												title='Edit'
-											>
-												<Edit2 className='h-4 w-4 text-primary' />
-											</button>
-										) : null,
-								},
-								{
-									key: 'containerType',
-									title: 'Container Type',
-									dataIndex: 'containerType' as keyof ClientSkuMapping,
-								},
-								{
-									key: 'impactName',
-									title: 'Impact Type',
-									dataIndex: 'impactName' as keyof ClientSkuMapping,
-								},
-								{
-									key: 'status',
-									title: 'Status',
-									dataIndex: 'status' as keyof ClientSkuMapping,
-									render: (value: unknown, row: any, _index: number) =>
-										row ? (
-											<span
-												className={row.status === 'Enabled' ? 'text-green-600' : 'text-red-600'}
-											>
-												{row.status}
-											</span>
-										) : (
-											'-'
-										),
-								},
-								{ key: 'price', title: 'Price', dataIndex: 'price' as keyof ClientSkuMapping },
-								{
-									key: 'distanceFromWarehouse',
-									title: 'Distance',
-									dataIndex: 'distanceFromWarehouse' as keyof ClientSkuMapping,
-									render: (_value: unknown, row: any, _index: number) =>
-										row ? row.distanceFromWarehouse || '-' : '-',
-								},
-								{
-									key: 'platesWashedPerCycle',
-									title: 'Plates/Cycle',
-									dataIndex: 'platesWashedPerCycle' as keyof ClientSkuMapping,
-									render: (_value: unknown, row: any, _index: number) =>
-										row ? row.platesWashedPerCycleByClient || '-' : '-',
-								},
-								{
-									key: 'disposableWeight',
-									title: 'Weight',
-									dataIndex: 'disposableWeight' as keyof ClientSkuMapping,
-									render: (_value: unknown, row: any, _index: number) =>
-										row ? row.disposableWeight || '-' : '-',
-								},
-								{
-									key: 'qtyTransported',
-									title: 'Qty/EV',
-									dataIndex: 'qtyTransported' as keyof ClientSkuMapping,
-									render: (_value: unknown, row: any, _index: number) =>
-										row ? row.srcQtyTransportedOneTripEv || '-' : '-',
-								},
-								{
-									key: 'weight',
-									title: 'Weight',
-									dataIndex: 'weight' as keyof ClientSkuMapping,
-									render: (_value: unknown, row: any, _index: number) =>
-										row ? row.weight_bagasse || '-' : '-',
-								},
-								{
-									key: 'numberOfClamshell',
-									title: 'Count',
-									dataIndex: 'numberOfClamshell' as keyof ClientSkuMapping,
-									render: (_value: unknown, row: any, _index: number) =>
-										row ? row.numberOfClamshell || '-' : '-',
-								},
-							]}
+							columns={getSkuListingTableColumns(handleEdit)}
 							data={mappings as any[]}
 							loading={loading}
 							emptyText='No SKU mappings found.'

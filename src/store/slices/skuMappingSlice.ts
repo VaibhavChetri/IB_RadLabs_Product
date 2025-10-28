@@ -78,27 +78,36 @@ const skuMappingSlice = createSlice({
 			state,
 			action: PayloadAction<{ rowId: number; field: string; value: any }>
 		) => {
-			const row = state.waterInefficiencyRows.find(r => r.id === action.payload.rowId);
-			if (row) {
-				(row as any)[action.payload.field] = action.payload.value;
+			const index = state.waterInefficiencyRows.findIndex(r => r.id === action.payload.rowId);
+			if (index !== -1) {
+				state.waterInefficiencyRows[index] = {
+					...state.waterInefficiencyRows[index],
+					[action.payload.field]: action.payload.value,
+				};
 			}
 		},
 		updateSingleUsePpRow: (
 			state,
 			action: PayloadAction<{ rowId: number; field: string; value: any }>
 		) => {
-			const row = state.singleUsePpRows.find(r => r.id === action.payload.rowId);
-			if (row) {
-				(row as any)[action.payload.field] = action.payload.value;
+			const index = state.singleUsePpRows.findIndex(r => r.id === action.payload.rowId);
+			if (index !== -1) {
+				state.singleUsePpRows[index] = {
+					...state.singleUsePpRows[index],
+					[action.payload.field]: action.payload.value,
+				};
 			}
 		},
 		updateClamshellRow: (
 			state,
 			action: PayloadAction<{ rowId: number; field: string; value: any }>
 		) => {
-			const row = state.clamshellRows.find(r => r.id === action.payload.rowId);
-			if (row) {
-				(row as any)[action.payload.field] = action.payload.value;
+			const index = state.clamshellRows.findIndex(r => r.id === action.payload.rowId);
+			if (index !== -1) {
+				state.clamshellRows[index] = {
+					...state.clamshellRows[index],
+					[action.payload.field]: action.payload.value,
+				};
 			}
 		},
 		setConstantFields: (

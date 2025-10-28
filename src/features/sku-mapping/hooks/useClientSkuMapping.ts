@@ -1,33 +1,37 @@
 import { useState, useEffect, useCallback } from 'react';
 import { SkuApiService, ClientWithImpactTypes } from '../../../services/skuApi';
-import { useSelector } from 'react-redux';
-import { RootState } from '../../../store';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState, AppDispatch } from '../../../store';
+import { setSelectedClient as setSelectedClientRedux } from '../../../store/slices/skuMappingSlice';
 
 export const useClientSkuMapping = (clientId?: string) => {
 	const { user } = useSelector((state: RootState) => state.auth);
 	const location_id = user?.city_id;
+	const dispatch = useDispatch<AppDispatch>();
 
 	const isEditMode = !!clientId;
 
+	// Get client info from Redux (persisted)
+	const reduxClientId = useSelector((state: RootState) => state.skuMapping.selectedClientId);
+	const reduxClient = useSelector((state: RootState) => state.skuMapping.selectedClient);
+
 	const [clients, setClients] = useState<ClientWithImpactTypes[]>([]);
-	const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
-	const [selectedClient, setSelectedClient] = useState<ClientWithImpactTypes | null>(null);
+	const [selectedClientId, setSelectedClientId] = useState<number | null>(reduxClientId);
+	const [selectedClient, setSelectedClient] = useState<ClientWithImpactTypes | null>(reduxClient);
 	const [isClientLocked, setIsClientLocked] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string>('');
 
 	useEffect(() => {
-		// Restore selected client from localStorage in add mode
-		if (!isEditMode) {
-			const storedClientId = localStorage.getItem('sku-mapping-client');
-			if (storedClientId) {
-				setSelectedClientId(Number(storedClientId));
-			}
+		// Restore selected client from Redux Persist in add mode
+		if (!isEditMode && reduxClientId && reduxClient) {
+			setSelectedClientId(reduxClientId);
+			setSelectedClient(reduxClient);
 		}
 
 		loadClients();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [location_id, isEditMode]);
+	}, [location_id, isEditMode, reduxClientId, reduxClient]);
 
 	useEffect(() => {
 		if (isEditMode && clientId && clients.length > 0) {
@@ -84,15 +88,16 @@ export const useClientSkuMapping = (clientId?: string) => {
 					return;
 				}
 
+				// Update both local state AND Redux
 				setSelectedClient(client);
 				setSelectedClientId(numClientId);
+				dispatch(setSelectedClientRedux({ client, clientId: numClientId }));
 				onClientSelect(client);
-				localStorage.setItem('sku-mapping-client', numClientId.toString());
 			} catch (error) {
 				console.error('Failed to check client mappings:', error);
 			}
 		},
-		[clients]
+		[clients, dispatch]
 	);
 
 	return {

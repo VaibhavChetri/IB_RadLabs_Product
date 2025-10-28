@@ -3,7 +3,7 @@
  * Handles Bearer token storage, validation, and auto-logout after inactivity
  */
 
-import { store } from '../store';
+import { store, persistor } from '../store';
 import { logout } from '../store/slices/authSlice';
 import { MenuPermission } from '../types/menu';
 
@@ -266,6 +266,9 @@ class TokenManager {
 
 		// Also clear sessionStorage
 		sessionStorage.clear();
+
+		// Purge redux-persist storage (clears all persisted Redux state)
+		persistor.purge();
 
 		// Dispatch logout action
 		store.dispatch(logout());

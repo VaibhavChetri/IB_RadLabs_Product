@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { Snackbar, FloatingDropdown, PageHeader, Button } from '../components/ui';
 import { RootState } from '../store';
 import { SkuApiService } from '../services/skuApi';
+import { resetSkuMapping } from '../store/slices/skuMappingSlice';
 import {
-	useSkuMappingForm,
+	useSkuMappingFormRedux,
 	useClientSkuMapping,
 	useSkuSubmission,
 	SkuMappingFormSection,
@@ -15,8 +16,12 @@ import {
 export const AddClientSkuMapping: React.FC = () => {
 	const { clientId } = useParams<{ clientId: string }>();
 	const navigate = useNavigate();
+	const dispatch = useDispatch();
 	const { user } = useSelector((state: RootState) => state.auth);
 	const isEditMode = Boolean(clientId);
+	const lastModeRef = useRef<'add' | 'edit' | null>(null);
+
+	// 🔹 Note: PersistGate already handles rehydration, so we don't need manual tracking
 
 	const {
 		clients,
@@ -27,6 +32,7 @@ export const AddClientSkuMapping: React.FC = () => {
 		error,
 		handleClientChange,
 	} = useClientSkuMapping(clientId);
+
 	const {
 		waterInefficiencyRows,
 		singleUsePpRows,
@@ -43,23 +49,19 @@ export const AddClientSkuMapping: React.FC = () => {
 		removeRow,
 		updateRow,
 		loadExistingMapping,
-	} = useSkuMappingForm(isEditMode);
-	const { submit, submitting, snackbar, setSnackbar } = useSkuSubmission();
+	} = useSkuMappingFormRedux();
 
+	const { submit, submitting, snackbar, setSnackbar } = useSkuSubmission();
 	const [loading, setLoading] = useState(false);
 	const [containerTypes, setContainerTypes] = useState<any[]>([]);
 
+	// Clear Redux state when switching modes to prevent stale data
 	useEffect(() => {
-		// Clean up listing menu's localStorage
-		localStorage.removeItem('sku-listing-client-id');
-		localStorage.removeItem('sku-listing-status');
-
-		// Clean up opposite mode's localStorage to avoid stale data
-		if (isEditMode) {
-			localStorage.removeItem('sku-mapping-rows');
-		} else {
-			localStorage.removeItem('sku-mapping-rows-edit');
+		const currentMode = isEditMode ? 'edit' : 'add';
+		if (lastModeRef.current && lastModeRef.current !== currentMode) {
+			dispatch(resetSkuMapping());
 		}
+		lastModeRef.current = currentMode;
 
 		const loadContainerTypes = async () => {
 			try {
@@ -72,57 +74,62 @@ export const AddClientSkuMapping: React.FC = () => {
 			}
 		};
 		loadContainerTypes();
-	}, [isEditMode]);
+	}, [isEditMode, dispatch]);
 
 	useEffect(() => {
 		if (error) setSnackbar({ open: true, message: error, type: 'error' });
 	}, [error, setSnackbar]);
 
+	// Load existing mapping in edit mode (only if no persisted data)
 	useEffect(() => {
 		if (selectedClientId && clientId) {
-			setLoading(true);
-			loadExistingMapping(selectedClientId)
-				.catch(() =>
-					setSnackbar({ open: true, message: 'Failed to load existing mapping', type: 'error' })
-				)
-				.finally(() => setLoading(false));
-		}
-	}, [selectedClientId, clientId, loadExistingMapping, setSnackbar]);
+			const totalRows =
+				waterInefficiencyRows.length + singleUsePpRows.length + clamshellRows.length;
 
-	// Add default rows when client is selected in add mode
-	useEffect(() => {
-		if (!clientId && selectedClient && selectedClient.impactTypes) {
-			// Only add default rows if the arrays are still empty
-			const allRowsEmpty =
-				waterInefficiencyRows.length === 0 &&
-				singleUsePpRows.length === 0 &&
-				clamshellRows.length === 0;
-
-			if (allRowsEmpty) {
-				selectedClient.impactTypes.forEach((impactType: { name: string }) => {
-					if (impactType.name === 'Water Inefficiency' && waterInefficiencyRows.length === 0) {
-						addRow(impactType.name);
-					} else if (impactType.name === 'Single use PP' && singleUsePpRows.length === 0) {
-						addRow(impactType.name);
-					} else if (impactType.name === 'Clampshell' && clamshellRows.length === 0) {
-						addRow('Clamshell');
-					}
-				});
+			// Only load from API if there's no existing data (either persisted or fetched)
+			if (totalRows === 0) {
+				setLoading(true);
+				loadExistingMapping(selectedClientId)
+					.catch(() =>
+						setSnackbar({
+							open: true,
+							message: 'Failed to load existing mapping',
+							type: 'error',
+						})
+					)
+					.finally(() => setLoading(false));
 			}
 		}
 	}, [
-		selectedClient,
+		selectedClientId,
 		clientId,
 		waterInefficiencyRows.length,
 		singleUsePpRows.length,
 		clamshellRows.length,
-		addRow,
+		loadExistingMapping,
+		setSnackbar,
 	]);
 
-	const handleClientSelect = useCallback(async (_client: { impactTypes: { name: string }[] }) => {
-		// This callback is triggered when client is selected
-		// Rows will be added by the useEffect above
-	}, []);
+	// When user selects client, add default rows only if needed
+	const handleClientSelect = useCallback(
+		async (client: { impactTypes: { name: string }[] }) => {
+			const totalRows =
+				waterInefficiencyRows.length + singleUsePpRows.length + clamshellRows.length;
+
+			if (totalRows === 0) {
+				client.impactTypes.forEach((impactType: { name: string }) => {
+					if (impactType.name === 'Water Inefficiency') {
+						addRow(impactType.name);
+					} else if (impactType.name === 'Single use PP') {
+						addRow(impactType.name);
+					} else if (impactType.name === 'Clampshell') {
+						addRow('Clamshell');
+					}
+				});
+			}
+		},
+		[waterInefficiencyRows.length, singleUsePpRows.length, clamshellRows.length, addRow]
+	);
 
 	const handleClientDropdownChange = async (clientIdStr: string) =>
 		await handleClientChange(clientIdStr, handleClientSelect);
@@ -159,72 +166,70 @@ export const AddClientSkuMapping: React.FC = () => {
 					icon='📦'
 				/>
 
+				{/* Client Selector */}
 				<div className='bg-background rounded-lg border border-border p-4 mb-6'>
 					<FloatingDropdown
 						label='Select Client'
 						placeholder='Choose a client'
 						value={selectedClientId?.toString() || ''}
 						onChange={handleClientDropdownChange}
-						options={clients.map(client => ({
-							value: client.clientId.toString(),
-							label: client.clientName,
-						}))}
+						options={
+							clients?.map(client => ({
+								value: client.clientId.toString(),
+								label: client.clientName,
+							})) || []
+						}
 						disabled={isClientLocked}
 					/>
 				</div>
 
-				{selectedClientId && selectedClient && (
+				{/* Mapping Sections */}
+				{selectedClientId && selectedClient && selectedClient.impactTypes && (
 					<div className='space-y-6'>
-						{selectedClient.impactTypes.map((impactType: { id: number; name: string }) => (
-							<div
-								key={impactType.id}
-								className='bg-background rounded-lg border border-border p-6'
-							>
-								<SkuMappingFormSection
-									impactType={impactType.name}
-									electricityConsumed={electricityConsumed}
-									setElectricityConsumed={setElectricityConsumed}
-									waterConsumed={waterConsumed}
-									setWaterConsumed={setWaterConsumed}
-									srcingDistance={srcingDistance}
-									setSrcingDistance={setSrcingDistance}
-									qtyTransportedOneTrip={qtyTransportedOneTrip}
-									setQtyTransportedOneTrip={setQtyTransportedOneTrip}
-								/>
-								<SkuMappingTable
-									impactType={impactType.name === 'Clampshell' ? 'Clamshell' : impactType.name}
-									rows={
-										impactType.name === 'Water Inefficiency'
-											? waterInefficiencyRows
-											: impactType.name === 'Single use PP'
-												? singleUsePpRows
-												: impactType.name === 'Clampshell'
-													? clamshellRows
-													: clamshellRows
-									}
-									columns={[]}
-									addRow={addRow}
-									removeRow={removeRow}
-									updateRow={updateRow}
-									containerTypes={containerTypes}
-									selectedContainerTypes={
-										impactType.name === 'Water Inefficiency'
-											? waterInefficiencyRows
-													.map(r => r.containerTypeId as number)
-													.filter(id => id > 0)
-											: impactType.name === 'Single use PP'
-												? singleUsePpRows.map(r => r.containerTypeId as number).filter(id => id > 0)
-												: impactType.name === 'Clampshell' || impactType.name === 'Clamshell'
-													? clamshellRows.map(r => r.containerTypeId as number).filter(id => id > 0)
-													: []
-									}
-									_isEditMode={!!clientId}
-								/>
-							</div>
-						))}
+						{selectedClient.impactTypes.map((impactType: { id: number; name: string }) => {
+							const rowsForImpactType =
+								impactType.name === 'Water Inefficiency'
+									? waterInefficiencyRows
+									: impactType.name === 'Single use PP'
+										? singleUsePpRows
+										: clamshellRows;
+
+							return (
+								<div
+									key={impactType.id}
+									className='bg-background rounded-lg border border-border p-6'
+								>
+									<SkuMappingFormSection
+										impactType={impactType.name}
+										electricityConsumed={electricityConsumed}
+										setElectricityConsumed={setElectricityConsumed}
+										waterConsumed={waterConsumed}
+										setWaterConsumed={setWaterConsumed}
+										srcingDistance={srcingDistance}
+										setSrcingDistance={setSrcingDistance}
+										qtyTransportedOneTrip={qtyTransportedOneTrip}
+										setQtyTransportedOneTrip={setQtyTransportedOneTrip}
+									/>
+									<SkuMappingTable
+										impactType={impactType.name === 'Clampshell' ? 'Clamshell' : impactType.name}
+										rows={rowsForImpactType}
+										columns={[]}
+										addRow={addRow}
+										removeRow={removeRow}
+										updateRow={updateRow}
+										containerTypes={containerTypes}
+										selectedContainerTypes={rowsForImpactType
+											.map(r => r.containerTypeId as number)
+											.filter(id => id > 0)}
+										_isEditMode={!!clientId}
+									/>
+								</div>
+							);
+						})}
 					</div>
 				)}
 
+				{/* Action Buttons */}
 				{selectedClientId && (
 					<div className='flex justify-end gap-4 mt-6'>
 						<Button
@@ -240,6 +245,8 @@ export const AddClientSkuMapping: React.FC = () => {
 					</div>
 				)}
 			</div>
+
+			{/* Snackbar */}
 			<Snackbar
 				open={snackbar.open}
 				message={snackbar.message}

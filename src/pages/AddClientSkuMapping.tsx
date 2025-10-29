@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { Snackbar, FloatingDropdown, PageHeader, Button } from '../components/ui';
 import { RootState } from '../store';
-import { SkuApiService } from '../services/skuApi';
 import { resetSkuMapping } from '../store/slices/skuMappingSlice';
+import { SkuApiService } from '../services/skuApi';
 import {
 	useSkuMappingFormRedux,
 	useClientSkuMapping,
@@ -14,14 +14,10 @@ import {
 } from '../features/sku-mapping';
 
 export const AddClientSkuMapping: React.FC = () => {
-	const { clientId } = useParams<{ clientId: string }>();
 	const navigate = useNavigate();
 	const dispatch = useDispatch();
 	const { user } = useSelector((state: RootState) => state.auth);
-	const isEditMode = Boolean(clientId);
-	const lastModeRef = useRef<'add' | 'edit' | null>(null);
-
-	// 🔹 Note: PersistGate already handles rehydration, so we don't need manual tracking
+	const hasClearedOnMount = useRef(false);
 
 	const {
 		clients,
@@ -31,7 +27,7 @@ export const AddClientSkuMapping: React.FC = () => {
 		loading: clientsLoading,
 		error,
 		handleClientChange,
-	} = useClientSkuMapping(clientId);
+	} = useClientSkuMapping();
 
 	const {
 		waterInefficiencyRows,
@@ -47,22 +43,29 @@ export const AddClientSkuMapping: React.FC = () => {
 		setQtyTransportedOneTrip,
 		addRow,
 		removeRow,
-		updateRow,
-		loadExistingMapping,
 	} = useSkuMappingFormRedux();
 
 	const { submit, submitting, snackbar, setSnackbar } = useSkuSubmission();
-	const [loading, setLoading] = useState(false);
 	const [containerTypes, setContainerTypes] = useState<any[]>([]);
 
-	// Clear Redux state when switching modes to prevent stale data
+	// Clear Redux state on navigation only, not on refresh
 	useEffect(() => {
-		const currentMode = isEditMode ? 'edit' : 'add';
-		if (lastModeRef.current && lastModeRef.current !== currentMode) {
-			dispatch(resetSkuMapping());
-		}
-		lastModeRef.current = currentMode;
+		// Check if we have persisted data (means this is a refresh)
+		const hasPersistedData =
+			waterInefficiencyRows.length > 0 || singleUsePpRows.length > 0 || clamshellRows.length > 0;
 
+		if (!hasPersistedData && !hasClearedOnMount.current) {
+			// No persisted data + first mount = navigation from sidebar/button
+			dispatch(resetSkuMapping());
+			hasClearedOnMount.current = true;
+		} else if (hasPersistedData) {
+			// Has persisted data = refresh, don't clear
+			hasClearedOnMount.current = true;
+		}
+	}, [dispatch, waterInefficiencyRows.length, singleUsePpRows.length, clamshellRows.length]);
+
+	// Load container types
+	useEffect(() => {
 		const loadContainerTypes = async () => {
 			try {
 				const response = await SkuApiService.getContainerTypes();
@@ -74,41 +77,25 @@ export const AddClientSkuMapping: React.FC = () => {
 			}
 		};
 		loadContainerTypes();
-	}, [isEditMode, dispatch]);
+	}, []);
 
 	useEffect(() => {
 		if (error) setSnackbar({ open: true, message: error, type: 'error' });
 	}, [error, setSnackbar]);
 
-	// Load existing mapping in edit mode (only if no persisted data)
+	// Clear Redux state after successful submission
 	useEffect(() => {
-		if (selectedClientId && clientId) {
-			const totalRows =
-				waterInefficiencyRows.length + singleUsePpRows.length + clamshellRows.length;
-
-			// Only load from API if there's no existing data (either persisted or fetched)
-			if (totalRows === 0) {
-				setLoading(true);
-				loadExistingMapping(selectedClientId)
-					.catch(() =>
-						setSnackbar({
-							open: true,
-							message: 'Failed to load existing mapping',
-							type: 'error',
-						})
-					)
-					.finally(() => setLoading(false));
-			}
+		if (
+			snackbar.open &&
+			snackbar.type === 'success' &&
+			snackbar.message.includes('added successfully')
+		) {
+			// Small delay to ensure navigation completes
+			setTimeout(() => {
+				dispatch(resetSkuMapping());
+			}, 2000);
 		}
-	}, [
-		selectedClientId,
-		clientId,
-		waterInefficiencyRows.length,
-		singleUsePpRows.length,
-		clamshellRows.length,
-		loadExistingMapping,
-		setSnackbar,
-	]);
+	}, [snackbar.open, snackbar.type, snackbar.message, dispatch]);
 
 	// When user selects client, add default rows only if needed
 	const handleClientSelect = useCallback(
@@ -145,10 +132,10 @@ export const AddClientSkuMapping: React.FC = () => {
 			waterConsumed,
 			srcingDistance,
 			qtyTransportedOneTrip,
-			!!clientId
+			false // isEditMode = false for add mode
 		);
 
-	if (loading || clientsLoading)
+	if (clientsLoading)
 		return (
 			<div className='flex items-center justify-center min-h-screen'>
 				<div className='text-lg'>Loading...</div>
@@ -159,7 +146,7 @@ export const AddClientSkuMapping: React.FC = () => {
 		<div className='min-h-screen bg-background-default p-6'>
 			<div className='max-w-7xl mx-auto'>
 				<PageHeader
-					title={clientId ? 'Edit Client SKU Mapping' : 'Add Client SKU Mapping'}
+					title='Add Client SKU Mapping'
 					locationName={user?.city_name || 'City'}
 					totalItems={0}
 					itemType='mappings'
@@ -216,12 +203,11 @@ export const AddClientSkuMapping: React.FC = () => {
 										columns={[]}
 										addRow={addRow}
 										removeRow={removeRow}
-										updateRow={updateRow}
 										containerTypes={containerTypes}
 										selectedContainerTypes={rowsForImpactType
 											.map(r => r.containerTypeId as number)
 											.filter(id => id > 0)}
-										_isEditMode={!!clientId}
+										_isEditMode={false}
 									/>
 								</div>
 							);
@@ -240,7 +226,7 @@ export const AddClientSkuMapping: React.FC = () => {
 							Cancel
 						</Button>
 						<Button onClick={handleSubmit} disabled={submitting}>
-							{submitting ? 'Saving...' : clientId ? 'Update' : 'Submit'}
+							{submitting ? 'Saving...' : 'Submit'}
 						</Button>
 					</div>
 				)}

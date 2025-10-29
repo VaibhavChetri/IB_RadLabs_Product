@@ -13,7 +13,6 @@ import {
 	updateClamshellRow,
 	setConstantFields,
 	clearAllRows,
-	resetSkuMapping,
 } from '../../../store/slices/skuMappingSlice';
 import { SkuApiService } from '../../../services/skuApi';
 
@@ -174,9 +173,11 @@ export const useSkuMappingFormRedux = () => {
 					dispatch(clearAllRows());
 
 					// Dispatch to set all rows
-					waterInefficiencyData.forEach(row => dispatch(addWaterInefficiencyRow(row)));
-					singleUsePpData.forEach(row => dispatch(addSingleUsePpRow(row)));
-					clamshellData.forEach(row => dispatch(addClamshellRow(row)));
+					waterInefficiencyData.forEach((row: SkuMappingRow) =>
+						dispatch(addWaterInefficiencyRow(row))
+					);
+					singleUsePpData.forEach((row: SkuMappingRow) => dispatch(addSingleUsePpRow(row)));
+					clamshellData.forEach((row: SkuMappingRow) => dispatch(addClamshellRow(row)));
 
 					// Set constant fields - only set if we don't already have values (to preserve user input)
 					if (rows.length > 0) {

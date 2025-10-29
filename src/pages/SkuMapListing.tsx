@@ -141,7 +141,10 @@ export const SkuMapListing: React.FC = () => {
 						/>
 					</div>
 					<Button
-						onClick={() => navigate('/ops-admin/map-sku/add')}
+						onClick={() => {
+							sessionStorage.removeItem('sku-add-navigation'); // Clear flag for fresh start
+							navigate('/ops-admin/map-sku/add');
+						}}
 						className='flex items-center space-x-2'
 					>
 						<Plus className='w-4 h-4' />

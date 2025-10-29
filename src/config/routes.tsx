@@ -20,6 +20,7 @@ import ClientListing from '../pages/ClientListing';
 import ClientInventoryDetails from '../pages/ClientInventoryDetails';
 import InventoryListing from '../pages/InventoryListing';
 import { AddClientSkuMapping } from '../pages/AddClientSkuMapping';
+import EditClientSkuMapping from '../pages/EditClientSkuMapping';
 import { SkuMapListing } from '../pages/SkuMapListing';
 
 export interface RouteConfig {
@@ -56,5 +57,5 @@ export const routes: RouteConfig[] = [
 	{ path: '/kam/inventory', component: InventoryListing },
 	{ path: '/ops-admin/map-sku/listing', component: SkuMapListing },
 	{ path: '/ops-admin/map-sku/add', component: AddClientSkuMapping },
-	{ path: '/ops-admin/map-sku/:clientId/edit', component: AddClientSkuMapping },
+	{ path: '/ops-admin/map-sku/:clientId/edit', component: EditClientSkuMapping },
 ];

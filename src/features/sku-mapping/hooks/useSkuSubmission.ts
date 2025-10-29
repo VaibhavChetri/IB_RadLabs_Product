@@ -116,8 +116,13 @@ export const useSkuSubmission = () => {
 						: 'SKU mapping added successfully',
 					type: 'success',
 				});
-				localStorage.removeItem('sku-mapping-client');
-				localStorage.removeItem('sku-mapping-rows');
+
+				// Clear Redux Persist storage on successful submission
+				if (!isEditMode) {
+					// Only clear add page storage, not edit page
+					localStorage.removeItem('persist:skuMapping');
+				}
+
 				// Set refresh timestamp to trigger listing reload
 				localStorage.setItem('sku-listing-refresh-timestamp', Date.now().toString());
 				setTimeout(() => navigate('/ops-admin/map-sku/listing'), 1500);

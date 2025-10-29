@@ -1,8 +1,14 @@
 import React from 'react';
+import { useDispatch } from 'react-redux';
 import { Plus, Trash2, Info } from 'lucide-react';
 import { BorderlessDropdown } from '../../../components/ui/BorderlessDropdown';
 import { Button } from '../../../components/ui/Button';
 import { getColumnsForImpactType } from '../utils/skuMappingTableConfig';
+import {
+	updateWaterInefficiencyRow,
+	updateSingleUsePpRow,
+	updateClamshellRow,
+} from '../../../store/slices/skuMappingSlice';
 
 interface SkuMappingRow {
 	id: number;
@@ -37,7 +43,6 @@ interface SkuMappingTableProps {
 	columns: TableColumn[];
 	addRow: (impactType: string) => void;
 	removeRow: (impactType: string, rowId: number) => void;
-	updateRow: (impactType: string, rowId: number, field: string, value: any) => void;
 	containerTypes?: any[];
 	selectedContainerTypes?: number[];
 	_isEditMode?: boolean;
@@ -49,11 +54,11 @@ export const SkuMappingTable: React.FC<SkuMappingTableProps> = ({
 	columns,
 	addRow,
 	removeRow,
-	updateRow,
 	containerTypes = [],
 	selectedContainerTypes = [],
 	_isEditMode = false,
 }) => {
+	const dispatch = useDispatch();
 	const renderDropdown = (
 		_rowId: number,
 		_impactType: string,
@@ -260,7 +265,14 @@ export const SkuMappingTable: React.FC<SkuMappingTableProps> = ({
 							{customColumns.map(col => (
 								<div key={col.key}>
 									{col.render(row, impactType, row.id, (field: string, value: any) => {
-										updateRow(impactType, row.id, field, value);
+										const payload = { rowId: row.id, field, value };
+										if (impactType === 'Water Inefficiency') {
+											dispatch(updateWaterInefficiencyRow(payload));
+										} else if (impactType === 'Single use PP') {
+											dispatch(updateSingleUsePpRow(payload));
+										} else if (impactType === 'Clamshell' || impactType === 'Clampshell') {
+											dispatch(updateClamshellRow(payload));
+										}
 									})}
 								</div>
 							))}

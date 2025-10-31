@@ -125,8 +125,7 @@ export const EditClientSkuMapping: React.FC = () => {
 		clamshellRows.length,
 	]);
 
-	const totalItems =
-		waterInefficiencyRows.length + singleUsePpRows.length + clamshellRows.length;
+	const totalItems = waterInefficiencyRows.length + singleUsePpRows.length + clamshellRows.length;
 
 	const handleSubmit = () =>
 		submit(

@@ -35,6 +35,50 @@ export interface SentInventoryRow extends Record<string, unknown> {
 	}>;
 }
 
+// Client by City Response
+export interface ClientByCityItem {
+	clientId: number;
+	clientName: string;
+}
+
+export interface ClientByCityResponse {
+	status_code: number;
+	result?: ClientByCityItem[];
+	message?: string;
+}
+
+// Dashboard KAM Response (matches DashboardResponse from hooks)
+export interface DashboardKAMResponse {
+	status_code: number;
+	summaryCount?: {
+		totalSummary?: {
+			totalClientSKUCount?: number;
+			totalClientAvgSKUCount?: number;
+		};
+	};
+	total?: {
+		totalPlasticSavedKg?: number;
+		water?: number;
+		ghc?: number;
+	};
+	segResult?: {
+		byDate?: Record<
+			string,
+			{
+				totalCount: number;
+				day: string;
+			}
+		>;
+		byWeek?: Array<{
+			weekNumber: number;
+			days: Array<{
+				date: string;
+				totalCount: number;
+			}>;
+		}>;
+	};
+}
+
 // API Response Types
 export interface WashingFacilitiesResponse {
 	status: string;
@@ -106,7 +150,32 @@ export class InventoryApiService {
 	/**
 	 * Get clients by city
 	 */
-	static async getClientByCity(location_id: number): Promise<any> {
-		return this.api.get(`/inventory/getClientByCity?location_id=${location_id}`);
+	static async getClientByCity(location_id: number): Promise<ClientByCityResponse> {
+		return this.api.get(
+			`/inventory/getClientByCity?location_id=${location_id}`
+		) as Promise<ClientByCityResponse>;
+	}
+
+	/**
+	 * Get sent count for KAM dashboard
+	 */
+	static async getSentCountKAM(
+		params: {
+			location_id: number;
+			client_id: string | number; // "All" or client ID
+			start_date: string;
+			end_date: string;
+		},
+		signal?: AbortSignal
+	): Promise<DashboardKAMResponse> {
+		const searchParams = new URLSearchParams();
+		searchParams.set('location_id', String(params.location_id));
+		searchParams.set('client_id', String(params.client_id));
+		searchParams.set('start_date', params.start_date);
+		searchParams.set('end_date', params.end_date);
+
+		return this.api.get(`/inventory/getSentCountKAM?${searchParams.toString()}`, {
+			signal,
+		}) as Promise<DashboardKAMResponse>;
 	}
 }

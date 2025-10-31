@@ -1,7 +1,7 @@
 import React from 'react';
 import { cn } from '../../utils/cn';
 
-interface CardProps {
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 	children: React.ReactNode;
 	className?: string;
 	onRemove?: () => void;
@@ -13,10 +13,12 @@ export const Card: React.FC<CardProps> = ({
 	className,
 	onRemove,
 	showRemove = false,
+	...props
 }) => {
 	return (
 		<div
 			className={cn('shadow-sm rounded-lg bg-white p-4 border border-gray-200 relative', className)}
+			{...props}
 		>
 			{showRemove && onRemove && (
 				<button

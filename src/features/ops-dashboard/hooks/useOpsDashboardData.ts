@@ -12,9 +12,11 @@ import {
 	DispatchDelayReportResponse,
 	ShiftStatusReportResponse,
 } from '../../../services/opsDashboardApi';
+import { apiService } from '../../../services/api';
 
 interface UseOpsDashboardDataParams {
 	cityId?: number;
+	selectedCityId?: string; // Selected city from filter ("all" or city ID)
 	clientId: string;
 	startDate: string;
 	endDate: string;
@@ -38,22 +40,44 @@ interface UseOpsDashboardDataReturn {
  */
 export const useOpsDashboardData = ({
 	cityId,
+	selectedCityId,
 	clientId: _clientId,
 	startDate,
 	endDate,
 	enabled = true,
 }: UseOpsDashboardDataParams): UseOpsDashboardDataReturn => {
-	// Only fetch if we have required params
-	const shouldFetch = enabled && !!cityId && !!startDate && !!endDate;
+	// Determine which city_id to use in API calls
+	// If selectedCityId is "all", don't pass city_ids (undefined)
+	// If selectedCityId is a number, use that
+	// Otherwise, fallback to user's cityId
+	const apiCityId: number | undefined =
+		selectedCityId && selectedCityId !== 'all'
+			? parseInt(selectedCityId, 10)
+			: selectedCityId === 'all'
+				? undefined
+				: cityId;
 
-	// KAM EOD Report Query
+	// Only fetch if we have required params (cityId may be undefined if "All" is selected)
+	const shouldFetch = enabled && !!startDate && !!endDate;
+
+	// KAM EOD Report Query - only include city_ids if apiCityId is defined
 	const kamEodQuery: UseQueryResult<KAMEodReportResponse, Error> = useQuery({
-		queryKey: ['ops-dashboard', 'kam-eod', cityId, startDate, endDate],
+		queryKey: ['ops-dashboard', 'kam-eod', apiCityId, startDate, endDate],
 		queryFn: async (): Promise<KAMEodReportResponse> => {
-			if (!cityId || !startDate || !endDate) {
+			if (!startDate || !endDate) {
 				throw new Error('Missing required parameters');
 			}
-			return await OpsDashboardApiService.getKAMEodReport(cityId, startDate, endDate);
+			// Only pass city_ids if apiCityId is defined (not "All")
+			if (apiCityId !== undefined) {
+				return await OpsDashboardApiService.getKAMEodReport(apiCityId, startDate, endDate);
+			}
+			// If "All" selected, pass empty or don't include city_ids
+			const searchParams = new URLSearchParams();
+			searchParams.set('start_date', startDate);
+			searchParams.set('end_date', endDate);
+			return apiService.get(
+				`/inventory/getKAMEodReport?${searchParams.toString()}`
+			) as unknown as Promise<KAMEodReportResponse>;
 		},
 		enabled: shouldFetch,
 		staleTime: 5 * 60 * 1000,
@@ -63,16 +87,24 @@ export const useOpsDashboardData = ({
 	// Transit Plan Summary Query
 	const transitPlanQuery: UseQueryResult<TransitPlanDispatchPickupSummaryResponse, Error> =
 		useQuery({
-			queryKey: ['ops-dashboard', 'transit-plan', cityId, startDate, endDate],
+			queryKey: ['ops-dashboard', 'transit-plan', apiCityId, startDate, endDate],
 			queryFn: async (): Promise<TransitPlanDispatchPickupSummaryResponse> => {
-				if (!cityId || !startDate || !endDate) {
+				if (!startDate || !endDate) {
 					throw new Error('Missing required parameters');
 				}
-				return await OpsDashboardApiService.getTransitPlanDispatchPickupSummary(
-					cityId,
-					startDate,
-					endDate
-				);
+				if (apiCityId !== undefined) {
+					return await OpsDashboardApiService.getTransitPlanDispatchPickupSummary(
+						apiCityId,
+						startDate,
+						endDate
+					);
+				}
+				const searchParams = new URLSearchParams();
+				searchParams.set('start_date', startDate);
+				searchParams.set('end_date', endDate);
+				return apiService.get(
+					`/transit-plan/getTransitPlanDispatchPickupSummary?${searchParams.toString()}`
+				) as unknown as Promise<TransitPlanDispatchPickupSummaryResponse>;
 			},
 			enabled: shouldFetch,
 			staleTime: 5 * 60 * 1000,
@@ -81,12 +113,20 @@ export const useOpsDashboardData = ({
 
 	// QC EOD Report Query
 	const qcEodQuery: UseQueryResult<QCEodReportResponse, Error> = useQuery({
-		queryKey: ['ops-dashboard', 'qc-eod', cityId, startDate, endDate],
+		queryKey: ['ops-dashboard', 'qc-eod', apiCityId, startDate, endDate],
 		queryFn: async (): Promise<QCEodReportResponse> => {
-			if (!cityId || !startDate || !endDate) {
+			if (!startDate || !endDate) {
 				throw new Error('Missing required parameters');
 			}
-			return await OpsDashboardApiService.getQCEodReport(cityId, startDate, endDate);
+			if (apiCityId !== undefined) {
+				return await OpsDashboardApiService.getQCEodReport(apiCityId, startDate, endDate);
+			}
+			const searchParams = new URLSearchParams();
+			searchParams.set('start_date', startDate);
+			searchParams.set('end_date', endDate);
+			return apiService.get(
+				`/inventory/getQCEodReport?${searchParams.toString()}`
+			) as unknown as Promise<QCEodReportResponse>;
 		},
 		enabled: shouldFetch,
 		staleTime: 5 * 60 * 1000,
@@ -95,12 +135,20 @@ export const useOpsDashboardData = ({
 
 	// Dispatch Delay Report Query
 	const dispatchDelayQuery: UseQueryResult<DispatchDelayReportResponse, Error> = useQuery({
-		queryKey: ['ops-dashboard', 'dispatch-delay', cityId, startDate, endDate],
+		queryKey: ['ops-dashboard', 'dispatch-delay', apiCityId, startDate, endDate],
 		queryFn: async (): Promise<DispatchDelayReportResponse> => {
-			if (!cityId || !startDate || !endDate) {
+			if (!startDate || !endDate) {
 				throw new Error('Missing required parameters');
 			}
-			return await OpsDashboardApiService.getDispatchDelayReport(cityId, startDate, endDate);
+			if (apiCityId !== undefined) {
+				return await OpsDashboardApiService.getDispatchDelayReport(apiCityId, startDate, endDate);
+			}
+			const searchParams = new URLSearchParams();
+			searchParams.set('start_date', startDate);
+			searchParams.set('end_date', endDate);
+			return apiService.get(
+				`/inventory/getDispatchDelayReport?${searchParams.toString()}`
+			) as unknown as Promise<DispatchDelayReportResponse>;
 		},
 		enabled: shouldFetch,
 		staleTime: 5 * 60 * 1000,

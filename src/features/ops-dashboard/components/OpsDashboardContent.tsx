@@ -12,7 +12,9 @@ import {
 	ShiftStatusReportResponse,
 } from '../../../services/opsDashboardApi';
 import { OpsDashboardTable } from './OpsDashboardTable';
-import { KAMMetrics } from './KAMMetrics';
+import { KAMMetrics } from './metrics/KAMMetrics';
+import { SentTransitMetrics } from './metrics/SentTransitMetrics';
+import { TransitDelayMetrics } from './metrics/TransitDelayMetrics';
 import { transformToTableData } from '../utils/tableDataTransformers';
 
 interface OpsDashboardContentProps {
@@ -23,6 +25,8 @@ interface OpsDashboardContentProps {
 	shiftStatusData: ShiftStatusReportResponse | null;
 	loading: boolean;
 	error: string | null;
+	selectedCity?: string;
+	showCityFilter?: boolean;
 }
 
 export const OpsDashboardContent: React.FC<OpsDashboardContentProps> = ({
@@ -33,6 +37,8 @@ export const OpsDashboardContent: React.FC<OpsDashboardContentProps> = ({
 	shiftStatusData,
 	loading,
 	error,
+	selectedCity,
+	showCityFilter,
 }) => {
 	const tableRows = useMemo(
 		() =>
@@ -64,11 +70,29 @@ export const OpsDashboardContent: React.FC<OpsDashboardContentProps> = ({
 
 	return (
 		<div className='space-y-6' role='region' aria-label='Ops Dashboard Content'>
-			{/* KAM Metrics Section */}
-			<KAMMetrics kamData={kamEodData} />
-
-			{/* Table Section */}
+			{/* Table Section - Always at top */}
 			<OpsDashboardTable rows={tableRows} />
+
+			{/* KAM Metrics Section */}
+			<KAMMetrics
+				kamData={kamEodData}
+				selectedCity={selectedCity}
+				showCityFilter={showCityFilter}
+			/>
+
+			{/* Sent Transit Metrics Section */}
+			<SentTransitMetrics
+				transitPlanData={transitPlanData}
+				selectedCity={selectedCity}
+				showCityFilter={showCityFilter}
+			/>
+
+			{/* Transit Delay Metrics Section */}
+			<TransitDelayMetrics
+				dispatchDelayData={dispatchDelayData}
+				selectedCity={selectedCity}
+				showCityFilter={showCityFilter}
+			/>
 		</div>
 	);
 };

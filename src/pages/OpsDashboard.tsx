@@ -16,11 +16,16 @@ export const OpsDashboard: React.FC = () => {
 		startDate,
 		endDate,
 		selectedClient,
+		selectedCity,
 		clientOptions,
+		cityOptions,
 		loadingClients,
+		loadingCities,
+		showCityFilter,
 		onStartDateChange,
 		onEndDateChange,
 		onClientChange,
+		onCityChange,
 	} = useOpsDashboardFilters();
 
 	const {
@@ -34,10 +39,11 @@ export const OpsDashboard: React.FC = () => {
 		refetch,
 	} = useOpsDashboardData({
 		cityId: user?.city_id,
+		selectedCityId: showCityFilter ? selectedCity : undefined,
 		clientId: selectedClient,
 		startDate,
 		endDate,
-		enabled: !!startDate && !!endDate && !!user?.city_id, // Auto-fetch when dates are set
+		enabled: !!startDate && !!endDate, // Auto-fetch when dates are set (city_id is optional if "All" selected)
 	});
 
 	const handleSearch = () => {
@@ -61,11 +67,16 @@ export const OpsDashboard: React.FC = () => {
 					startDate={startDate}
 					endDate={endDate}
 					selectedClient={selectedClient}
+					selectedCity={selectedCity}
 					clientOptions={clientOptions}
+					cityOptions={cityOptions}
 					loadingClients={loadingClients}
+					loadingCities={loadingCities}
+					showCityFilter={showCityFilter}
 					onStartDateChange={onStartDateChange}
 					onEndDateChange={onEndDateChange}
 					onClientChange={onClientChange}
+					onCityChange={onCityChange}
 					onSearch={handleSearch}
 				/>
 
@@ -78,6 +89,8 @@ export const OpsDashboard: React.FC = () => {
 						shiftStatusData={shiftStatusData}
 						loading={loading}
 						error={error}
+						selectedCity={selectedCity}
+						showCityFilter={showCityFilter}
 					/>
 				</ErrorBoundary>
 			</div>

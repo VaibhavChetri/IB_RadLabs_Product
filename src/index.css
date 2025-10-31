@@ -195,4 +195,20 @@
 		white-space: nowrap;
 		border-width: 0;
 	}
+
+	/* Recharts background override - ensure white backgrounds */
+	.recharts-wrapper {
+		background-color: white !important;
+	}
+	.recharts-surface {
+		background-color: white !important;
+		background: white !important;
+	}
+	.recharts-tooltip-wrapper {
+		background-color: white !important;
+	}
+	.recharts-wrapper > svg {
+		background-color: white !important;
+		background: white !important;
+	}
 }

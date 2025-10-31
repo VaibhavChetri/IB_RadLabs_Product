@@ -45,6 +45,20 @@ API documentation and integration guides:
 - **API Authentication** - Authentication and authorization
 - **API Error Handling** - Error handling patterns and responses
 
+### 📊 **Dashboard** (`/10-Dashboard/`)
+Inventory Analysis dashboard:
+- **Dashboard Overview** - Overview of inventory analysis dashboard
+- **Dashboard How It Works** - Step-by-step execution flow
+- **Dashboard Accessibility** - Accessibility implementation
+- **Dashboard Testing** - Testing strategy and patterns
+- **Dashboard Page Structure Pattern** - Page structure template
+
+### 🏭 **Ops Dashboard** (`/11-Ops-Dashboard/`)
+Operational metrics and reports dashboard:
+- **Ops Dashboard Overview** - Overview of ops dashboard
+- **Ops Dashboard How It Works** - Step-by-step execution flow with code navigation
+- Complete documentation of all files, sections, and common mistakes
+
 ---
 
 ## 🚀 Quick Navigation
@@ -63,6 +77,7 @@ API documentation and integration guides:
 - **Client Features**: [Client Management](./02-Client-Management/)
 - **Transit Features**: [Transit Plan](./03-Transit-Plan/)
 - **Menu Features**: [Menu Management](./05-Menu-Management/)
+- **Dashboard Features**: [Dashboard](./10-Dashboard/) | [Ops Dashboard](./11-Ops-Dashboard/)
 
 ### For **Component Development**
 - **Quick Reference**: [Quick Reference Index](./QUICK_REFERENCE_INDEX.md) ⭐ **START HERE - Quick lookup guide**
@@ -161,6 +176,8 @@ Each documentation file should include:
 | Menu Management | ✅ Complete | Recent | Medium |
 | UI Components | ✅ Complete | Recent | High |
 | API Reference | ✅ Complete | Recent | Medium |
+| Dashboard | ✅ Complete | Recent | High |
+| Ops Dashboard | ✅ Complete | Recent | High |
 
 ---
 

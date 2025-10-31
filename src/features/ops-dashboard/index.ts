@@ -6,10 +6,15 @@
 export { OpsDashboardFilters } from './components/OpsDashboardFilters';
 export { OpsDashboardContent } from './components/OpsDashboardContent';
 export { OpsDashboardTable } from './components/OpsDashboardTable';
-export { CityMetricsCard } from './components/CityMetricsCard';
-export { KAMMetrics } from './components/KAMMetrics';
-export { KAMCircularProgress } from './components/KAMCircularProgress';
-export { KAMDailyGraph } from './components/KAMDailyGraph';
+export { KAMMetrics, SentTransitMetrics, TransitDelayMetrics } from './components/metrics';
+export {
+	KAMDailyBarChart,
+	KAMStackedBarChart,
+	SentTransitDailyBarChart,
+	SentTransitStackedBarChart,
+	TransitDelayDailyBarChart,
+	TransitDelayStackedBarChart,
+} from './components/charts';
 export { useOpsDashboardFilters } from './hooks/useOpsDashboardFilters';
 export { useOpsDashboardData } from './hooks/useOpsDashboardData';
 export { transformToTableData } from './utils/tableDataTransformers';

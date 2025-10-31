@@ -156,6 +156,12 @@ feature/
 2. **How It Works**: → `10-Dashboard/01-Dashboard-How-It-Works.md`
 3. **Example Code**: → `src/pages/Dashboard.tsx`
 
+### Creating an Ops Dashboard Page
+1. **Overview**: → `11-Ops-Dashboard/00-Ops-Dashboard-Overview.md`
+2. **How It Works**: → `11-Ops-Dashboard/01-Ops-Dashboard-How-It-Works.md`
+3. **Example Code**: → `src/pages/OpsDashboard.tsx`
+4. **All Files**: See → `11-Ops-Dashboard/README.md`
+
 ### Creating a Listing Page
 1. **Template**: → `04-UI-Components/05-Universal-Listing-Page-Template.md`
 2. **Date Filters**: → `04-UI-Components/07-Date-Filter-Patterns.md`
@@ -195,6 +201,7 @@ feature/
 |-------|------|--------------|
 | **Component Standards** | `COMPONENT_DEVELOPMENT_STANDARDS.md` | Before writing any code |
 | **Dashboard Pattern** | `10-Dashboard/04-Dashboard-Page-Structure-Pattern.md` | Creating dashboard pages |
+| **Ops Dashboard** | `11-Ops-Dashboard/01-Ops-Dashboard-How-It-Works.md` | Creating ops dashboard pages |
 | **Listing Template** | `04-UI-Components/05-Universal-Listing-Page-Template.md` | Creating listing pages |
 | **Date Filters** | `04-UI-Components/07-Date-Filter-Patterns.md` | Adding date filters |
 | **Component Architecture** | `01-Architecture/04-Component-Architecture.md` | Understanding patterns |

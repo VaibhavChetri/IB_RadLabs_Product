@@ -12,11 +12,16 @@ interface OpsDashboardFiltersProps {
 	startDate: string;
 	endDate: string;
 	selectedClient: string;
+	selectedCity: string;
 	clientOptions: DropdownOption[];
+	cityOptions: DropdownOption[];
 	loadingClients: boolean;
+	loadingCities: boolean;
+	showCityFilter: boolean;
 	onStartDateChange: (value: string) => void;
 	onEndDateChange: (value: string) => void;
 	onClientChange: (value: string) => void;
+	onCityChange: (value: string) => void;
 	onSearch: () => void;
 }
 
@@ -24,11 +29,16 @@ export const OpsDashboardFilters: React.FC<OpsDashboardFiltersProps> = ({
 	startDate,
 	endDate,
 	selectedClient,
+	selectedCity,
 	clientOptions,
+	cityOptions,
 	loadingClients,
+	loadingCities,
+	showCityFilter,
 	onStartDateChange,
 	onEndDateChange,
 	onClientChange,
+	onCityChange,
 	onSearch,
 }) => {
 	return (
@@ -45,6 +55,19 @@ export const OpsDashboardFilters: React.FC<OpsDashboardFiltersProps> = ({
 				<div className='w-56'>
 					<FloatingInput label='End Date' type='date' value={endDate} onChange={onEndDateChange} />
 				</div>
+				{showCityFilter && (
+					<div className='w-56'>
+						<FloatingDropdown
+							label='Select City'
+							options={cityOptions}
+							value={selectedCity}
+							onChange={onCityChange}
+							placeholder='Select city'
+							loading={loadingCities}
+							searchable
+						/>
+					</div>
+				)}
 				<div className='w-56'>
 					<FloatingDropdown
 						label='Select Client'

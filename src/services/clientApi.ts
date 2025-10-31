@@ -1,5 +1,4 @@
-import { apiService } from './api';
-import { ApiResponse } from './api';
+import { apiService, ApiResponse } from './api';
 import { CommonApiService } from './commonApi';
 
 // Client/Location interfaces based on API response

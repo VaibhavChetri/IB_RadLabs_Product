@@ -29,6 +29,7 @@ import {
 	Package,
 	ArrowRight,
 	Briefcase,
+	Activity,
 	// ArrowLeft, // Deprecated - Received section commented out
 } from 'lucide-react';
 
@@ -41,6 +42,12 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 		name: 'Dashboard',
 		icon: LayoutDashboard,
 		href: '/',
+	},
+	{
+		id: 'ops-dashboard',
+		name: 'Ops Dashboard',
+		icon: Activity,
+		href: '/ops-dashboard',
 	},
 	{
 		id: 'menu-management',

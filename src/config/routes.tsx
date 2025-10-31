@@ -22,6 +22,7 @@ import InventoryListing from '../pages/InventoryListing';
 import { AddClientSkuMapping } from '../pages/AddClientSkuMapping';
 import EditClientSkuMapping from '../pages/EditClientSkuMapping';
 import { SkuMapListing } from '../pages/SkuMapListing';
+import { OpsDashboard } from '../pages/OpsDashboard';
 
 export interface RouteConfig {
 	path: string;
@@ -30,6 +31,7 @@ export interface RouteConfig {
 
 export const routes: RouteConfig[] = [
 	{ path: '/', component: Dashboard },
+	{ path: '/ops-dashboard', component: OpsDashboard },
 	{ path: '/menu-management', component: MenuManagement },
 	{ path: '/clients/add', component: AddClient },
 	{ path: '/clients/edit', component: EditClient },

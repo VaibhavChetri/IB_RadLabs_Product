@@ -65,7 +65,8 @@ API documentation and integration guides:
 - **Menu Features**: [Menu Management](./05-Menu-Management/)
 
 ### For **Component Development**
-- **Development Standards**: [Component Development Standards](./COMPONENT_DEVELOPMENT_STANDARDS.md) ⭐ **START HERE**
+- **Quick Reference**: [Quick Reference Index](./QUICK_REFERENCE_INDEX.md) ⭐ **START HERE - Quick lookup guide**
+- **Development Standards**: [Component Development Standards](./COMPONENT_DEVELOPMENT_STANDARDS.md) ⭐ **Before coding - Full standards**
 - **New Components**: [Reusable Components Architecture](./04-UI-Components/04-Reusable-Components-Architecture.md)
 - **Existing Components**: [UI Components](./04-UI-Components/03-UI-Components.md)
 

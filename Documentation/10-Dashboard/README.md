@@ -80,6 +80,7 @@ When you need to:
 
 1. **[Overview](./00-Dashboard-Overview.md)** - Start here for basic understanding
 2. **[How It Works](./01-Dashboard-How-It-Works.md)** - Deep dive into execution flow
-3. **[Accessibility](./02-Dashboard-Accessibility.md)** - ARIA, keyboard nav, screen readers
-4. **[Testing](./03-Dashboard-Testing.md)** - Test files, coverage, best practices
+3. **[Page Structure Pattern](./04-Dashboard-Page-Structure-Pattern.md)** ⭐ **Creating new dashboard pages**
+4. **[Accessibility](./02-Dashboard-Accessibility.md)** - ARIA, keyboard nav, screen readers
+5. **[Testing](./03-Dashboard-Testing.md)** - Test files, coverage, best practices
 

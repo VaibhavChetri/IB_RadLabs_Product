@@ -113,63 +113,39 @@ export interface LoginResponse {
 
 export class AuthApiService {
   static async login(credentials: LoginRequest): Promise<LoginResponse> {
-    try {
-      console.log('🔍 authApi: Starting login process');
-      
-      const response = await apiService.post<LoginResponse>('/auth/login', credentials);
-      
-      console.log('🔍 authApi: Full API response:', response);
-      console.log('🔍 authApi: User object from API:', response.user);
-      console.log('🔍 authApi: city_id in response:', response.user.city_id);
-      console.log('🔍 authApi: state_id in response:', (response.user as unknown as { state_id: number }).state_id);
-      
-      // Store tokens
-      TokenManager.setToken(response.access_token);
-      TokenManager.setRefreshToken(response.refresh_token);
-      
-      // Store user data
-      const userData = {
-        id: response.user.id.toString(),
-        name: `${response.user.first_name} ${response.user.last_name}`.trim(),
-        email: response.user.email,
-        role: `User Type ${response.user.user_type_id}`,
-        userTypeId: response.user.user_type_id,
-        city_id: response.user.city_id,
-        state_id: (response.user as unknown as { state_id: number }).state_id,
-      };
-      
-      TokenManager.setUserData(userData);
-      TokenManager.setMenuPermissions(response.menu_permissions || {});
-      
-      console.log('✅ authApi: User data stored from API response:', userData);
-      console.log('✅ authApi: city_id:', userData.city_id, 'state_id:', userData.state_id);
-      
-      return response;
-    } catch (error) {
-      console.error('❌ authApi: Login failed:', error);
-      throw error;
-    }
+    const response = await apiService.post<LoginResponse>('/auth/login', credentials);
+    
+    // Store tokens
+    TokenManager.setToken(response.access_token);
+    TokenManager.setRefreshToken(response.refresh_token);
+    
+    // Store user data
+    const userData = {
+      id: response.user.id.toString(),
+      name: `${response.user.first_name} ${response.user.last_name}`.trim(),
+      email: response.user.email,
+      role: `User Type ${response.user.user_type_id}`,
+      userTypeId: response.user.user_type_id,
+      city_id: response.user.city_id,
+      state_id: (response.user as unknown as { state_id: number }).state_id,
+    };
+    
+    TokenManager.setUserData(userData);
+    TokenManager.setMenuPermissions(response.menu_permissions || {});
+    
+    return response;
   }
 
   static async logout(): Promise<void> {
     try {
       await apiService.post('/auth/logout');
-    } catch (error) {
-      console.error('Logout API call failed:', error);
     } finally {
       TokenManager.logout();
     }
   }
 
   static async getUserProfile(): Promise<ApiResponse<unknown>> {
-    try {
-      const response = await apiService.get('/user/profile');
-      console.log('User profile response:', response);
-      return response;
-    } catch (error) {
-      console.error('Failed to fetch user profile:', error);
-      throw error;
-    }
+    return apiService.get('/user/profile');
   }
 }
 ```
@@ -247,119 +223,37 @@ export interface UpdateClientRequest {
 }
 
 export class ClientApiService {
-  static async getLocations(filters: ClientLocationFilters = {}): Promise<ClientLocationResponse> {
-    try {
-      console.log('🔍 ClientApiService: Fetching locations with filters:', filters);
-      
-      const params = new URLSearchParams();
-      
-      // Set default values
-      params.append('page', (filters.page || 1).toString());
-      params.append('limit', (filters.limit || 10).toString());
-      
-      // Add optional filters
-      if (filters.city_id) params.append('city_id', filters.city_id.toString());
-      if (filters.location_type) params.append('location_type', filters.location_type.toString());
-      if (filters.client_id) params.append('client_id', filters.client_id.toString());
-      
-      const response = await apiService.get<ClientLocationResponse>(
-        `/locations/getLocations?${params.toString()}`
-      );
-      
-      console.log('✅ ClientApiService: Locations fetched successfully:', response);
-      return response;
-    } catch (error) {
-      console.error('❌ ClientApiService: Failed to fetch locations:', error);
-      throw error;
-    }
+  static async getClientLocations(
+    filters: ClientLocationFilters = {}
+  ): Promise<ApiResponse<ClientLocationResponse>> {
+    const params = new URLSearchParams();
+    
+    // Add default values
+    params.append('page', (filters.page || 1).toString());
+    params.append('limit', (filters.limit || 1000).toString());
+    
+    // Add optional filters
+    if (filters.city_id) params.append('city_id', filters.city_id.toString());
+    if (filters.location_type) params.append('location_type', filters.location_type.toString());
+    if (filters.client_id) params.append('client_id', filters.client_id.toString());
+    
+    return apiService.get(`/locations/getLocations?${params.toString()}`);
   }
 
-  static async createLocation(locationData: Partial<ClientLocation>): Promise<ClientLocation> {
-    try {
-      console.log('🔍 ClientApiService: Creating location:', locationData);
-      
-      const response = await apiService.post<ClientLocation>('/locations/create', locationData);
-      
-      console.log('✅ ClientApiService: Location created successfully:', response);
-      return response;
-    } catch (error) {
-      console.error('❌ ClientApiService: Failed to create location:', error);
-      throw error;
-    }
-  }
-
-  static async updateLocation(id: number, locationData: Partial<ClientLocation>): Promise<ClientLocation> {
-    try {
-      console.log('🔍 ClientApiService: Updating location:', id, locationData);
-      
-      const response = await apiService.put<ClientLocation>(`/locations/update/${id}`, locationData);
-      
-      console.log('✅ ClientApiService: Location updated successfully:', response);
-      return response;
-    } catch (error) {
-      console.error('❌ ClientApiService: Failed to update location:', error);
-      throw error;
-    }
+  static async addClient(data: AddClientRequest): Promise<ApiResponse<unknown>> {
+    return apiService.post('/restaurants/addClient', data);
   }
 
   static async updateClient(data: UpdateClientRequest): Promise<ApiResponse<unknown>> {
-    try {
-      console.log('🔍 ClientApiService: Updating client:', data);
-      
-      const response = await apiService.put<ApiResponse<unknown>>('/restaurants/updateClient', data);
-      
-      console.log('✅ ClientApiService: Client updated successfully:', response);
-      return response;
-    } catch (error) {
-      console.error('❌ ClientApiService: Failed to update client:', error);
-      throw error;
-    }
+    return apiService.put('/restaurants/updateClient', data);
   }
 
-  static async deleteLocation(id: number): Promise<void> {
-    try {
-      console.log('🔍 ClientApiService: Deleting location:', id);
-      
-      await apiService.delete(`/locations/delete/${id}`);
-      
-      console.log('✅ ClientApiService: Location deleted successfully');
-    } catch (error) {
-      console.error('❌ ClientApiService: Failed to delete location:', error);
-      throw error;
-    }
+  static async getAllLocations(locationType: number): Promise<ApiResponse<ClientLocation[]>> {
+    return apiService.get(`/locations/getAllLocations?location_type=${locationType}`);
   }
 
-  static async getAllLocations(locationType: number): Promise<ApiResponse<unknown[]>> {
-    try {
-      console.log('🔍 ClientApiService: Fetching all locations for type:', locationType);
-      
-      const response = await apiService.get<ApiResponse<unknown[]>>(
-        `/locations/getAllLocations?location_type=${locationType}`
-      );
-      
-      console.log('✅ ClientApiService: All locations fetched successfully:', response);
-      return response;
-    } catch (error) {
-      console.error('❌ ClientApiService: Failed to fetch all locations:', error);
-      throw error;
-    }
-  }
-
-  static async updateClientStatus(clientId: number, status: number): Promise<ApiResponse<unknown>> {
-    try {
-      console.log('🔍 ClientApiService: Updating client status:', { clientId, status });
-      
-      const response = await apiService.put<ApiResponse<unknown>>(
-        '/restaurants/updateClientStatus',
-        { id: clientId, status }
-      );
-      
-      console.log('✅ ClientApiService: Client status updated successfully:', response);
-      return response;
-    } catch (error) {
-      console.error('❌ ClientApiService: Failed to update client status:', error);
-      throw error;
-    }
+  static async updateClientStatus(id: number, status: number): Promise<ApiResponse<unknown>> {
+    return apiService.put('/restaurants/updateClientStatus', { id, status });
   }
 }
 ```
@@ -524,6 +418,141 @@ try {
   });
 }
 ```
+
+## 📋 Industry Standard API Service Pattern
+
+### Standard Pattern (Meta/Google Approach)
+
+**Key Principles:**
+1. **Singleton Import**: Import `apiService` singleton directly
+2. **Static Methods**: Use static methods on service classes
+3. **No Try-Catch**: Let base service handle errors via interceptors
+4. **Type Casting**: Use `as unknown as Promise<Type>` when response types don't match
+5. **AbortSignal Support**: Include `signal` parameter for request cancellation (P0 standard)
+
+### Complete Example
+
+```typescript
+import { apiService, ApiResponse } from './api';
+
+export interface ExampleRequest {
+  id: number;
+  name: string;
+}
+
+export interface ExampleResponse {
+  status: string;
+  status_code: number;
+  message: string;
+  data: {
+    id: number;
+    name: string;
+  };
+}
+
+export class ExampleApiService {
+  /**
+   * Get example data with filters
+   * @param id - Example ID
+   * @param signal - Optional AbortSignal for request cancellation
+   */
+  static async getExample(
+    id: number,
+    signal?: AbortSignal
+  ): Promise<ExampleResponse> {
+    return apiService.get(`/example/get?id=${id}`, {
+      signal,
+    }) as unknown as Promise<ExampleResponse>;
+  }
+
+  /**
+   * Create example data
+   * @param data - Request payload
+   */
+  static async createExample(data: ExampleRequest): Promise<ApiResponse<ExampleResponse>> {
+    return apiService.post('/example/create', data);
+  }
+
+  /**
+   * Update example data
+   * @param id - Example ID
+   * @param data - Request payload
+   */
+  static async updateExample(
+    id: number,
+    data: Partial<ExampleRequest>
+  ): Promise<ApiResponse<ExampleResponse>> {
+    return apiService.put(`/example/update/${id}`, data);
+  }
+
+  /**
+   * Delete example data
+   * @param id - Example ID
+   */
+  static async deleteExample(id: number): Promise<ApiResponse<void>> {
+    return apiService.delete(`/example/delete/${id}`);
+  }
+}
+```
+
+### Real Examples from Codebase
+
+**Location API Service:**
+```typescript
+import { apiService, ApiResponse } from './api';
+
+export class ImpactApiService {
+  static async getImpactTypes(
+    page: number = 1,
+    limit: number = 10
+  ): Promise<ApiResponse<{ data: ImpactType[]; total: number; page: number; limit: number }>> {
+    return apiService.get('/impact/getImpactMenu', {
+      params: { page, limit },
+    });
+  }
+}
+```
+
+**Ops Dashboard API Service:**
+```typescript
+import { apiService } from './api';
+
+export class OpsDashboardApiService {
+  /**
+   * Get KAM EOD Report
+   * Note: Uses `as unknown as` because API response structure doesn't match ApiResponse<T>
+   * (data fields like totalDays, dailyEntryStatus are at root level, not wrapped in "data" field)
+   */
+  static async getKAMEodReport(
+    cityIds: number | string,
+    startDate: string,
+    endDate: string,
+    signal?: AbortSignal
+  ): Promise<KAMEodReportResponse> {
+    const searchParams = new URLSearchParams();
+    searchParams.set('city_ids', String(cityIds));
+    searchParams.set('start_date', startDate);
+    searchParams.set('end_date', endDate);
+
+    return apiService.get(`/inventory/getKAMEodReport?${searchParams.toString()}`, {
+      signal,
+    }) as unknown as Promise<KAMEodReportResponse>;
+  }
+}
+```
+
+**Why `as unknown as Promise<Type>`?**
+
+Some APIs return data at the root level instead of wrapped in a `data` field:
+- `apiService.get()` returns `Promise<ApiResponse<T>>` = `Promise<{ status, status_code, message, data: T }>`
+- But `KAMEodReportResponse` = `{ status, status_code, message, totalDays, dailyEntryStatus, ... }` (no `data` wrapper)
+
+Since TypeScript can't directly cast incompatible types, we use `unknown` as an intermediate bridge:
+```
+Promise<ApiResponse<T>> → unknown → Promise<ResponseType>
+```
+
+See [`03-API-Integration-Type-Casting.md`](./03-API-Integration-Type-Casting.md) for detailed explanation.
 
 ## 🎣 Custom API Hook (`src/hooks/useApi.ts`)
 
@@ -920,33 +949,51 @@ const debouncedSearch = debounce(async (searchTerm: string) => {
 }, 300);
 ```
 
-### 2. **Request Cancellation**
+### 2. **Request Cancellation (P0 Standard)**
 ```typescript
-import { CancelTokenSource } from 'axios';
+import { AbortController } from 'abort-controller';
 
-const cancelTokenSource = axios.CancelToken.source();
-
-const apiCall = async () => {
-  try {
-    const response = await apiService.get('/endpoint', {
-      cancelToken: cancelTokenSource.token
-    });
-    return response;
-  } catch (error) {
-    if (axios.isCancel(error)) {
-      console.log('Request cancelled');
-    } else {
-      throw error;
-    }
-  }
-};
-
-// Cancel request on component unmount
+// In hooks or components
 useEffect(() => {
-  return () => {
-    cancelTokenSource.cancel();
+  const abortController = new AbortController();
+
+  const fetchData = async () => {
+    try {
+      const response = await ExampleApiService.getExample(
+        id,
+        abortController.signal
+      );
+      setData(response);
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        // Request was cancelled, ignore
+        return;
+      }
+      setError(error);
+    }
   };
-}, []);
+
+  fetchData();
+
+  // Cancel request on unmount
+  return () => {
+    abortController.abort();
+  };
+}, [id]);
+```
+
+**In API Service:**
+```typescript
+export class ExampleApiService {
+  static async getExample(
+    id: number,
+    signal?: AbortSignal
+  ): Promise<ExampleResponse> {
+    return apiService.get(`/example/get?id=${id}`, {
+      signal,
+    }) as unknown as Promise<ExampleResponse>;
+  }
+}
 ```
 
 ### 3. **Caching Strategy**

@@ -161,6 +161,7 @@ feature/
 2. **How It Works**: → `11-Ops-Dashboard/01-Ops-Dashboard-How-It-Works.md`
 3. **Example Code**: → `src/pages/OpsDashboard.tsx`
 4. **All Files**: See → `11-Ops-Dashboard/README.md`
+5. **Chart Component Pattern**: → `11-Ops-Dashboard/01-Ops-Dashboard-How-It-Works.md#industry-standard-chart-component-separation-pattern`
 
 ### Creating a Listing Page
 1. **Template**: → `04-UI-Components/05-Universal-Listing-Page-Template.md`
@@ -175,7 +176,8 @@ feature/
 ### Creating a Reusable Component
 1. **Component Architecture**: → `04-UI-Components/04-Reusable-Components-Architecture.md`
 2. **Standards**: → `COMPONENT_DEVELOPMENT_STANDARDS.md`
-3. **Place in**: `src/components/ui/YourComponent.tsx`
+3. **Chart Pattern**: → `11-Ops-Dashboard/01-Ops-Dashboard-How-It-Works.md#industry-standard-chart-component-separation-pattern` (Generic vs Feature-Specific)
+4. **Place in**: `src/components/ui/YourComponent.tsx` (generic) or `src/features/feature-name/components/` (feature-specific)
 
 ---
 

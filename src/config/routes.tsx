@@ -23,6 +23,8 @@ import { AddClientSkuMapping } from '../pages/AddClientSkuMapping';
 import EditClientSkuMapping from '../pages/EditClientSkuMapping';
 import { SkuMapListing } from '../pages/SkuMapListing';
 import { OpsDashboard } from '../pages/OpsDashboard';
+import { PLSummary } from '../pages/PLSummary';
+import { PLGraphs } from '../pages/PLGraphs';
 
 export interface RouteConfig {
 	path: string;
@@ -60,4 +62,6 @@ export const routes: RouteConfig[] = [
 	{ path: '/ops-admin/map-sku/listing', component: SkuMapListing },
 	{ path: '/ops-admin/map-sku/add', component: AddClientSkuMapping },
 	{ path: '/ops-admin/map-sku/:clientId/edit', component: EditClientSkuMapping },
+	{ path: '/p-and-l/summary', component: PLSummary },
+	{ path: '/p-and-l/graphs', component: PLGraphs },
 ];

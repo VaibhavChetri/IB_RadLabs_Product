@@ -308,6 +308,25 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 		icon: HelpCircle,
 		href: '/help',
 	},
+	{
+		id: 'p-and-l',
+		name: 'P&L Review',
+		icon: DollarSign,
+		children: [
+			{
+				id: 'pl-summary',
+				name: 'P&L Summary',
+				icon: FileText,
+				href: '/p-and-l/summary',
+			},
+			{
+				id: 'pl-graphs',
+				name: 'P&L Graphs',
+				icon: BarChart3,
+				href: '/p-and-l/graphs',
+			},
+		],
+	},
 ];
 
 // Helper function to find menu item by ID

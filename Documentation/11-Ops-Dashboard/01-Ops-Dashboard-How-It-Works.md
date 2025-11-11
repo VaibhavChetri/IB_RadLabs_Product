@@ -983,6 +983,129 @@ Each metrics component (KAMMetrics, SentTransitMetrics, TransitDelayMetrics) fol
 
 ---
 
+## Industry Standard: Chart Component Separation Pattern
+
+### Why Charts Are Separated
+
+**Industry Best Practice**: Separate generic, reusable components from feature-specific logic.
+
+**Pattern Used**:
+1. **Generic Components** (`src/components/charts/`): Handle rendering only, no business logic
+2. **Feature-Specific Wrappers** (`src/features/ops-dashboard/components/charts/`): Transform API data → generic format
+
+### Generic vs Feature-Specific Pattern
+
+#### Generic Components (`src/components/charts/`)
+
+**Purpose**: Reusable, framework-agnostic chart components
+
+**Characteristics**:
+- ✅ Accept standardized data formats (interfaces)
+- ✅ No API knowledge
+- ✅ No business logic
+- ✅ Can be used by ANY feature
+- ✅ Easy to test (just pass data)
+
+**Example**: `CircularProgress.tsx`
+```typescript
+interface CircularProgressProps {
+  label: string;
+  percentage: number;
+  color?: string;
+  displayValue?: string;
+  displayUnit?: string;
+  // ... other generic props
+}
+```
+
+**Why**: This component can be used for KAM metrics, Sent Transit metrics, Transit Delay metrics, or ANY future feature that needs circular progress.
+
+#### Feature-Specific Wrappers (`src/features/ops-dashboard/components/charts/`)
+
+**Purpose**: Transform feature-specific API data into generic format
+
+**Characteristics**:
+- ✅ Know about API response structure
+- ✅ Transform API data → generic component props
+- ✅ Handle feature-specific business logic
+- ✅ One wrapper per feature's data type
+
+**Example**: `KAMDailyBarChart.tsx`
+```typescript
+// Transforms KAMEodReportResponse → DailyBarChart props
+const KAMDailyBarChart = ({ kamData }: { kamData: KAMEodReportResponse }) => {
+  const transformedData = useMemo(() => {
+    // Transform API data to DailyDataPoint[]
+    return kamData.dailyEntryStatus.map(day => ({
+      date: day.entry_date,
+      value: parseFloat(day.overallEntryPercentage),
+      // ... transform logic
+    }));
+  }, [kamData]);
+
+  return <DailyBarChart data={transformedData} ... />;
+};
+```
+
+**Why**: Each feature has different API structures. Wrappers isolate transformation logic, keeping generic components clean.
+
+### Benefits of This Pattern
+
+1. **DRY (Don't Repeat Yourself)**: Write chart logic once, use everywhere
+2. **Single Source of Truth**: Chart styling/behavior defined in one place
+3. **Easy Updates**: Update `StackedBarChart.tsx` once, all features benefit
+4. **Testability**: Test generic components with mock data, test wrappers separately
+5. **Maintainability**: Clear separation makes code easier to understand
+
+### Industry Examples
+
+**Similar patterns used by**:
+- **Material-UI**: Generic `<TextField>` → Feature-specific `<EmailInput>`
+- **Ant Design**: Generic `<Table>` → Feature-specific `<UserTable>`
+- **React Router**: Generic `<Route>` → Feature-specific route configurations
+
+### Alignment with Component Development Standards
+
+This pattern follows **P1: Separation of Concerns** from [Component Development Standards](../COMPONENT_DEVELOPMENT_STANDARDS.md#3-separation-of-concerns):
+
+- ✅ **Components**: Only handle rendering (`CircularProgress`, `DailyBarChart`, `StackedBarChart`)
+- ✅ **Feature Wrappers**: Handle data transformation (`KAMDailyBarChart`, `SentTransitStackedBarChart`)
+- ✅ **Utils**: Handle pure transformations (`cityColorUtils`, `tableDataTransformers`)
+- ✅ **Hooks**: Handle business logic (`useOpsDashboardData`, `useOpsDashboardFilters`)
+
+### When to Use This Pattern
+
+**Use Generic Components When**:
+- Component can be reused across multiple features
+- Component has no business logic
+- Component accepts standardized data format
+
+**Use Feature Wrappers When**:
+- Need to transform API data → generic format
+- Feature-specific business logic required
+- Need to customize generic component behavior per feature
+
+### File Structure Reference
+
+```
+src/
+├── components/
+│   └── charts/                    # Generic, reusable charts
+│       ├── CircularProgress.tsx   # ✅ Generic
+│       ├── DailyBarChart.tsx      # ✅ Generic
+│       └── StackedBarChart.tsx   # ✅ Generic
+└── features/
+    └── ops-dashboard/
+        └── components/
+            └── charts/           # Feature-specific wrappers
+                ├── KAMDailyBarChart.tsx           # Transforms KAM data
+                ├── KAMStackedBarChart.tsx         # Transforms KAM data
+                ├── SentTransitDailyBarChart.tsx   # Transforms Sent Transit data
+                └── TransitDelayStackedBarChart.tsx # Transforms Transit Delay data
+```
+
+---
+
 ## Common Mistakes and Where to Look
 
 ### Mistake 1: APIs Not Loading on Page Load

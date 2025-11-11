@@ -89,6 +89,17 @@ This helps operations teams make better decisions about resource allocation and 
 - `src/components/charts/DailyBarChart.tsx` - Generic daily bar chart component (uses Recharts)
 - `src/components/charts/StackedBarChart.tsx` - Generic stacked bar chart component (uses ApexCharts)
 
+**Why Generic Components?** (Industry Standard Pattern)
+- ✅ **Reusability**: Generic components can be used across multiple features
+- ✅ **Maintainability**: Fix bugs or add features once, benefits all features
+- ✅ **Testability**: Generic components are easier to test in isolation
+- ✅ **Consistency**: Same chart behavior and styling across the app
+- ✅ **Separation of Concerns**: Generic components handle rendering, feature wrappers handle data transformation
+
+**Pattern**: Generic components live in `src/components/charts/` (shared), feature-specific wrappers in `src/features/ops-dashboard/components/charts/` (transforms API data → generic format)
+
+See: [Component Development Standards - Separation of Concerns](../COMPONENT_DEVELOPMENT_STANDARDS.md#3-separation-of-concerns) | [Detailed Pattern Explanation](./01-Ops-Dashboard-How-It-Works.md#industry-standard-chart-component-separation-pattern)
+
 ### Hooks
 - `src/features/ops-dashboard/hooks/useOpsDashboardFilters.ts` - Filter logic (loading clients, cities, persisting dates)
 - `src/features/ops-dashboard/hooks/useOpsDashboardData.ts` - Fetches all 5 APIs using React Query

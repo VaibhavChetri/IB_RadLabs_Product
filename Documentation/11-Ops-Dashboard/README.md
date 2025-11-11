@@ -48,13 +48,22 @@ All ops dashboard code lives in `src/features/ops-dashboard/`:
 - `hooks/`: Business logic hooks
 - `utils/`: Helper functions (transformers, color utilities)
 
-### Generic Chart Components
+### Generic Chart Components (Industry Standard Pattern)
 We use generic chart components from `src/components/charts/`:
 - `CircularProgress.tsx`: Generic circular progress indicator
 - `DailyBarChart.tsx`: Generic daily bar chart (uses Recharts)
 - `StackedBarChart.tsx`: Generic stacked bar chart (uses ApexCharts)
 
-Feature-specific wrappers transform API data and pass it to generic components.
+**Why Generic Components?**
+- ✅ **Reusability**: Used across multiple features
+- ✅ **Maintainability**: Fix bugs once, benefits all features
+- ✅ **Testability**: Easy to test in isolation
+- ✅ **Consistency**: Same behavior across the app
+- ✅ **Separation of Concerns**: Generic = rendering, Wrappers = data transformation
+
+**Pattern**: Generic components (`src/components/charts/`) handle rendering only. Feature-specific wrappers (`src/features/ops-dashboard/components/charts/`) transform API data → generic format.
+
+See: [Component Development Standards - Separation of Concerns](../COMPONENT_DEVELOPMENT_STANDARDS.md#3-separation-of-concerns)
 
 ### City Color Mapping
 City colors are consistent across all charts using `cityColorUtils.ts`:

@@ -15,6 +15,7 @@ export { PageHeader } from './PageHeader';
 export { Button, IconButton, ButtonGroup, FAB } from './Button';
 export { Table, Accordion } from './DataDisplay';
 export { StatCard } from './StatCard';
+export { FacilityDropdown } from '../FacilityDropdown';
 
 // Re-export types for convenience
 export type { FloatingInputProps } from './FloatingInput';

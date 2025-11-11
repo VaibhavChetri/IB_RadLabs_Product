@@ -12,9 +12,9 @@ import {
 	PageHeader,
 	Badge,
 } from '../components/ui';
+import { FacilityDropdown } from '../components/FacilityDropdown';
 import {
 	TransitPlanApi,
-	FacilityOption,
 	ClientByCityOption,
 	MasterPlanRow,
 } from '../services/transitPlanApi';
@@ -56,7 +56,6 @@ const MasterPlanListing: React.FC = () => {
 	const navigate = useNavigate();
 	const dispatch = useDispatch();
 
-	const [facilities, setFacilities] = useState<DropdownOption[]>([]);
 	const [clients, setClients] = useState<DropdownOption[]>([]);
 	const [transitTypes, setTransitTypes] = useState<DropdownOption[]>([]);
 	const [filters, setFilters] = useState<{
@@ -92,14 +91,9 @@ const MasterPlanListing: React.FC = () => {
 	// Load dropdowns
 	useEffect(() => {
 		(async () => {
-			const [facRes, cliRes, transitRes] = await Promise.all([
-				TransitPlanApi.getFacilities(cityId),
+			const [cliRes, transitRes] = await Promise.all([
 				TransitPlanApi.getClientsByCity(), // Remove cityId parameter
 				CommonApiService.getTransitTypes(),
-			]);
-			setFacilities([
-				{ label: 'All', value: '' },
-				...facRes.data.map((f: FacilityOption) => ({ label: f.location, value: String(f.id) })),
 			]);
 			setClients([
 				{ label: 'All', value: '' },
@@ -226,13 +220,16 @@ const MasterPlanListing: React.FC = () => {
 			/>
 
 			<div className='bg-white p-4 shadow-sm rounded-lg flex flex-wrap gap-4 items-center mb-6'>
-				<FloatingDropdown
-					label='Washing Facility'
-					options={facilities}
-					value={filters.facility_id ?? ''}
-					onChange={v => handleFilterChange('facility_id', v)}
-					className='w-56'
-				/>
+				<div className='w-56'>
+					<FacilityDropdown
+						value={filters.facility_id ?? ''}
+						onChange={v => handleFilterChange('facility_id', v)}
+						cityId={cityId}
+						autoSelectFirst={false}
+						includeAllOption={true}
+						className='w-full'
+					/>
+				</div>
 				<FloatingDropdown
 					label='Client'
 					options={clients}

@@ -4,12 +4,11 @@ import {
 	Pagination,
 	SearchButton,
 	FloatingInput,
-	FloatingDropdown,
 	PageHeader,
 } from '../components/ui';
+import { FacilityDropdown } from '../components/FacilityDropdown';
 import {
 	InventoryApiService,
-	WashingFacility,
 	SentInventoryResponse,
 	SentInventoryRow,
 } from '../services/inventoryApi';
@@ -18,7 +17,6 @@ const SentInventoryListing: React.FC = () => {
 	// State management
 	const [startDate, setStartDate] = useState<string>('');
 	const [endDate, setEndDate] = useState<string>('');
-	const [facilities, setFacilities] = useState<WashingFacility[]>([]);
 	const [selectedFacility, setSelectedFacility] = useState<string>('');
 	const [rows, setRows] = useState<SentInventoryRow[]>([]);
 	const [loading, setLoading] = useState(false);
@@ -36,27 +34,6 @@ const SentInventoryListing: React.FC = () => {
 		'dispatchDateTime',
 	]);
 
-	// Load washing facilities on component mount
-	useEffect(() => {
-		const loadFacilities = async () => {
-			try {
-				const response = await InventoryApiService.getWashingFacilities();
-				if (response.status === 'Success') {
-					setFacilities(response.data);
-
-					// Auto-select first facility if none selected
-					if (!selectedFacility && response.data.length > 0) {
-						const firstFacility = response.data[0];
-						setSelectedFacility(String(firstFacility.id));
-						console.log('🔍 Auto-selected facility:', firstFacility.location);
-					}
-				}
-			} catch (err) {
-				console.error('❌ Error loading facilities:', err);
-			}
-		};
-		loadFacilities();
-	}, [selectedFacility]);
 
 	// Handle column sorting
 	const _handleSort = (key: string, order: 'asc' | 'desc') => {
@@ -95,12 +72,11 @@ const SentInventoryListing: React.FC = () => {
 			console.log('🔍 API Response:', response);
 
 			if (response.status === 'success') {
-				// Transform data for table display
-				const transformedData = transformDataForTable(
-					response,
-					facilities,
-					parseInt(selectedFacility)
-				);
+			// Transform data for table display
+			const transformedData = transformDataForTable(
+				response,
+				parseInt(selectedFacility)
+			);
 
 				// Apply client-side pagination since API returns all data
 				const startIndex = (pageNumber - 1) * itemsPerPage;
@@ -125,7 +101,6 @@ const SentInventoryListing: React.FC = () => {
 	// Transform data for table display - group by client and dispatch date/time
 	const transformDataForTable = (
 		data: SentInventoryResponse,
-		facilities: WashingFacility[],
 		selectedFacility: number
 	): SentInventoryRow[] => {
 		if (!data || !data.result) return [];
@@ -263,16 +238,14 @@ const SentInventoryListing: React.FC = () => {
 				<div className='w-56'>
 					<FloatingInput label='To Date' type='date' value={endDate} onChange={setEndDate} />
 				</div>
-				<FloatingDropdown
-					label='Washing Facility'
-					options={facilities.map(facility => ({
-						value: facility.id.toString(),
-						label: facility.location,
-					}))}
-					value={selectedFacility}
-					onChange={setSelectedFacility}
-					className='w-56'
-				/>
+				<div className='w-56'>
+					<FacilityDropdown
+						value={selectedFacility}
+						onChange={setSelectedFacility}
+						autoSelectFirst={true}
+						className='w-full'
+					/>
+				</div>
 				<SearchButton
 					onClick={() => {
 						setPageNumber(1);

@@ -3,7 +3,6 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../store';
 import { CommonApiService } from '../services/commonApi';
 import type {
-	FacilityOption,
 	ClientByCityOption,
 	VehicleOption,
 	TransitTypeOption,
@@ -28,7 +27,6 @@ export type { VehicleOption } from '../services/commonApi';
 
 export const useMasterPlanData = (isEditMode: boolean = false) => {
 	const [loading, setLoading] = useState(true);
-	const [facilities, setFacilities] = useState<FacilityOption[]>([]);
 	const [clients, setClients] = useState<ClientByCityOption[]>([]);
 	const [vehicles, setVehicles] = useState<VehicleOption[]>([]);
 	const [transitTypes, setTransitTypes] = useState<TransitTypeOption[]>([]);
@@ -104,14 +102,12 @@ export const useMasterPlanData = (isEditMode: boolean = false) => {
 			try {
 				setLoading(true);
 
-				const [facilitiesRes, clientsRes, vehiclesRes, transitTypesRes] = await Promise.all([
-					CommonApiService.getFacilities(), // No city filter needed
+				const [clientsRes, vehiclesRes, transitTypesRes] = await Promise.all([
 					CommonApiService.getClientsByCity(),
 					CommonApiService.getVehicles(),
 					CommonApiService.getTransitTypes(),
 				]);
 
-				setFacilities(facilitiesRes.data || []);
 				setClients(clientsRes.data || []);
 				setVehicles(vehiclesRes.data || []);
 				setTransitTypes(transitTypesRes.data || []);
@@ -286,7 +282,6 @@ export const useMasterPlanData = (isEditMode: boolean = false) => {
 
 	return {
 		loading,
-		facilities,
 		clients,
 		vehicles,
 		transitTypes,

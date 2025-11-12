@@ -25,6 +25,9 @@ import { SkuMapListing } from '../pages/SkuMapListing';
 import { OpsDashboard } from '../pages/OpsDashboard';
 import { PLSummary } from '../pages/PLSummary';
 import { PLGraphs } from '../pages/PLGraphs';
+import { MonthlyEstimateAdd } from '../pages/MonthlyEstimateAdd';
+import { MonthlyEstimateList } from '../pages/MonthlyEstimateList';
+import { MonthlyEstimateEdit } from '../pages/MonthlyEstimateEdit';
 
 export interface RouteConfig {
 	path: string;
@@ -64,4 +67,7 @@ export const routes: RouteConfig[] = [
 	{ path: '/ops-admin/map-sku/:clientId/edit', component: EditClientSkuMapping },
 	{ path: '/p-and-l/summary', component: PLSummary },
 	{ path: '/p-and-l/graphs', component: PLGraphs },
+	{ path: '/revenue/monthly-estimate/add', component: MonthlyEstimateAdd },
+	{ path: '/revenue/monthly-estimate/list', component: MonthlyEstimateList },
+	{ path: '/revenue/monthly-estimate/edit', component: MonthlyEstimateEdit },
 ];

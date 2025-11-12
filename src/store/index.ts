@@ -20,6 +20,7 @@ import inventoryReducer from './slices/inventorySlice';
 import kamReducer from './slices/kamSlice';
 import skuMappingReducer from './slices/skuMappingSlice';
 import skuListingReducer from './slices/skuListingSlice';
+import revenueReducer from './slices/revenueSlice';
 import { combineReducers } from '@reduxjs/toolkit';
 
 // Configure redux-persist for SKU Listing
@@ -46,6 +47,20 @@ const skuMappingPersistConfig = {
 	],
 };
 
+// Configure redux-persist for Revenue
+const revenuePersistConfig = {
+	key: 'revenue',
+	storage,
+	whitelist: [
+		'budgets',
+		'onSiteManPowerEstimates',
+		'lastUpdated',
+		'editBudgetWeekValues',
+		'editManPowerWeekValues',
+		'editLastUpdated',
+	],
+};
+
 // Combine all reducers
 const rootReducer = combineReducers({
 	theme: themeSlice.reducer,
@@ -58,6 +73,7 @@ const rootReducer = combineReducers({
 	kam: kamReducer,
 	skuMapping: persistReducer(skuMappingPersistConfig, skuMappingReducer),
 	skuListing: persistReducer(skuListingPersistConfig, skuListingReducer),
+	revenue: persistReducer(revenuePersistConfig, revenueReducer),
 });
 
 export const store = configureStore({

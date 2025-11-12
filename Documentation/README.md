@@ -65,6 +65,12 @@ Financial analysis and reporting:
 - **P&L How It Works** - Step-by-step execution flow with code navigation
 - Complete documentation of all tabs, API calls, and common mistakes
 
+### 💵 **Revenue** (`/13-Revenue/`)
+Monthly revenue estimation and tracking:
+- **Revenue Overview** - Overview of Revenue feature with three pages (Add, List, Edit)
+- **Revenue How It Works** - Step-by-step execution flow for all pages
+- Complete documentation of Redux persistence, API calls, and common mistakes
+
 ---
 
 ## 🚀 Quick Navigation
@@ -83,7 +89,7 @@ Financial analysis and reporting:
 - **Client Features**: [Client Management](./02-Client-Management/)
 - **Transit Features**: [Transit Plan](./03-Transit-Plan/)
 - **Menu Features**: [Menu Management](./05-Menu-Management/)
-- **Dashboard Features**: [Dashboard](./10-Dashboard/) | [Ops Dashboard](./11-Ops-Dashboard/) | [P&L](./12-P-and-L/)
+- **Dashboard Features**: [Dashboard](./10-Dashboard/) | [Ops Dashboard](./11-Ops-Dashboard/) | [P&L](./12-P-and-L/) | [Revenue](./13-Revenue/)
 
 ### For **Component Development**
 - **Quick Reference**: [Quick Reference Index](./QUICK_REFERENCE_INDEX.md) ⭐ **START HERE - Quick lookup guide**
@@ -185,6 +191,7 @@ Each documentation file should include:
 | Dashboard | ✅ Complete | Recent | High |
 | Ops Dashboard | ✅ Complete | Recent | High |
 | P&L | ✅ Complete | Recent | High |
+| Revenue | ✅ Complete | Recent | High |
 
 ---
 

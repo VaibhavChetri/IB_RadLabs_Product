@@ -116,7 +116,13 @@ export const Table = <T extends Record<string, unknown>>({
 									style={{ width: column.width }}
 									onClick={() => column.sortable && handleSort(column.key)}
 								>
-									<div className='flex items-center space-x-2'>
+									<div
+										className={cn(
+											'flex items-center space-x-2',
+											column.align === 'center' && 'justify-center',
+											column.align === 'right' && 'justify-end'
+										)}
+									>
 										<span>{column.title}</span>
 										{column.sortable && (
 											<span className='flex-shrink-0'>{getSortIcon(column.key)}</span>

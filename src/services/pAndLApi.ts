@@ -5,13 +5,35 @@
 
 import { apiService } from './api';
 
+// Cost Category Interfaces
+export interface CostCategory {
+	id: number;
+	costCategories: string;
+	status: string;
+}
+
+export interface GetCostCategoriesResponse {
+	status_code: number;
+	status: string;
+	data: CostCategory[];
+	pagination: {
+		page: number;
+		limit: number;
+		totalItems: number;
+		totalPages: number;
+	};
+}
+
 // Request Interfaces
 export interface GetRevenueParams {
+	city_id?: number;
 	facility_id: number;
 	start_date: string;
 	end_date: string;
-	page: number;
-	limit: number;
+	reviewCategoryTypeId?: number;
+	page?: number;
+	limit?: number;
+	allResults?: boolean;
 }
 
 export interface GetRevenueInUnitsParams {
@@ -89,6 +111,7 @@ export interface MonthYearData {
 	weekData: WeekData;
 	records: RevenueRecord[];
 	costingTypes: CostingType[];
+	onSiteManPowerDetails?: OnSiteManPowerItem[];
 }
 
 export interface FacilityData {
@@ -307,11 +330,24 @@ export class PAndLApiService {
 	 */
 	static async getRevenue(params: GetRevenueParams): Promise<RevenueResponse> {
 		const searchParams = new URLSearchParams();
+		if (params.city_id) {
+			searchParams.set('city_id', params.city_id.toString());
+		}
 		searchParams.set('facility_id', params.facility_id.toString());
 		searchParams.set('start_date', params.start_date);
 		searchParams.set('end_date', params.end_date);
-		searchParams.set('page', params.page.toString());
-		searchParams.set('limit', params.limit.toString());
+		if (params.reviewCategoryTypeId) {
+			searchParams.set('reviewCategoryTypeId', params.reviewCategoryTypeId.toString());
+		}
+		if (params.page !== undefined) {
+			searchParams.set('page', params.page.toString());
+		}
+		if (params.limit !== undefined) {
+			searchParams.set('limit', params.limit.toString());
+		}
+		if (params.allResults) {
+			searchParams.set('allResults', 'true');
+		}
 
 		const response = await apiService.get<RevenueResponse>(
 			`/review/getRevenue?${searchParams.toString()}`
@@ -340,6 +376,35 @@ export class PAndLApiService {
 		// apiService.get already returns response.data from axios
 		// So response is already the RevenueInUnitsResponse structure { status_code, status, updateUnitEconomics, ... }
 		return response as unknown as RevenueInUnitsResponse;
+	}
+
+	/**
+	 * Update Revenue
+	 * PUT /api/review/updateRevenue
+	 */
+	static async updateRevenue(data: UpdateRevenueRequest): Promise<UpdateRevenueResponse> {
+		console.log('PAndLApiService.updateRevenue - Calling endpoint:', '/review/updateRevenue');
+		console.log('PAndLApiService.updateRevenue - Payload:', JSON.stringify(data, null, 2));
+		try {
+			const response = await apiService.put<UpdateRevenueResponse>('/review/updateRevenue', data);
+			console.log('PAndLApiService.updateRevenue - Response:', response);
+			// apiService.put already returns response.data from axios
+			return response as unknown as UpdateRevenueResponse;
+		} catch (error: unknown) {
+			const axiosError = error as {
+				response?: { status?: number; data?: unknown };
+				message?: string;
+			};
+			console.error('PAndLApiService.updateRevenue - Error:', error);
+			console.error('PAndLApiService.updateRevenue - Error response:', axiosError?.response);
+			console.error('PAndLApiService.updateRevenue - Error status:', axiosError?.response?.status);
+			console.error('PAndLApiService.updateRevenue - Error data:', axiosError?.response?.data);
+			console.error(
+				'PAndLApiService.updateRevenue - Full URL would be:',
+				`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3099/v1/api'}/review/updateRevenue`
+			);
+			throw error;
+		}
 	}
 
 	/**
@@ -399,5 +464,212 @@ export class PAndLApiService {
 		// apiService.get already returns response.data from axios
 		// So response is already the EscalationResponse structure { status_code, status, data, totalEscalationWeekWise, ... }
 		return response as unknown as EscalationResponse;
+	}
+
+	/**
+	 * Get Cost Categories
+	 */
+	static async getCostCategories(status: number = 1): Promise<GetCostCategoriesResponse> {
+		const response = await apiService.get<GetCostCategoriesResponse>(
+			`/review/getCostCategories?status=${status}`
+		);
+		// apiService.get already returns response.data from axios
+		return response as unknown as GetCostCategoriesResponse;
+	}
+}
+
+// Review Costing Type Interfaces
+export interface ReviewCostingType {
+	id: number;
+	name: string;
+	reviewCategoryName: string;
+	status: string;
+}
+
+export interface GetReviewCostingTypeResponse {
+	status_code: number;
+	status: string;
+	data: ReviewCostingType[];
+	pagination?: {
+		page: number;
+		limit: number;
+		totalItems: number;
+		totalPages: number;
+	};
+}
+
+// Extended PAndLApiService with Review Costing Type method
+export class ReviewCostingTypeService {
+	/**
+	 * Get Review Costing Types
+	 */
+	static async getReviewCostingType(
+		page: number = 1,
+		limit: number = 22,
+		showAll: boolean = true
+	): Promise<GetReviewCostingTypeResponse> {
+		const response = await apiService.get<GetReviewCostingTypeResponse>(
+			`/review/getReviewCostingType?page=${page}&limit=${limit}&showAll=${showAll}`
+		);
+		// apiService.get already returns response.data from axios
+		return response as unknown as GetReviewCostingTypeResponse;
+	}
+}
+
+// Projected Costing Interfaces
+export interface ProjectedCostingItem {
+	id: number;
+	date_year: string;
+	facility_id: number;
+	costing_type_id: number;
+	city_id: number;
+	projected_value: string;
+	costing_type_name: string;
+	city_name: string;
+}
+
+export interface OnSiteManPowerItem {
+	id: number;
+	client_id: number;
+	client_name: string;
+	costing_type_id: number;
+	est: string;
+	costing_type_name?: string;
+	facility_id?: number;
+	facility_name?: string;
+	week1?: string | number | null;
+	week2?: string | number | null;
+	week3?: string | number | null;
+	week4?: string | number | null;
+	date_year?: string;
+}
+
+export interface OnSiteManPowerClient {
+	id: number;
+	client_id: number;
+	client_name: string;
+	facility_id: number;
+	status: number;
+	facility_name: string;
+}
+
+export interface GetOnSiteManPowerClientsResponse {
+	status: string;
+	data: OnSiteManPowerClient[];
+}
+
+export interface GetProjectedCostingResponse {
+	status_code: number;
+	status: string;
+	results: {
+		costingResults: ProjectedCostingItem[];
+		manPowerResults?: OnSiteManPowerItem[];
+	};
+}
+
+export interface GetProjectedCostingParams {
+	date_year: string; // Format: YYYY-MM-01 (first day of month)
+	facility_id: number;
+}
+
+// Extended PAndLApiService with Projected Costing method
+export class ProjectedCostingService {
+	/**
+	 * Get Projected Costing
+	 */
+	static async getProjectedCosting(
+		params: GetProjectedCostingParams
+	): Promise<GetProjectedCostingResponse> {
+		const response = await apiService.get<GetProjectedCostingResponse>(
+			`/review/getProjectedCosting?date_year=${params.date_year}&facility_id=${params.facility_id}`
+		);
+		// apiService.get already returns response.data from axios
+		return response as unknown as GetProjectedCostingResponse;
+	}
+
+	/**
+	 * Get On-Site Manpower Clients
+	 */
+	static async getOnSiteManPowerClients(
+		facilityId: number
+	): Promise<GetOnSiteManPowerClientsResponse> {
+		const response = await apiService.get<GetOnSiteManPowerClientsResponse>(
+			`/review/getOnSiteManPowerClients?facility_id=${facilityId}`
+		);
+		// apiService.get already returns response.data from axios
+		return response as unknown as GetOnSiteManPowerClientsResponse;
+	}
+}
+
+// Add Projected Actual Costing Interfaces
+export interface ProjectedValue {
+	costing_type_id: number;
+	projected_value: number;
+}
+
+export interface OnSiteManPowerClientValue {
+	client_id: number;
+	value: number;
+}
+
+export interface AddProjectedActualCostingRequest {
+	projectedValues: ProjectedValue[];
+	date_year: string; // Format: YYYY-MM-01 (start of month)
+	facility_id: number;
+	onSiteManPower_clients: OnSiteManPowerClientValue[];
+}
+
+export interface AddProjectedActualCostingResponse {
+	status_code: number;
+	status: string;
+	message?: string;
+}
+
+// Extended PAndLApiService with Add Projected Actual Costing method
+export interface UpdateRevenueWeeklyValue {
+	id: number;
+	week1_actual_value: number;
+	week2_actual_value: number;
+	week3_actual_value: number;
+	week4_actual_value: number;
+}
+
+export interface UpdateRevenueOnSiteManPowerDetail {
+	id: number;
+	client_id: number;
+	costing_type_id: number;
+	est: string;
+	week1: number | null;
+	week2: number | null;
+	week3: number | null;
+	week4: number | null;
+	date_year: string;
+	client_name: string;
+}
+
+export interface UpdateRevenueRequest {
+	weeklyValue: UpdateRevenueWeeklyValue[];
+	onSiteManPowerDetails: UpdateRevenueOnSiteManPowerDetail[];
+}
+
+export interface UpdateRevenueResponse {
+	status_code: number;
+	status: string;
+	message?: string;
+}
+
+export class ProjectedActualCostingService {
+	/**
+	 * Add Projected Actual Costing
+	 */
+	static async addProjectedActualCosting(
+		data: AddProjectedActualCostingRequest
+	): Promise<AddProjectedActualCostingResponse> {
+		const response = await apiService.post<AddProjectedActualCostingResponse>(
+			'/review/addProjectedActualCosting',
+			data
+		);
+		// apiService.post already returns response.data from axios
+		return response as unknown as AddProjectedActualCostingResponse;
 	}
 }

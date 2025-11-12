@@ -327,6 +327,32 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 			},
 		],
 	},
+	{
+		id: 'revenue',
+		name: 'Revenue',
+		icon: TrendingUp,
+		children: [
+			{
+				id: 'monthly-estimate',
+				name: 'Monthly Estimate',
+				icon: BarChart3,
+				children: [
+					{
+						id: 'monthly-estimate-add',
+						name: 'Add',
+						icon: UserPlus,
+						href: '/revenue/monthly-estimate/add',
+					},
+					{
+						id: 'monthly-estimate-list',
+						name: 'List',
+						icon: FileText,
+						href: '/revenue/monthly-estimate/list',
+					},
+				],
+			},
+		],
+	},
 ];
 
 // Helper function to find menu item by ID

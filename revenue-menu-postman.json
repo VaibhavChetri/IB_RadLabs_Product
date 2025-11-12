@@ -1,0 +1,42 @@
+{
+	"parent": {
+		"name": "Revenue",
+		"slug": "revenue",
+		"parent_id": null,
+		"sort_order": 13,
+		"level": 0,
+		"badge": null,
+		"status": 1
+	},
+	"children": [
+		{
+			"name": "Monthly Estimate",
+			"slug": "monthly-estimate",
+			"parent_id": null,
+			"sort_order": 1,
+			"level": 1,
+			"badge": null,
+			"status": 1,
+			"grandchildren": [
+				{
+					"name": "Add",
+					"slug": "monthly-estimate-add",
+					"parent_id": null,
+					"sort_order": 1,
+					"level": 2,
+					"badge": null,
+					"status": 1
+				},
+				{
+					"name": "List",
+					"slug": "monthly-estimate-list",
+					"parent_id": null,
+					"sort_order": 2,
+					"level": 2,
+					"badge": null,
+					"status": 1
+				}
+			]
+		}
+	]
+}

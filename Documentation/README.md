@@ -59,6 +59,12 @@ Operational metrics and reports dashboard:
 - **Ops Dashboard How It Works** - Step-by-step execution flow with code navigation
 - Complete documentation of all files, sections, and common mistakes
 
+### 💰 **P&L (Profit & Loss)** (`/12-P-and-L/`)
+Financial analysis and reporting:
+- **P&L Overview** - Overview of P&L feature with tabs and filters
+- **P&L How It Works** - Step-by-step execution flow with code navigation
+- Complete documentation of all tabs, API calls, and common mistakes
+
 ---
 
 ## 🚀 Quick Navigation
@@ -77,7 +83,7 @@ Operational metrics and reports dashboard:
 - **Client Features**: [Client Management](./02-Client-Management/)
 - **Transit Features**: [Transit Plan](./03-Transit-Plan/)
 - **Menu Features**: [Menu Management](./05-Menu-Management/)
-- **Dashboard Features**: [Dashboard](./10-Dashboard/) | [Ops Dashboard](./11-Ops-Dashboard/)
+- **Dashboard Features**: [Dashboard](./10-Dashboard/) | [Ops Dashboard](./11-Ops-Dashboard/) | [P&L](./12-P-and-L/)
 
 ### For **Component Development**
 - **Quick Reference**: [Quick Reference Index](./QUICK_REFERENCE_INDEX.md) ⭐ **START HERE - Quick lookup guide**
@@ -178,6 +184,7 @@ Each documentation file should include:
 | API Reference | ✅ Complete | Recent | Medium |
 | Dashboard | ✅ Complete | Recent | High |
 | Ops Dashboard | ✅ Complete | Recent | High |
+| P&L | ✅ Complete | Recent | High |
 
 ---
 

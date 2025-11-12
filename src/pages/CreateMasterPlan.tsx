@@ -96,13 +96,13 @@ const CreateMasterPlan: React.FC = () => {
 	return (
 		<div className='min-h-screen bg-white p-6'>
 			<div className='max-w-[1920px] mx-auto  flex flex-col gap-6'>
-			<MasterPlanForm
-				clients={clients}
-				facilityId={data.facilityId}
-				clientId={data.clientId}
-				onFacilityChange={value => updateData({ facilityId: value })}
-				onClientChange={value => updateData({ clientId: value })}
-			/>
+				<MasterPlanForm
+					clients={clients}
+					facilityId={data.facilityId}
+					clientId={data.clientId}
+					onFacilityChange={value => updateData({ facilityId: value })}
+					onClientChange={value => updateData({ clientId: value })}
+				/>
 
 				<div className='shadow-lg rounded-lg p-4 bg-white'>
 					<TransitSection

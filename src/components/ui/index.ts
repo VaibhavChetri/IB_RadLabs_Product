@@ -16,6 +16,8 @@ export { Button, IconButton, ButtonGroup, FAB } from './Button';
 export { Table, Accordion } from './DataDisplay';
 export { StatCard } from './StatCard';
 export { FacilityDropdown } from '../FacilityDropdown';
+export { Tabs } from './Navigation';
+export type { TabItem, TabsProps } from './Navigation';
 
 // Re-export types for convenience
 export type { FloatingInputProps } from './FloatingInput';

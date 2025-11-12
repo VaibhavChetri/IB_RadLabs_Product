@@ -13,11 +13,7 @@ import {
 	Badge,
 } from '../components/ui';
 import { FacilityDropdown } from '../components/FacilityDropdown';
-import {
-	TransitPlanApi,
-	ClientByCityOption,
-	MasterPlanRow,
-} from '../services/transitPlanApi';
+import { TransitPlanApi, ClientByCityOption, MasterPlanRow } from '../services/transitPlanApi';
 import { CommonApiService, TransitTypeOption } from '../services/commonApi';
 import { Pencil, Trash2 } from 'lucide-react';
 

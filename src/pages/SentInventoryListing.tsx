@@ -1,11 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import {
-	MultiSelectDropdown,
-	Pagination,
-	SearchButton,
-	FloatingInput,
-	PageHeader,
-} from '../components/ui';
+import React, { useEffect, useState } from 'react';
+import { Pagination, SearchButton, FloatingInput, PageHeader } from '../components/ui';
 import { FacilityDropdown } from '../components/FacilityDropdown';
 import {
 	InventoryApiService,
@@ -23,25 +17,7 @@ const SentInventoryListing: React.FC = () => {
 	const [pageNumber, setPageNumber] = useState(1);
 	const [itemsPerPage, setItemsPerPage] = useState(10);
 	const [totalItems, setTotalItems] = useState(0);
-	const [sortBy, setSortBy] = useState<string>('date');
-	const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 	const [openAccordion, setOpenAccordion] = useState<string | null>(null);
-
-	// Column visibility state
-	const [visibleColumns, setVisibleColumns] = useState<string[]>([
-		'serial',
-		'clientName',
-		'dispatchDateTime',
-	]);
-
-
-	// Handle column sorting
-	const _handleSort = (key: string, order: 'asc' | 'desc') => {
-		setSortBy(key);
-		setSortOrder(order);
-		setPageNumber(1); // Reset to first page when sorting
-		fetchData(true); // Fetch data with new sorting
-	};
 
 	// Fetch data from API
 	const fetchData = async (_useFilters = true) => {
@@ -72,11 +48,8 @@ const SentInventoryListing: React.FC = () => {
 			console.log('🔍 API Response:', response);
 
 			if (response.status === 'success') {
-			// Transform data for table display
-			const transformedData = transformDataForTable(
-				response,
-				parseInt(selectedFacility)
-			);
+				// Transform data for table display
+				const transformedData = transformDataForTable(response);
 
 				// Apply client-side pagination since API returns all data
 				const startIndex = (pageNumber - 1) * itemsPerPage;
@@ -99,14 +72,30 @@ const SentInventoryListing: React.FC = () => {
 	};
 
 	// Transform data for table display - group by client and dispatch date/time
-	const transformDataForTable = (
-		data: SentInventoryResponse,
-		selectedFacility: number
-	): SentInventoryRow[] => {
+	const transformDataForTable = (data: SentInventoryResponse): SentInventoryRow[] => {
 		if (!data || !data.result) return [];
 
+		// Type assertion: API returns array of objects, not numbers
+		interface SentInventoryItem {
+			clientId: number;
+			clientName: string;
+			dispatch_date_time: string;
+			sku?: string;
+			containerTypeId?: string;
+			count: number;
+		}
+
+		const items = data.result as unknown as SentInventoryItem[];
+
 		// Group by client and dispatch date/time
-		const groupedData = data.result.reduce((acc: any, item: any) => {
+		interface GroupedItem {
+			clientId: number;
+			clientName: string;
+			dispatchDateTime: string;
+			skus: Array<{ sku: string; count: number }>;
+		}
+
+		const groupedData = items.reduce((acc: Record<string, GroupedItem>, item) => {
 			const key = `${item.clientId}-${item.dispatch_date_time}`;
 			if (!acc[key]) {
 				acc[key] = {
@@ -124,7 +113,7 @@ const SentInventoryListing: React.FC = () => {
 		}, {});
 
 		// Convert to table rows
-		return Object.values(groupedData).map((group: any, index: number) => ({
+		return Object.values(groupedData).map((group, index: number) => ({
 			id: `${group.clientId}-${group.dispatchDateTime}`,
 			serial: index + 1,
 			clientName: group.clientName,
@@ -156,52 +145,7 @@ const SentInventoryListing: React.FC = () => {
 			fetchData(true);
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [pageNumber, itemsPerPage, sortBy, sortOrder]);
-
-	// Define all available columns
-	const allColumns = useMemo(
-		() => [
-			{
-				key: 'serial',
-				label: '#',
-				title: 'Sl. No',
-				width: '60px',
-				sortable: false,
-				render: (_: unknown, __: SentInventoryRow, index: number) =>
-					(pageNumber - 1) * itemsPerPage + index + 1,
-			},
-			{
-				key: 'clientName',
-				label: 'Client',
-				title: 'Client',
-				sortable: true,
-			},
-			{
-				key: 'dispatchDateTime',
-				label: 'Dispatch Date & Time',
-				title: 'Dispatch Date & Time',
-				sortable: true,
-				render: (value: unknown) => {
-					const dateTime = value as string;
-					if (!dateTime) return 'N/A';
-					const date = new Date(dateTime);
-					return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
-				},
-			},
-		],
-		[pageNumber, itemsPerPage]
-	);
-
-	// Filter visible columns
-	const _visibleColumnsData = allColumns.filter(col => visibleColumns.includes(col.key));
-
-	// Column options for MultiSelectDropdown
-	const columnOptions = allColumns
-		.filter(col => col.key !== 'serial')
-		.map(col => ({
-			value: col.key,
-			label: col.label,
-		}));
+	}, [pageNumber, itemsPerPage]);
 
 	// Format date for input
 	function formatDateForInput(date: Date): string {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card } from '../../../components/ui/Card';
-import { FloatingDropdown } from '../../../components/ui/FloatingDropdown';
+import { FloatingDropdown, SearchButton } from '../../../components/ui';
 import { FacilityDropdown } from '../../../components/FacilityDropdown';
 import { DropdownOption } from '../hooks/usePLFilters';
 
@@ -13,6 +13,7 @@ interface PLFiltersProps {
 	onMonthChange: (value: string) => void;
 	onYearChange: (value: string) => void;
 	onFacilityChange: (value: string) => void;
+	onSearch: () => void;
 }
 
 export const PLFilters: React.FC<PLFiltersProps> = ({
@@ -24,32 +25,44 @@ export const PLFilters: React.FC<PLFiltersProps> = ({
 	onMonthChange,
 	onYearChange,
 	onFacilityChange,
+	onSearch,
 }) => {
+	const isSearchDisabled = !selectedMonth || !selectedYear || !selectedFacility;
+
 	return (
 		<Card className='p-4 sm:p-6'>
-			<div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-				<FloatingDropdown
-					label='Month'
-					options={monthOptions}
-					value={selectedMonth}
-					onChange={onMonthChange}
-					placeholder='Select month'
-					className='w-full'
-				/>
-				<FloatingDropdown
-					label='Year'
-					options={yearOptions}
-					value={selectedYear}
-					onChange={onYearChange}
-					placeholder='Select year'
-					className='w-full'
-				/>
-				<FacilityDropdown
-					value={selectedFacility}
-					onChange={onFacilityChange}
-					autoSelectFirst={true}
-					className='w-full'
-				/>
+			<div className='flex flex-wrap gap-4 items-end'>
+				<div className='w-56'>
+					<FloatingDropdown
+						label='Month'
+						options={monthOptions}
+						value={selectedMonth}
+						onChange={onMonthChange}
+						placeholder='Select month'
+						className='w-full'
+					/>
+				</div>
+				<div className='w-56'>
+					<FloatingDropdown
+						label='Year'
+						options={yearOptions}
+						value={selectedYear}
+						onChange={onYearChange}
+						placeholder='Select year'
+						className='w-full'
+					/>
+				</div>
+				<div className='w-56'>
+					<FacilityDropdown
+						value={selectedFacility}
+						onChange={onFacilityChange}
+						autoSelectFirst={true}
+						className='w-full'
+					/>
+				</div>
+				<div>
+					<SearchButton onClick={onSearch} disabled={isSearchDisabled} />
+				</div>
 			</div>
 		</Card>
 	);

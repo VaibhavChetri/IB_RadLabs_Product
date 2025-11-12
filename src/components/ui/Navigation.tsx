@@ -152,8 +152,8 @@ export const Tabs: React.FC<TabsProps> = ({
 			inactive: 'text-foreground-secondary hover:text-foreground',
 		},
 		underline: {
-			tab: 'border-b-2 border-transparent hover:border-border hover:text-foreground',
-			active: 'border-primary text-primary',
+			tab: 'border-b-2 border-transparent hover:border-gray-300 hover:text-gray-700',
+			active: 'border-green-500 text-green-500 hover:border-green-500 hover:text-green-500',
 			inactive: 'text-foreground-secondary',
 		},
 	};
@@ -178,8 +178,8 @@ export const Tabs: React.FC<TabsProps> = ({
 						onClick={() => !item.disabled && handleTabChange(item.id)}
 						disabled={item.disabled}
 						className={cn(
-							'flex items-center space-x-2 font-medium transition-all duration-200',
-							'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
+							'flex items-center space-x-2 font-medium transition-all duration-200 cursor-pointer',
+							'focus:outline-none',
 							'disabled:opacity-50 disabled:pointer-events-none',
 							sizeClasses[size],
 							currentVariant.tab,

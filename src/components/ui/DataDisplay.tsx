@@ -17,6 +17,8 @@ export interface TableColumn<T = Record<string, unknown>> {
 	width?: string | number;
 	align?: 'left' | 'center' | 'right';
 	fixed?: 'left' | 'right';
+	headerClassName?: string; // Custom className for header cell
+	cellClassName?: string; // Custom className for cell content
 }
 
 export interface TableProps<T = Record<string, unknown>> {
@@ -52,6 +54,12 @@ export const Table = <T extends Record<string, unknown>>({
 		sm: 'text-xs',
 		md: 'text-sm',
 		lg: 'text-base',
+	};
+
+	const cellSizeClasses = {
+		sm: 'text-[11px]', // Slightly smaller than text-xs (12px)
+		md: 'text-xs',
+		lg: 'text-sm',
 	};
 
 	const handleSort = (key: string) => {
@@ -96,13 +104,14 @@ export const Table = <T extends Record<string, unknown>>({
 								<th
 									key={column.key}
 									className={cn(
-										'px-3 py-2 text-left font-bold text-gray-900',
+										'px-3 py-2 text-left font-bold text-gray-700 whitespace-nowrap', // Changed to font-bold
 										sizeClasses[size],
 										column.align === 'center' && 'text-center',
 										column.align === 'right' && 'text-right',
 										column.sortable && 'cursor-pointer hover:bg-gray-50 select-none',
 										column.fixed === 'left' && 'sticky left-0 bg-white z-10',
-										column.fixed === 'right' && 'sticky right-0 bg-white z-10'
+										column.fixed === 'right' && 'sticky right-0 bg-white z-10',
+										column.headerClassName // Add custom header className
 									)}
 									style={{ width: column.width }}
 									onClick={() => column.sortable && handleSort(column.key)}
@@ -147,8 +156,8 @@ export const Table = <T extends Record<string, unknown>>({
 											<td
 												key={column.key}
 												className={cn(
-													'px-3 py-2 font-semibold text-gray-900',
-													sizeClasses[size],
+													'px-3 py-2 font-normal text-gray-900',
+													column.cellClassName || cellSizeClasses[size], // Use custom cellClassName if provided, otherwise use default size
 													column.align === 'center' && 'text-center',
 													column.align === 'right' && 'text-right',
 													column.fixed === 'left' && 'sticky left-0 bg-white z-10',

@@ -115,6 +115,12 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 						icon: FileText,
 						href: '/ops-admin/revenue/review-cost-type',
 					},
+					{
+						id: 'review-category-type',
+						name: 'Review Category Type',
+						icon: FileText,
+						href: '/ops-admin/revenue/review-category-type',
+					},
 				],
 			},
 		],

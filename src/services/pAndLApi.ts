@@ -469,9 +469,10 @@ export class PAndLApiService {
 	/**
 	 * Get Cost Categories
 	 */
-	static async getCostCategories(status: number = 1): Promise<GetCostCategoriesResponse> {
+	static async getCostCategories(status: number | string = 1): Promise<GetCostCategoriesResponse> {
+		const statusParam = typeof status === 'string' ? status : status.toString();
 		const response = await apiService.get<GetCostCategoriesResponse>(
-			`/review/getCostCategories?status=${status}`
+			`/review/getCostCategories?status=${statusParam}`
 		);
 		// apiService.get already returns response.data from axios
 		return response as unknown as GetCostCategoriesResponse;
@@ -558,6 +559,100 @@ export class ReviewCostingTypeService {
 			status: string;
 			message?: string;
 		}>('/review/updateReviewCostingType', data);
+		return response as unknown as { status_code: number; status: string; message?: string };
+	}
+}
+
+// Review Category Type Interfaces
+export interface ReviewCategoryType {
+	id: number;
+	name: string;
+	status: string;
+}
+
+export interface GetReviewCategoryTypeResponse {
+	status_code: number;
+	status: string;
+	data: ReviewCategoryType[];
+	pagination?: {
+		page: number;
+		limit: number;
+		totalItems: number;
+		totalPages: number;
+	};
+}
+
+// Extended PAndLApiService with Review Category Type methods
+export class ReviewCategoryTypeService {
+	/**
+	 * Get Review Category Types (Cost Categories)
+	 * GET /api/review/getCostCategories?status=All
+	 */
+	static async getReviewCategoryTypes(
+		page: number = 1,
+		limit: number = 22,
+		showAll: boolean = false,
+		status?: number | string
+	): Promise<GetReviewCategoryTypeResponse> {
+		const params = new URLSearchParams();
+		params.set('page', page.toString());
+		params.set('limit', limit.toString());
+		params.set('showAll', showAll.toString());
+		const statusParam =
+			status !== undefined ? (typeof status === 'string' ? status : status.toString()) : 'All';
+		params.set('status', statusParam);
+
+		const response = (await apiService.get<GetCostCategoriesResponse>(
+			`/review/getCostCategories?${params.toString()}`
+		)) as unknown as GetCostCategoriesResponse;
+
+		// Transform CostCategory[] to ReviewCategoryType[]
+		// API returns costCategories field, but we need name field
+		// apiService.get already returns response.data, so response is GetCostCategoriesResponse
+		const costCategories = response.data || [];
+		const transformedData: ReviewCategoryType[] = costCategories.map((item: CostCategory) => ({
+			id: item.id,
+			name: item.costCategories, // Map costCategories to name
+			status: item.status,
+		}));
+
+		return {
+			status_code: response.status_code,
+			status: response.status,
+			data: transformedData,
+			pagination: response.pagination,
+		} as unknown as GetReviewCategoryTypeResponse;
+	}
+
+	/**
+	 * Add Review Category Type
+	 * POST /api/review/addReviewCostingCategory
+	 */
+	static async addReviewCategoryType(data: {
+		name: string;
+	}): Promise<{ status_code: number; status: string; message?: string }> {
+		const response = await apiService.post<{
+			status_code: number;
+			status: string;
+			message?: string;
+		}>('/review/addReviewCostingCategory', data);
+		return response as unknown as { status_code: number; status: string; message?: string };
+	}
+
+	/**
+	 * Update Review Category Type
+	 * PUT /api/review/updateReviewCostingCategories
+	 */
+	static async updateReviewCategoryType(data: {
+		id: number;
+		name: string;
+		status: number;
+	}): Promise<{ status_code: number; status: string; message?: string }> {
+		const response = await apiService.put<{
+			status_code: number;
+			status: string;
+			message?: string;
+		}>('/review/updateReviewCostingCategories', data);
 		return response as unknown as { status_code: number; status: string; message?: string };
 	}
 }

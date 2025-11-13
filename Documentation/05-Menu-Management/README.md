@@ -25,6 +25,17 @@ This folder contains documentation for the **Menu Management** system and naviga
   - Fresh permissions after bulk updates
   - Files involved in the flow
 
+### 📝 **Menu Hierarchy Creation Guide** ⭐
+- **File**: `03-Menu-Hierarchy-Creation-Guide.md`
+- **Description**: Complete guide for creating menu hierarchies using Postman
+- **Covers**:
+  - Scenario 1: Full hierarchy (Parent + Children + Grandchildren)
+  - Scenario 2: Parent + Children only
+  - Scenario 3: Adding children to existing parent
+  - Scenario 4: Adding grandchildren to existing child
+  - Field reference and common mistakes
+  - Postman examples for all scenarios
+
 ## 🎯 Key Features Documented
 
 ### ✅ **Menu System Features**
@@ -50,11 +61,14 @@ This folder contains documentation for the **Menu Management** system and naviga
 4. Review permission filtering logic
 5. Check API integration patterns
 
-### For **Menu Updates**
-1. Review current menu structure
-2. Understand permission system
-3. Check menu configuration format
-4. Test menu rendering with different user roles
+### For **Menu Creation/Updates** ⭐
+1. **Start Here**: Read [Menu Hierarchy Creation Guide](./03-Menu-Hierarchy-Creation-Guide.md)
+2. Get menu IDs from `/api/menus` endpoint
+3. Choose the correct scenario (full hierarchy, add to existing, etc.)
+4. Use Postman examples provided
+5. Update `src/config/menuConfig.ts` after creation
+6. Add route in `src/config/routes.tsx`
+7. Verify menu permissions
 
 ## 🔗 Related Documentation
 - **Architecture**: [Architecture Overview](../01-Architecture/01-Architecture-Overview.md)

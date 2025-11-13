@@ -30,6 +30,7 @@ Transit plan management and operations:
 Menu system and navigation management:
 - **Menu Management** - Creating and managing hierarchical menus
 - **Menu Permissions** - Role-based access control for menus
+- **Menu Hierarchy Creation Guide** ⭐ - **Complete Postman guide** for all menu creation scenarios
 - **Menu API** - Menu-related API endpoints and operations
 
 ### 🎨 **UI Components** (`/04-UI-Components/`)

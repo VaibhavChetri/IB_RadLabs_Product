@@ -506,13 +506,59 @@ export class ReviewCostingTypeService {
 	static async getReviewCostingType(
 		page: number = 1,
 		limit: number = 22,
-		showAll: boolean = true
+		showAll: boolean = false,
+		reviewCategoryTypeId?: number,
+		status?: number
 	): Promise<GetReviewCostingTypeResponse> {
+		const params = new URLSearchParams();
+		params.set('page', page.toString());
+		params.set('limit', limit.toString());
+		params.set('showAll', showAll.toString());
+		if (reviewCategoryTypeId !== undefined) {
+			params.set('reviewCategoryTypeId', reviewCategoryTypeId.toString());
+		}
+		if (status !== undefined) {
+			params.set('status', status.toString());
+		}
 		const response = await apiService.get<GetReviewCostingTypeResponse>(
-			`/review/getReviewCostingType?page=${page}&limit=${limit}&showAll=${showAll}`
+			`/review/getReviewCostingType?${params.toString()}`
 		);
 		// apiService.get already returns response.data from axios
 		return response as unknown as GetReviewCostingTypeResponse;
+	}
+
+	/**
+	 * Add Review Costing Type
+	 * POST /api/review/addReviewCostingType
+	 */
+	static async addReviewCostingType(data: {
+		name: string;
+		reviewCategoryTypeId: number;
+	}): Promise<{ status_code: number; status: string; message?: string }> {
+		const response = await apiService.post<{
+			status_code: number;
+			status: string;
+			message?: string;
+		}>('/review/addReviewCostingType', data);
+		return response as unknown as { status_code: number; status: string; message?: string };
+	}
+
+	/**
+	 * Update Review Costing Type
+	 * PUT /api/review/updateReviewCostingType
+	 */
+	static async updateReviewCostingType(data: {
+		id: number;
+		name: string;
+		reviewCategoryTypeId: number;
+		status: number;
+	}): Promise<{ status_code: number; status: string; message?: string }> {
+		const response = await apiService.put<{
+			status_code: number;
+			status: string;
+			message?: string;
+		}>('/review/updateReviewCostingType', data);
+		return response as unknown as { status_code: number; status: string; message?: string };
 	}
 }
 

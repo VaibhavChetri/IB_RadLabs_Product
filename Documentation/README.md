@@ -71,6 +71,14 @@ Monthly revenue estimation and tracking:
 - **Revenue How It Works** - Step-by-step execution flow for all pages
 - Complete documentation of Redux persistence, API calls, and common mistakes
 
+### ⭐ **Review Cost Type** (`/14-Review-Cost-Type/`) - **Admin Page Template**
+Modern admin page implementation with best practices:
+- **Review Cost Type Overview** - Feature overview and architecture
+- **Review Cost Type How It Works** - Detailed execution flow
+- **Implementation Guide** - ⭐ **Complete template for future admin pages**
+- **API Reference** - API endpoints and TypeScript interfaces
+- Includes: React Query, URL state sync, debouncing, optimistic updates, loading skeletons
+
 ---
 
 ## 🚀 Quick Navigation
@@ -90,6 +98,7 @@ Monthly revenue estimation and tracking:
 - **Transit Features**: [Transit Plan](./03-Transit-Plan/)
 - **Menu Features**: [Menu Management](./05-Menu-Management/)
 - **Dashboard Features**: [Dashboard](./10-Dashboard/) | [Ops Dashboard](./11-Ops-Dashboard/) | [P&L](./12-P-and-L/) | [Revenue](./13-Revenue/)
+- **Admin Pages**: [Review Cost Type](./14-Review-Cost-Type/) ⭐ **Template for CRUD admin pages**
 
 ### For **Component Development**
 - **Quick Reference**: [Quick Reference Index](./QUICK_REFERENCE_INDEX.md) ⭐ **START HERE - Quick lookup guide**
@@ -192,6 +201,7 @@ Each documentation file should include:
 | Ops Dashboard | ✅ Complete | Recent | High |
 | P&L | ✅ Complete | Recent | High |
 | Revenue | ✅ Complete | Recent | High |
+| Review Cost Type | ✅ Complete | Recent | High | ⭐ **Admin Page Template**
 
 ---
 

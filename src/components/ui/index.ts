@@ -5,6 +5,7 @@ export { MultiSelectDropdown } from './MultiSelectDropdown';
 export { Pagination } from './Pagination';
 export { Snackbar } from './Snackbar';
 export { SearchButton } from './SearchButton';
+export { Skeleton, TableSkeleton, FilterSkeleton } from './Skeleton';
 export { ModernFilter } from './ModernFilter';
 export { FilterChips } from './FilterChips';
 export { TimeInput } from './TimeInput';

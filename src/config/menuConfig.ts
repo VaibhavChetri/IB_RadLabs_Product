@@ -104,6 +104,19 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 					},
 				],
 			},
+			{
+				id: 'ops-admin-revenue',
+				name: 'Revenue',
+				icon: DollarSign,
+				children: [
+					{
+						id: 'review-cost-type',
+						name: 'Review Cost Type',
+						icon: FileText,
+						href: '/ops-admin/revenue/review-cost-type',
+					},
+				],
+			},
 		],
 	},
 	{

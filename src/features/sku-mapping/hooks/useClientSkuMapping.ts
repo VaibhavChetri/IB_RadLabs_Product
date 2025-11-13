@@ -16,15 +16,23 @@ export const useClientSkuMapping = (clientId?: string) => {
 	const reduxClient = useSelector((state: RootState) => state.skuMapping.selectedClient);
 
 	const [clients, setClients] = useState<ClientWithImpactTypes[]>([]);
-	const [selectedClientId, setSelectedClientId] = useState<number | null>(reduxClientId);
-	const [selectedClient, setSelectedClient] = useState<ClientWithImpactTypes | null>(reduxClient);
+	// In add mode, always start with null (fresh start)
+	// In edit mode, initialize from Redux if available
+	const [selectedClientId, setSelectedClientId] = useState<number | null>(
+		isEditMode ? reduxClientId : null
+	);
+	const [selectedClient, setSelectedClient] = useState<ClientWithImpactTypes | null>(
+		isEditMode ? reduxClient : null
+	);
 	const [isClientLocked, setIsClientLocked] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string>('');
 
 	useEffect(() => {
-		// Restore selected client from Redux Persist in add mode
-		if (!isEditMode && reduxClientId && reduxClient) {
+		// Don't restore selected client from Redux Persist in add mode
+		// Add page should always start fresh - client selection is cleared on navigation
+		// Only restore in edit mode where client is required
+		if (isEditMode && reduxClientId && reduxClient) {
 			setSelectedClientId(reduxClientId);
 			setSelectedClient(reduxClient);
 		}
@@ -42,17 +50,12 @@ export const useClientSkuMapping = (clientId?: string) => {
 				setIsClientLocked(true);
 			}
 		} else if (!isEditMode) {
-			// In add mode, restore client from localStorage if available
-			if (selectedClientId && clients.length > 0) {
-				const client = clients.find(c => c.clientId === selectedClientId);
-				if (client) {
-					setSelectedClient(client);
-				}
-			}
+			// In add mode, don't restore client - Add page should always start fresh
+			// Client must be explicitly selected by user
 			setIsClientLocked(false);
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [clientId, isEditMode, clients.length, selectedClientId]);
+	}, [clientId, isEditMode, clients.length]);
 
 	const loadClients = async () => {
 		if (!location_id) return;

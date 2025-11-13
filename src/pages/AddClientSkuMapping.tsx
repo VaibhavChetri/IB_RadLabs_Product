@@ -50,16 +50,17 @@ export const AddClientSkuMapping: React.FC = () => {
 
 	// Clear Redux state on navigation only, not on refresh
 	useEffect(() => {
-		// Check if we have persisted data (means this is a refresh)
-		const hasPersistedData =
+		// Check if we have persisted form data (means this is a refresh with user input)
+		const hasPersistedFormData =
 			waterInefficiencyRows.length > 0 || singleUsePpRows.length > 0 || clamshellRows.length > 0;
 
-		if (!hasPersistedData && !hasClearedOnMount.current) {
-			// No persisted data + first mount = navigation from sidebar/button
-			dispatch(resetSkuMapping());
-			hasClearedOnMount.current = true;
-		} else if (hasPersistedData) {
-			// Has persisted data = refresh, don't clear
+		if (!hasClearedOnMount.current) {
+			if (!hasPersistedFormData) {
+				// No persisted form data = fresh navigation (from sidebar/button or Edit page)
+				// Always clear everything including selected client to ensure fresh start
+				dispatch(resetSkuMapping());
+			}
+			// If hasPersistedFormData = refresh with user input, don't clear (preserve user work)
 			hasClearedOnMount.current = true;
 		}
 	}, [dispatch, waterInefficiencyRows.length, singleUsePpRows.length, clamshellRows.length]);

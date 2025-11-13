@@ -10,7 +10,6 @@ import {
 	UserPlus,
 	Eye,
 	BarChart3,
-	DollarSign,
 	TrendingUp,
 	Server,
 	Settings,
@@ -30,6 +29,7 @@ import {
 	ArrowRight,
 	Briefcase,
 	Activity,
+	ClipboardList,
 	// ArrowLeft, // Deprecated - Received section commented out
 } from 'lucide-react';
 
@@ -107,7 +107,7 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 			{
 				id: 'ops-admin-revenue',
 				name: 'Revenue',
-				icon: DollarSign,
+				icon: TrendingUp,
 				children: [
 					{
 						id: 'review-cost-type',
@@ -133,7 +133,7 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 			{
 				id: 'analytics-revenue',
 				name: 'Revenue Reports',
-				icon: DollarSign,
+				icon: TrendingUp,
 				href: '/analytics/revenue',
 			},
 			{
@@ -164,7 +164,7 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 			{
 				id: 'reports-financial',
 				name: 'Financial Reports',
-				icon: DollarSign,
+				icon: BarChart3,
 				href: '/reports/financial',
 			},
 			{
@@ -330,7 +330,7 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 	{
 		id: 'p-and-l',
 		name: 'P&L Review',
-		icon: DollarSign,
+		icon: BarChart3,
 		children: [
 			{
 				id: 'pl-summary',
@@ -367,6 +367,70 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 						name: 'List',
 						icon: FileText,
 						href: '/revenue/monthly-estimate/list',
+					},
+				],
+			},
+		],
+	},
+	{
+		id: 'operations-reporting',
+		name: 'Operations Reporting',
+		icon: ClipboardList,
+		children: [
+			{
+				id: 'shift-reporting',
+				name: 'Shift Reporting',
+				icon: FileText,
+				children: [
+					{
+						id: 'shift-reporting-add',
+						name: 'Add',
+						icon: UserPlus,
+						href: '/operations-reporting/shift-reporting/add',
+					},
+					{
+						id: 'shift-reporting-listing',
+						name: 'Listing',
+						icon: FileText,
+						href: '/operations-reporting/shift-reporting/listing',
+					},
+				],
+			},
+			{
+				id: 'qc-rejection',
+				name: 'QC Rejection',
+				icon: FileText,
+				children: [
+					{
+						id: 'qc-rejection-add',
+						name: 'Add',
+						icon: UserPlus,
+						href: '/operations-reporting/qc-rejection/add',
+					},
+					{
+						id: 'qc-rejection-listing',
+						name: 'Listing',
+						icon: FileText,
+						href: '/operations-reporting/qc-rejection/listing',
+					},
+				],
+			},
+			{
+				id: 'client-escalation',
+				name: 'Client Escalation',
+				icon: FileText,
+				children: [
+					{
+						id: 'client-escalation-add',
+						name: 'Add',
+						icon: UserPlus,
+						href: '/operations-reporting/client-escalation/add',
+					},
+					{
+						id: 'client-escalation-listing',
+						name: 'Listing',
+						icon: FileText,
+						href: '/operations-reporting/client-escalation/listing',
 					},
 				],
 			},

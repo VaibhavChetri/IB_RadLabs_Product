@@ -46,10 +46,10 @@ export const EditableOnSiteManPowerTable: React.FC<EditableOnSiteManPowerTablePr
 			client_id: item.client_id,
 			clientName: item.client_name,
 			est: item.est || '0',
-			week1: item.week1 || '0',
-			week2: item.week2 || '0',
-			week3: item.week3 || '0',
-			week4: item.week4 || '0',
+			week1: item.week1 != null ? String(item.week1) : '0',
+			week2: item.week2 != null ? String(item.week2) : '0',
+			week3: item.week3 != null ? String(item.week3) : '0',
+			week4: item.week4 != null ? String(item.week4) : '0',
 		}));
 
 		// Calculate total row

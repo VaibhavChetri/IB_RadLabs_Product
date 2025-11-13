@@ -11,6 +11,7 @@ export { FilterChips } from './FilterChips';
 export { TimeInput } from './TimeInput';
 export { Card } from './Card';
 export { BorderlessDropdown } from './BorderlessDropdown';
+export { Dropdown } from './Dropdown';
 export { Badge } from './Badge';
 export { PageHeader } from './PageHeader';
 export { Button, IconButton, ButtonGroup, FAB } from './Button';

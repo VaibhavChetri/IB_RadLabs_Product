@@ -7,14 +7,10 @@ import {
 	MultiSelectDropdown,
 	Table,
 	Pagination,
-	SearchButton,
 	PageHeader,
-	Badge,
-	StatCard,
 } from '../../components/ui';
 import { KamApiService, InventoryValueRow } from '../../services/kamApi';
 import { InventoryApiService } from '../../services/inventoryApi';
-import { TransitPlanApi } from '../../services/transitPlanApi';
 import { setInventoryListing, setInventoryListingLoading } from '../../store/slices/kamSlice';
 
 type DropdownOption = { label: string; value: string };

@@ -1,5 +1,4 @@
 import jsPDF from 'jspdf';
-import { getCityAddress } from '../config/cityConfig';
 
 // -----------------------------
 // Types
@@ -117,7 +116,7 @@ export class DeliveryChallanGenerator {
 	// -----------------------------
 	// Shared Drawing Helpers
 	// -----------------------------
-	private drawHeader(data: DeliveryChallanData, yStart: number, font: number): number {
+	private drawHeader(_data: DeliveryChallanData, yStart: number, font: number): number {
 		const margin = this.margin;
 		const challanLabel = 'DELIVERY CHALLAN';
 		const companyName = 'INFINITYBOX PRIVATE LIMITED';
@@ -231,7 +230,7 @@ export class DeliveryChallanGenerator {
 		return y; // return final vertical position
 	}
 
-	private drawFooter(data: DeliveryChallanData, yStart: number, font: number): void {
+	private drawFooter(_data: DeliveryChallanData, yStart: number, font: number): void {
 		// Give the footer some breathing space below the table
 		const topGap = 25;
 		const y = yStart + topGap;
@@ -271,26 +270,6 @@ export class DeliveryChallanGenerator {
 		}
 	}
 
-	private formatAddressInThreeLines(address: string): string[] {
-		// Split address into components
-		const parts = address.split(',').map(part => part.trim());
-
-		if (parts.length < 3) {
-			// If less than 3 parts, pad with empty strings
-			return [parts[0] || '', parts[1] || '', parts[2] || ''];
-		}
-
-		// First line: numbers/unit (Gala No 2 AK Containe)
-		const firstLine = parts[0];
-
-		// Last line: city and pincode (Mumbai - 400078)
-		const lastLine = parts[parts.length - 1];
-
-		// Middle line: address details (Patkar Compound, Tulshet Pada, Bhandup (West))
-		const middleLine = parts.slice(1, -1).join(', ');
-
-		return [firstLine, middleLine, lastLine];
-	}
 }
 
 // -----------------------------

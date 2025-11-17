@@ -45,7 +45,6 @@ interface SkuMappingTableProps {
 	removeRow: (impactType: string, rowId: number) => void;
 	containerTypes?: any[];
 	selectedContainerTypes?: number[];
-	_isEditMode?: boolean;
 }
 
 export const SkuMappingTable: React.FC<SkuMappingTableProps> = ({
@@ -56,7 +55,6 @@ export const SkuMappingTable: React.FC<SkuMappingTableProps> = ({
 	removeRow,
 	containerTypes = [],
 	selectedContainerTypes = [],
-	_isEditMode = false,
 }) => {
 	const dispatch = useDispatch();
 	const renderDropdown = (

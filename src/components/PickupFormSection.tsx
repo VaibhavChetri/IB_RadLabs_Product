@@ -41,7 +41,7 @@ const PickupFormSection: React.FC<PickupFormSectionProps> = ({
 		if (errorDiv) errorDiv.style.display = 'block';
 	};
 
-	const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+	const handleImageLoad = () => {
 		console.log('✅ Image loaded successfully:', imageUrl);
 		console.log('✅ File type:', photograph?.type);
 	};

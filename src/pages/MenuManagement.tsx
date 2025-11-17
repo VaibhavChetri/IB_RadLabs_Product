@@ -2,15 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Eye, EyeOff, Settings, ChevronRight, ChevronDown, X } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { MenuManagementApiService, Menu } from '../services/menuManagementApi';
-import { useApi } from '../hooks/useApi';
 import { useUserMenus } from '../hooks/useUserMenus';
-import { useSelector } from 'react-redux';
-import { RootState } from '../store';
 import { MenuApiService } from '../services/menuApi';
 
 export const MenuManagement: React.FC = () => {
 	const { refreshPermissions } = useUserMenus();
-	const { user } = useSelector((state: RootState) => state.auth);
 	const [menus, setMenus] = useState<Menu[]>([]);
 	const [selectedMenu, setSelectedMenu] = useState<Menu | null>(null);
 	const [showPermissionModal, setShowPermissionModal] = useState(false);
@@ -297,98 +293,6 @@ export const MenuManagement: React.FC = () => {
 			setPermissionData(null);
 		} catch (error) {
 			console.error('Failed to save permissions:', error);
-		}
-	};
-
-	const refreshLoginAndPermissions = async () => {
-		try {
-			console.log('🔄 Updating permissions in localStorage and Redux...');
-
-			// Import TokenManager
-			const TokenManager = (await import('../utils/tokenManager')).default;
-
-			// Get current permissions from Redux
-			const currentPermissions = user?.menuPermissions || {};
-
-			// Merge with updated permissions from the menu hierarchy
-			const updatedPermissions = await updateReduxPermissions();
-			const mergedPermissions = { ...currentPermissions, ...updatedPermissions };
-
-			console.log('✅ Updated menu permissions:', mergedPermissions);
-
-			// Update localStorage via TokenManager
-			TokenManager.setMenuPermissions(mergedPermissions);
-
-			// Update Redux state
-			await refreshPermissions(mergedPermissions);
-
-			console.log('✅ Menu permissions updated in localStorage and Redux!');
-		} catch (error) {
-			console.error('Failed to refresh permissions:', error);
-		}
-	};
-
-	const updateReduxPermissions = async () => {
-		try {
-			// Get the current user's permissions from the updated menu data
-			// We need to reconstruct the permissions structure that matches what Redux expects
-			const updatedPermissions: Record<string, any> = {};
-
-			// Helper function to build permissions from menu hierarchy
-			const buildPermissions = (menu: any) => {
-				if (menu.permissions) {
-					const hasAccess = menu.permissions.some((p: any) => p.access);
-					console.log(
-						`🔍 Building permissions for ${menu.name} (${menu.slug}): hasAccess=${hasAccess}`
-					);
-
-					updatedPermissions[menu.slug] = {
-						access: hasAccess,
-						children: {},
-					};
-
-					// Add children permissions
-					if (menu.children) {
-						menu.children.forEach((child: any) => {
-							const childHasAccess = child.permissions?.some((p: any) => p.access);
-							console.log(
-								`🔍 Building permissions for child ${child.name} (${child.slug}): hasAccess=${childHasAccess}`
-							);
-
-							updatedPermissions[menu.slug].children[child.slug] = {
-								access: childHasAccess,
-								children: {},
-							};
-
-							// Add grandchildren permissions
-							if (child.children) {
-								child.children.forEach((grandchild: any) => {
-									const grandchildHasAccess = grandchild.permissions?.some((p: any) => p.access);
-									console.log(
-										`🔍 Building permissions for grandchild ${grandchild.name} (${grandchild.slug}): hasAccess=${grandchildHasAccess}`
-									);
-
-									updatedPermissions[menu.slug].children[child.slug].children[grandchild.slug] = {
-										access: grandchildHasAccess,
-										children: {},
-									};
-								});
-							}
-						});
-					}
-				}
-			};
-
-			// Build permissions from the updated menu data
-			if (permissionData?.menu) {
-				buildPermissions(permissionData.menu);
-			}
-
-			console.log('🔄 Updated permissions for Redux:', updatedPermissions);
-			return updatedPermissions;
-		} catch (error) {
-			console.error('Failed to update Redux permissions:', error);
-			return {};
 		}
 	};
 

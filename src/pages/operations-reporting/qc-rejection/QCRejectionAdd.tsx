@@ -105,7 +105,6 @@ export const QCRejectionAdd: React.FC = () => {
 	// Fetch adherence stats (use same date for start and end)
 	const {
 		data: adherenceData,
-		isLoading: loadingAdherence,
 		error: adherenceError,
 	} = useQCReportAdherence({
 		start_date: transitDate,

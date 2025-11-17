@@ -25,7 +25,6 @@ export const BudgetEstimateTabs: React.FC<BudgetEstimateTabsProps> = ({
 	budgets,
 	estimates,
 	onBudgetChange,
-	onEstimateChange,
 	isLoading = false,
 }) => {
 	const [activeTab, setActiveTab] = useState<'budget' | 'estimate'>('budget');

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, FloatingDropdown } from './ui';
+import { FloatingDropdown } from './ui';
 import { FacilityDropdown } from './FacilityDropdown';
 import type { ClientByCityOption } from '../services/commonApi';
 

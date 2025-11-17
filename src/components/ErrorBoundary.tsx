@@ -3,7 +3,7 @@
  * Catches React errors and displays user-friendly error messages
  */
 
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Component, ErrorInfo, ReactNode } from 'react';
 import { Card } from './ui/Card';
 
 interface Props {

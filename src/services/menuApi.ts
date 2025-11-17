@@ -5,7 +5,6 @@
 
 import { apiService, ApiResponse } from '../services/api';
 import { UserMenuPermissions } from '../types/menu';
-import { MOCK_LOGIN_RESPONSE_WITH_MENUS } from '../mocks/menuPermissions';
 
 export class MenuApiService {
 	/**

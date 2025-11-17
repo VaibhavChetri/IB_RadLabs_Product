@@ -1,6 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-	MultiSelectDropdown,
 	Pagination,
 	SearchButton,
 	FloatingInput,
@@ -32,16 +31,9 @@ const ReceivedInventoryListing: React.FC = () => {
 	const [pageNumber, setPageNumber] = useState(1);
 	const [itemsPerPage, setItemsPerPage] = useState(10);
 	const [totalItems, setTotalItems] = useState(0);
-	const [sortBy, setSortBy] = useState<string>('date');
-	const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+	const [sortBy] = useState<string>('date');
+	const [sortOrder] = useState<'asc' | 'desc'>('desc');
 	const [openAccordion, setOpenAccordion] = useState<string | null>(null);
-
-	// Column visibility state
-	const [visibleColumns, setVisibleColumns] = useState<string[]>([
-		'serial',
-		'clientName',
-		'receivedDateTime',
-	]);
 
 	// Load washing facilities on component mount
 	useEffect(() => {
@@ -111,12 +103,7 @@ const ReceivedInventoryListing: React.FC = () => {
 
 			if (response.status === 'success') {
 				// Transform data for table display
-				const transformedData = transformDataForTable(
-					response,
-					facilities,
-					parseInt(selectedFacility),
-					selectedClientId
-				);
+				const transformedData = transformDataForTable(response, selectedClientId);
 
 				// Apply client-side pagination since API returns all data
 				const startIndex = (pageNumber - 1) * itemsPerPage;
@@ -141,8 +128,6 @@ const ReceivedInventoryListing: React.FC = () => {
 	// Transform data for table display - group by client and received date/time
 	const transformDataForTable = (
 		data: SentInventoryResponse,
-		facilities: WashingFacility[],
-		selectedFacility: number,
 		selectedClientId: string
 	): SentInventoryRow[] => {
 		if (!data || !data.result) return [];
@@ -201,51 +186,6 @@ const ReceivedInventoryListing: React.FC = () => {
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [pageNumber, itemsPerPage, sortBy, sortOrder]);
-
-	// Define all available columns
-	const allColumns = useMemo(
-		() => [
-			{
-				key: 'serial',
-				label: '#',
-				title: 'Sl. No',
-				width: '60px',
-				sortable: false,
-				render: (_: unknown, __: SentInventoryRow, index: number) =>
-					(pageNumber - 1) * itemsPerPage + index + 1,
-			},
-			{
-				key: 'clientName',
-				label: 'Client',
-				title: 'Client',
-				sortable: true,
-			},
-			{
-				key: 'receivedDateTime',
-				label: 'Pickup Date & Time',
-				title: 'Pickup Date & Time',
-				sortable: true,
-				render: (value: unknown) => {
-					const dateTime = value as string;
-					if (!dateTime) return 'N/A';
-					const date = new Date(dateTime);
-					return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
-				},
-			},
-		],
-		[pageNumber, itemsPerPage]
-	);
-
-	// Filter visible columns
-	const _visibleColumnsData = allColumns.filter(col => visibleColumns.includes(col.key));
-
-	// Column options for MultiSelectDropdown
-	const columnOptions = allColumns
-		.filter(col => col.key !== 'serial')
-		.map(col => ({
-			value: col.key,
-			label: col.label,
-		}));
 
 	// Format date for input
 	function formatDateForInput(date: Date): string {

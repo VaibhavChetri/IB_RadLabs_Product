@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { RootState } from '../../store';
-import { FloatingInput, PageHeader, Button, Snackbar, Table } from '../../components/ui';
+import { PageHeader, Button, Snackbar, Table } from '../../components/ui';
 import { KamApiService, ClientInventoryRow } from '../../services/kamApi';
 import { setClientInventory, setClientInventoryLoading } from '../../store/slices/kamSlice';
 

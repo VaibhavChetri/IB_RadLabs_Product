@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
 import { ArrowLeft } from 'lucide-react';
 import { Button, Snackbar } from '../../../components/ui';
-import { RootState } from '../../../store';
 import { SkuApiService } from '../../../services/skuApi';
 import { EscalationTypeService, QCRejectionService } from '../../../services/transitPlanApi';
 import type { ClientSkuMapItem } from '../../../services/transitPlanApi';
@@ -16,10 +14,9 @@ interface QCRejectionFormData {
 }
 
 export const QCRejectionDetails: React.FC = () => {
-	const { clientId, transitId } = useParams<{ clientId: string; transitId: string }>();
+	const { clientId } = useParams<{ clientId: string; transitId: string }>();
 	const location = useLocation();
 	const navigate = useNavigate();
-	const { user } = useSelector((state: RootState) => state.auth);
 
 	const [skus, setSkus] = useState<ClientSkuMapItem[]>([]);
 	const [rejectionReasons, setRejectionReasons] = useState<EscalationType[]>([]);

@@ -15,7 +15,6 @@ import {
 import { TransitPlanApi, SentTransitPlanRow, RestaurantOption } from '../../../services/transitPlanApi';
 import {
 	generateDeliveryChallanPDF,
-	DeliveryChallanData,
 	convertApiResponseToDCData,
 	DCApiResponse,
 } from '../../../services/deliveryChallanGenerator';
@@ -85,31 +84,6 @@ const SentTransitPlanListing: React.FC = () => {
 		'driver_phone',
 		'facilityName',
 		'transit_status_label',
-	]);
-
-	// Save filters to localStorage
-	const saveFiltersToStorage = useCallback(() => {
-		const filters = {
-			startDate,
-			endDate,
-			selectedClientId,
-			visibleColumns,
-			itemsPerPage,
-			sortBy,
-			sortOrder,
-			timestamp: Date.now(),
-		};
-		localStorage.setItem(storageKey, JSON.stringify(filters));
-		console.log('💾 Saved filters to localStorage:', filters);
-	}, [
-		startDate,
-		endDate,
-		selectedClientId,
-		visibleColumns,
-		itemsPerPage,
-		sortBy,
-		sortOrder,
-		storageKey,
 	]);
 
 	// Load filters from localStorage

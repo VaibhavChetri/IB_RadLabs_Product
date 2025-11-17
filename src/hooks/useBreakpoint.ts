@@ -61,14 +61,6 @@ export const useBreakpoint = (): BreakpointState => {
 	});
 
 	useEffect(() => {
-		// Create media queries for all breakpoints
-		const mediaQueries = Object.entries(breakpoints)
-			.sort(([, a], [, b]) => b - a) // Sort descending
-			.map(([breakpoint, width]) => ({
-				breakpoint: breakpoint as Breakpoint,
-				mq: window.matchMedia(`(max-width: ${width - 1}px)`),
-			}));
-
 		const updateBreakpoint = () => {
 			const width = window.innerWidth;
 			setState(calculateBreakpoint(width));

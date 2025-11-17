@@ -1,13 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { PageHeader, Snackbar, FloatingInput, FloatingDropdown, BorderlessDropdown, Dropdown, Button } from '../../../components/ui';
-import { RootState } from '../../../store';
+import { PageHeader, Snackbar, FloatingInput, FloatingDropdown, Dropdown, Button } from '../../../components/ui';
 import {
 	ShiftApiService,
 	Hora,
 	ShiftStatus,
-	FacilityResource,
 	OpsStatus,
 	EscalationManager,
 	CheckInShiftOpsStatusRequest,
@@ -22,7 +19,6 @@ interface ResourceRow {
 
 export const ShiftReportingAdd: React.FC = () => {
 	const navigate = useNavigate();
-	const { user } = useSelector((state: RootState) => state.auth);
 	// Set default date to today in YYYY-MM-DD format
 	const getTodayDate = () => {
 		const today = new Date();
@@ -35,7 +31,6 @@ export const ShiftReportingAdd: React.FC = () => {
 	const [selectedHoraId, setSelectedHoraId] = useState<number | null>(null);
 	const [horaOptions, setHoraOptions] = useState<Hora[]>([]);
 	const [shiftStatus, setShiftStatus] = useState<ShiftStatus | null>(null);
-	const [resources, setResources] = useState<FacilityResource[]>([]);
 	const [opsStatusOptions, setOpsStatusOptions] = useState<OpsStatus[]>([]);
 	const [escalationManagers, setEscalationManagers] = useState<EscalationManager[]>([]);
 	const [resourceRows, setResourceRows] = useState<ResourceRow[]>([]);
@@ -77,7 +72,6 @@ export const ShiftReportingAdd: React.FC = () => {
 				]);
 
 				if (resourcesRes.status === 'Success' && resourcesRes.data) {
-					setResources(resourcesRes.data);
 					// Initialize resource rows
 					const initialRows: ResourceRow[] = resourcesRes.data.map(resource => ({
 						resourceId: resource.id,

@@ -13,7 +13,6 @@ import { useRevenueListingData } from '../../../features/revenue/hooks/useRevenu
 import { EditableBudgetTable } from '../../../features/revenue/components/EditableBudgetTable';
 import { EditableOnSiteManPowerTable } from '../../../features/revenue/components/EditableOnSiteManPowerTable';
 import {
-	RevenueRecord,
 	OnSiteManPowerItem,
 	PAndLApiService,
 	UpdateRevenueRequest,
@@ -42,7 +41,6 @@ export const MonthlyEstimateEdit: React.FC = () => {
 	const {
 		editBudgetWeekValues: persistedBudgetWeekValues,
 		editManPowerWeekValues: persistedManPowerWeekValues,
-		editLastUpdated,
 	} = useSelector((state: RootState) => state.revenue);
 
 	// Get parameters from URL

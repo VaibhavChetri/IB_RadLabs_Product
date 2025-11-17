@@ -44,7 +44,6 @@ export const Table = <T extends Record<string, unknown>>({
 	size = 'md',
 	striped = false,
 	hoverable = true,
-	bordered = false,
 	sortBy,
 	sortOrder,
 	onSort,

@@ -268,37 +268,6 @@ export const AddClient: React.FC = () => {
 		}
 	};
 
-	const validateForm = (): boolean => {
-		const newErrors: Partial<ClientFormData> = {};
-
-		// Required fields validation
-		if (!formData.name.trim()) newErrors.name = 'Name is required';
-		if (!formData.address1.trim()) newErrors.address1 = 'Address 1 is required';
-		if (!formData.locationType) newErrors.locationType = 'Location Type is required';
-		if (!formData.billingType) newErrors.billingType = 'Billing Type is required';
-		if (!formData.impactTypes || formData.impactTypes.length === 0)
-			newErrors.impactTypes = 'At least one Impact Type is required';
-		if (!formData.country) newErrors.country = 'Country is required';
-		if (!formData.state) newErrors.state = 'State is required';
-		if (!formData.city) newErrors.city = 'City is required';
-		if (!formData.landmark.trim()) newErrors.landmark = 'Landmark is required';
-		if (!formData.latitude.trim()) newErrors.latitude = 'Latitude is required';
-		if (!formData.longitude.trim()) newErrors.longitude = 'Longitude is required';
-
-		// Conditional validation for Fixed Price
-		if (formData.billingType === '3' && !formData.fixedPrice?.trim()) {
-			newErrors.fixedPrice = 'Fixed Price is required';
-		}
-
-		// Conditional validation for Billing Sub Type
-		if (formData.billingType === '4' && !formData.billingSubType) {
-			newErrors.billingSubType = 'Billing Sub Type is required';
-		}
-
-		setErrors(newErrors);
-		return Object.keys(newErrors).length === 0;
-	};
-
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 		console.log('🚀 AddClient: Submit button clicked!');
@@ -372,7 +341,7 @@ export const AddClient: React.FC = () => {
 			console.log('📝 Submitting client data:', payload);
 
 			// Call actual API
-			const result = await ClientApiService.addClient(payload);
+			await ClientApiService.addClient(payload);
 
 			// Show success message
 			setSnackbar({

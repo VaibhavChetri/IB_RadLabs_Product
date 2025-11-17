@@ -3,15 +3,18 @@
  * Separates business logic from presentation components
  */
 
-import { DashboardKAMResponse, DashboardStats } from '../hooks/useDashboardData';
-import { ChartDataPoint } from '../hooks/useDashboardData';
-import { getDayFromDate } from './dateUtils';
+import {
+	DashboardResponse,
+	DashboardStats,
+	ChartDataPoint,
+	DateSegment,
+} from '../hooks/useDashboardData';
 
 /**
  * Transform API response to DashboardStats
  * Extracts summary statistics from dashboard response
  */
-export const transformToStats = (data: DashboardKAMResponse | null): DashboardStats | null => {
+export const transformToStats = (data: DashboardResponse | null): DashboardStats | null => {
 	if (!data) return null;
 
 	return {
@@ -27,17 +30,18 @@ export const transformToStats = (data: DashboardKAMResponse | null): DashboardSt
  * Transform API response to chart data points for monthly view
  * Converts byDate object to sorted array of chart points
  */
-export const transformToMonthlyChartData = (
-	data: DashboardKAMResponse | null
-): ChartDataPoint[] => {
+export const transformToMonthlyChartData = (data: DashboardResponse | null): ChartDataPoint[] => {
 	if (!data?.segResult?.byDate) return [];
 
 	return Object.entries(data.segResult.byDate)
-		.map(([date, value]) => ({
-			day: parseInt(date.split('-')[2], 10),
-			date,
-			count: value.totalCount || 0,
-		}))
+		.map(([date, value]) => {
+			const dateSegment = value as DateSegment;
+			return {
+				day: parseInt(date.split('-')[2], 10),
+				date,
+				count: dateSegment.totalCount || 0,
+			};
+		})
 		.sort((a, b) => a.day - b.day);
 };
 

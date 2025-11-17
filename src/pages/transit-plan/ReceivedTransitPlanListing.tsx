@@ -15,7 +15,6 @@ import {
 import { TransitPlanApi, SentTransitPlanRow, RestaurantOption } from '../../services/transitPlanApi';
 import {
 	generateDeliveryChallanPDF,
-	DeliveryChallanData,
 	convertApiResponseToDCData,
 	DCApiResponse,
 } from '../../services/deliveryChallanGenerator';

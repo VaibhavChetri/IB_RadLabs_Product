@@ -10,7 +10,7 @@ export const getSkuListingTableColumns = (handleEdit: EditHandler): TableColumn[
 	{
 		key: 'actions',
 		title: 'Actions',
-		render: (value: unknown, row: unknown, _index: number) =>
+		render: (_value: unknown, row: unknown, _index: number) =>
 			row ? (
 				<button
 					onClick={() => handleEdit(row as ClientSkuMapping)}

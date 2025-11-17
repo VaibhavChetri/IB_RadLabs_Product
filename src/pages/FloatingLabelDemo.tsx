@@ -104,7 +104,7 @@ const FloatingLabelDemo: React.FC = () => {
 								label='Phone Number'
 								value={formData.phone}
 								onChange={value => handleInputChange('phone', value)}
-								type='tel'
+								type='text'
 							/>
 						</div>
 					</Card>

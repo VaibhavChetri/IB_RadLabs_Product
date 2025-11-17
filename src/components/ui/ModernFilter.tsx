@@ -47,12 +47,6 @@ export const ModernFilter: React.FC<ModernFilterProps> = ({
 		setShowAddFilter(false);
 	};
 
-	const filteredFilters = filters.filter(
-		filter =>
-			filter.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			filter.options.some(option => option.label.toLowerCase().includes(searchTerm.toLowerCase()))
-	);
-
 	return (
 		<div
 			className={cn(

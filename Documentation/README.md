@@ -100,6 +100,7 @@ Modern admin page implementation with best practices:
 - **Menu Features**: [Menu Management](./05-Menu-Management/)
 - **Dashboard Features**: [Dashboard](./10-Dashboard/) | [Ops Dashboard](./11-Ops-Dashboard/) | [P&L](./12-P-and-L/) | [Revenue](./13-Revenue/)
 - **Admin Pages**: [Review Cost Type](./14-Review-Cost-Type/) ⭐ **Template for CRUD admin pages**
+- **Operations Reporting**: [Escalation Type](./15-Escalation-Type/) | [QC Rejection](./16-QC-Rejection/)
 
 ### For **Component Development**
 - **Quick Reference**: [Quick Reference Index](./QUICK_REFERENCE_INDEX.md) ⭐ **START HERE - Quick lookup guide**

@@ -437,3 +437,227 @@ export const TransitPlanApi = {
 		return response;
 	},
 };
+
+// Escalation Type (Complaint Type) Interfaces
+export interface EscalationType {
+	id: number;
+	name: string;
+	status: string;
+}
+
+export interface GetEscalationTypesResponse {
+	status: string;
+	status_code: number;
+	data: EscalationType[];
+}
+
+export interface CreateEscalationTypeRequest {
+	name: string;
+}
+
+export interface CreateEscalationTypeResponse {
+	status: string;
+	status_code: number;
+	data: {
+		id: number;
+		name: string;
+	};
+}
+
+export interface UpdateEscalationTypeRequest {
+	name: string;
+	status?: number;
+}
+
+export interface UpdateEscalationTypeResponse {
+	status: string;
+	status_code: number;
+	data: {
+		id: string;
+		name: string;
+	};
+}
+
+// Escalation Type API Service
+export class EscalationTypeService {
+	/**
+	 * Get all escalation types (complaint types)
+	 */
+	static async getEscalationTypes(): Promise<GetEscalationTypesResponse> {
+		return api.get(
+			'/transit-plan/getComplaintTypes'
+		) as unknown as Promise<GetEscalationTypesResponse>;
+	}
+
+	/**
+	 * Create a new escalation type
+	 */
+	static async createEscalationType(
+		data: CreateEscalationTypeRequest
+	): Promise<CreateEscalationTypeResponse> {
+		return api.post(
+			'/transit-plan/createComplaintType',
+			data
+		) as unknown as Promise<CreateEscalationTypeResponse>;
+	}
+
+	/**
+	 * Update an existing escalation type
+	 */
+	static async updateEscalationType(
+		id: number,
+		data: UpdateEscalationTypeRequest
+	): Promise<UpdateEscalationTypeResponse> {
+		return api.put(
+			`/transit-plan/updateComplaintType/${id}`,
+			data
+		) as unknown as Promise<UpdateEscalationTypeResponse>;
+	}
+}
+
+// QC Rejection Interfaces
+export interface QCRejection {
+	id: number;
+	runId: number;
+	transitId: string;
+	transitDate: string;
+	transitTime: string;
+	containerTypeId: number;
+	containerTypeName: string;
+	reasonId: number;
+	reasonName: string;
+	rejectedCount: number;
+	createdBy: number;
+	createdByName: string;
+	updatedBy: number;
+	updatedByName: string;
+	createdAt: string;
+	updatedAt: string;
+	hasEntered: string;
+	clientId: number;
+	clientName: string;
+	[key: string]: unknown;
+}
+
+export interface GetQCRejectionsResponse {
+	status: string;
+	status_code: number;
+	data: QCRejection[];
+}
+
+// QC Run Interfaces (for Add page)
+export interface QCRun {
+	id: number;
+	transit_id: string;
+	transit_date: string;
+	transit_time: string;
+	client_id: number;
+	clientName: string;
+	city_id: number;
+	cityName: string;
+	hasEntered: string;
+}
+
+export interface GetQCRunsResponse {
+	status: string;
+	status_code: number;
+	data: QCRun[];
+}
+
+// QC Report Adherence Interfaces
+export interface QCDailyAdherence {
+	date: string;
+	submitted: number;
+	total: number;
+	adherence: number;
+}
+
+export interface QCTotalAdherence {
+	submitted: number;
+	total: number;
+	adherence: number;
+}
+
+export interface GetQCReportAdherenceResponse {
+	status: string;
+	status_code: number;
+	data: {
+		cityId: number;
+		startDate: string;
+		endDate: string;
+		daily: QCDailyAdherence[];
+		total: QCTotalAdherence;
+	};
+}
+
+// QC Rejection API Service
+export class QCRejectionService {
+	/**
+	 * Get QC rejections
+	 */
+	static async getQCRejections(params: {
+		transit_date: string;
+		client_id?: number;
+	}): Promise<GetQCRejectionsResponse> {
+		const searchParams = new URLSearchParams();
+		searchParams.set('transit_date', params.transit_date);
+		if (params.client_id) {
+			searchParams.set('client_id', params.client_id.toString());
+		}
+		return api.get(
+			`/transit-plan/getQCRejections?${searchParams.toString()}`
+		) as unknown as Promise<GetQCRejectionsResponse>;
+	}
+
+	/**
+	 * Get QC runs (for Add page)
+	 */
+	static async getQCRuns(params: {
+		transit_date: string;
+		client_id?: number;
+	}): Promise<GetQCRunsResponse> {
+		const searchParams = new URLSearchParams();
+		searchParams.set('transit_date', params.transit_date);
+		if (params.client_id) {
+			searchParams.set('client_id', params.client_id.toString());
+		}
+		return api.get(
+			`/transit-plan/getQcRuns?${searchParams.toString()}`
+		) as unknown as Promise<GetQCRunsResponse>;
+	}
+
+	/**
+	 * Get QC report adherence stats
+	 */
+	static async getQCReportAdherence(params: {
+		start_date: string;
+		end_date: string;
+	}): Promise<GetQCReportAdherenceResponse> {
+		const searchParams = new URLSearchParams();
+		searchParams.set('start_date', params.start_date);
+		searchParams.set('end_date', params.end_date);
+		return api.get(
+			`/transit-plan/getQcReportAdherence?${searchParams.toString()}`
+		) as unknown as Promise<GetQCReportAdherenceResponse>;
+	}
+
+	/**
+	 * Submit QC rejections
+	 */
+	static async submitQCRejections(
+		runId: number,
+		payload: {
+			details: Array<{
+				containerTypeId: number;
+				reasonId: number;
+				rejectedCount: number;
+			}>;
+		}
+	): Promise<{ status: string; status_code: number; message?: string }> {
+		return api.post(`/transit-plan/qcRejections/${runId}`, payload) as unknown as Promise<{
+			status: string;
+			status_code: number;
+			message?: string;
+		}>;
+	}
+}

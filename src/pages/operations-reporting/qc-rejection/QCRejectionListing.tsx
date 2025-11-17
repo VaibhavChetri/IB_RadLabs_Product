@@ -1,12 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { PageHeader, Button, Pagination, Snackbar } from '../../../components/ui';
+import {
+	PageHeader,
+	Button,
+	Snackbar,
+	FloatingInput,
+	FloatingDropdown,
+	SearchButton,
+} from '../../../components/ui';
 import { Table } from '../../../components/ui/DataDisplay';
 import { TableSkeleton } from '../../../components/ui/Skeleton';
 import { Plus } from 'lucide-react';
+import { useQCRejectionData } from '../../../features/qc-rejection/hooks/useQCRejectionData';
+import { InventoryApiService } from '../../../services/inventoryApi';
+import { RootState } from '../../../store';
+import type { TableColumn } from '../../../components/ui/DataDisplay';
 
 export const QCRejectionListing: React.FC = () => {
 	const navigate = useNavigate();
+	const { user } = useSelector((state: RootState) => state.auth);
+	const [transitDate, setTransitDate] = useState<string>('');
+	const [selectedClientId, setSelectedClientId] = useState<string>('');
+	const [clientOptions, setClientOptions] = useState<Array<{ value: string; label: string }>>([
+		{ value: '', label: 'All Clients' },
+	]);
+	const [loadingClients, setLoadingClients] = useState(false);
 	const [snackbar, setSnackbar] = useState<{
 		open: boolean;
 		message: string;
@@ -17,34 +36,172 @@ export const QCRejectionListing: React.FC = () => {
 		type: 'success',
 	});
 
-	const [pagination, setPagination] = useState({
-		currentPage: 1,
-		totalPages: 1,
-		totalItems: 0,
-		pageSize: 10,
+	// Set default date to today
+	useEffect(() => {
+		const today = new Date().toISOString().split('T')[0];
+		setTransitDate(today);
+	}, []);
+
+	// Load clients by city
+	useEffect(() => {
+		const loadClients = async () => {
+			if (!user?.city_id) return;
+
+			setLoadingClients(true);
+			try {
+				const response = await InventoryApiService.getClientByCity(user.city_id);
+				if (response.status_code === 200 && response.result) {
+					const clientList = response.result.map(client => ({
+						value: client.clientId.toString(),
+						label: client.clientName,
+					}));
+					setClientOptions([{ value: '', label: 'All Clients' }, ...clientList]);
+				}
+			} catch (error) {
+				console.error('Failed to load clients:', error);
+				setSnackbar({
+					open: true,
+					message: 'Failed to load clients',
+					type: 'error',
+				});
+			} finally {
+				setLoadingClients(false);
+			}
+		};
+
+		loadClients();
+	}, [user?.city_id]);
+
+	// Fetch QC rejections
+	const {
+		data: listingData,
+		isLoading: loading,
+		error: listingError,
+	} = useQCRejectionData({
+		transit_date: transitDate,
+		client_id: selectedClientId ? parseInt(selectedClientId, 10) : undefined,
+		enabled: !!transitDate,
 	});
 
-	const columns = [
-		{ key: 'id', label: 'ID' },
-		{ key: 'rejection_date', label: 'Rejection Date' },
-		{ key: 'reason', label: 'Reason' },
-		{ key: 'status', label: 'Status' },
-		{ key: 'actions', label: 'Actions' },
-	];
-
-	const tableData: Record<string, unknown>[] = [];
+	// Show error snackbar if API fails
+	useEffect(() => {
+		if (listingError) {
+			setSnackbar({
+				open: true,
+				message: 'Failed to load QC rejections',
+				type: 'error',
+			});
+		}
+	}, [listingError]);
 
 	const handleAdd = () => {
 		navigate('/operations-reporting/qc-rejection/add');
 	};
 
-	const handlePageChange = (page: number) => {
-		setPagination(prev => ({ ...prev, currentPage: page }));
+	const handleSearch = () => {
+		if (!transitDate) {
+			setSnackbar({
+				open: true,
+				message: 'Please select a date',
+				type: 'error',
+			});
+			return;
+		}
+		// Data will be refetched automatically via React Query when transitDate or selectedClientId changes
 	};
 
-	const handleItemsPerPageChange = (itemsPerPage: number) => {
-		setPagination(prev => ({ ...prev, pageSize: itemsPerPage, currentPage: 1 }));
+	const formatDate = (dateString: string): string => {
+		if (!dateString) return '-';
+		try {
+			const date = new Date(dateString);
+			const day = String(date.getDate()).padStart(2, '0');
+			const month = String(date.getMonth() + 1).padStart(2, '0');
+			const year = date.getFullYear();
+			return `${day}/${month}/${year}`;
+		} catch {
+			return dateString;
+		}
 	};
+
+	const columns = useMemo<TableColumn<Record<string, unknown>>[]>(
+		() => [
+			{
+				key: 'serial',
+				title: '#',
+				sortable: false,
+				align: 'center',
+				render: (_value: unknown, _row: Record<string, unknown>, index: number) => (
+					<div className='font-semibold text-gray-600 text-center'>{index + 1}</div>
+				),
+			},
+			{
+				key: 'transitDate',
+				title: 'Transit Date',
+				sortable: true,
+				align: 'center',
+				render: (value: unknown) => (
+					<div className='text-gray-900 text-center'>{formatDate(String(value || ''))}</div>
+				),
+			},
+			{
+				key: 'transitTime',
+				title: 'Time',
+				sortable: true,
+				align: 'center',
+				render: (value: unknown) => (
+					<div className='text-gray-900 text-center'>{String(value || '-')}</div>
+				),
+			},
+			{
+				key: 'clientName',
+				title: 'Client Name',
+				sortable: true,
+				align: 'center',
+				render: (value: unknown) => (
+					<div className='text-gray-900 text-center'>{String(value || '-')}</div>
+				),
+			},
+			{
+				key: 'containerTypeName',
+				title: 'SKU',
+				sortable: true,
+				align: 'center',
+				render: (value: unknown) => (
+					<div className='text-gray-900 text-center'>{String(value || '-')}</div>
+				),
+			},
+			{
+				key: 'reasonName',
+				title: 'Reason',
+				sortable: true,
+				align: 'center',
+				render: (value: unknown) => (
+					<div className='text-gray-900 text-center'>{String(value || '-')}</div>
+				),
+			},
+			{
+				key: 'rejectedCount',
+				title: 'Rejected Count',
+				sortable: true,
+				align: 'center',
+				render: (value: unknown) => (
+					<div className='text-gray-900 text-center'>{String(value ?? '-')}</div>
+				),
+			},
+			{
+				key: 'updatedByName',
+				title: 'Updated By',
+				sortable: true,
+				align: 'center',
+				render: (value: unknown) => (
+					<div className='text-gray-900 text-center'>{String(value || '-')}</div>
+				),
+			},
+		],
+		[]
+	);
+
+	const tableData = (listingData?.data || []) as unknown as Record<string, unknown>[];
 
 	return (
 		<div className='min-h-screen bg-white p-4'>
@@ -52,41 +209,51 @@ export const QCRejectionListing: React.FC = () => {
 				<div className='flex items-center justify-between mb-6'>
 					<PageHeader
 						title='QC Rejection'
-						totalItems={pagination.totalItems}
+						locationName={user?.city_name || 'City'}
+						totalItems={tableData.length}
 						itemType='QC rejections'
 						icon='❌'
 					/>
-					<Button
-						onClick={handleAdd}
-						className='px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors'
-					>
-						<Plus className='w-4 h-4 mr-2' />
+					<Button onClick={handleAdd} variant='primary' leftIcon={<Plus className='w-4 h-4' />}>
 						Add QC Rejection
 					</Button>
 				</div>
 
-				{/* Filter Section - To be implemented */}
+				{/* Filter Section */}
 				<div className='mb-6 flex w-full'>
 					<div className='bg-gradient-to-r from-gray-50 to-white border border-gray-100 rounded-lg p-4 flex w-full gap-3'>
-						<p className='text-gray-600'>Filters will be implemented here.</p>
+						<div className='flex items-center gap-4 w-full'>
+							<div className='w-56'>
+								<FloatingInput
+									label='Transit Date'
+									type='date'
+									value={transitDate}
+									onChange={setTransitDate}
+									required
+								/>
+							</div>
+							<div className='w-56'>
+								<FloatingDropdown
+									label='Client'
+									options={clientOptions}
+									value={selectedClientId}
+									onChange={setSelectedClientId}
+									placeholder='All Clients'
+									disabled={loadingClients}
+								/>
+							</div>
+							<div className='ml-auto'>
+								<SearchButton onClick={handleSearch} disabled={loading || !transitDate} />
+							</div>
+						</div>
 					</div>
 				</div>
 
-				{false ? (
-					<TableSkeleton rows={pagination.pageSize} columns={5} />
+				{loading ? (
+					<TableSkeleton rows={10} columns={columns.length} />
 				) : (
 					<Table columns={columns} data={tableData} loading={false} size='sm' />
 				)}
-
-				<Pagination
-					currentPage={pagination.currentPage}
-					totalPages={pagination.totalPages}
-					totalItems={pagination.totalItems}
-					itemsPerPage={pagination.pageSize}
-					onPageChange={handlePageChange}
-					onItemsPerPageChange={handleItemsPerPageChange}
-					className='mt-6'
-				/>
 
 				<Snackbar
 					message={snackbar.message}
@@ -98,4 +265,3 @@ export const QCRejectionListing: React.FC = () => {
 		</div>
 	);
 };
-

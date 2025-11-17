@@ -12,14 +12,11 @@ import {
 	BarChart3,
 	TrendingUp,
 	Server,
-	Settings,
-	Shield,
 	Link,
 	FileText,
 	Database,
-	Mail,
-	Bell,
 	HelpCircle,
+	AlertCircle,
 	Building2,
 	UserX,
 	Menu,
@@ -37,200 +34,27 @@ import { MenuItem } from '../types/menu';
 
 // All possible menu items (safe to expose)
 export const ALL_MENU_ITEMS: MenuItem[] = [
+	// 1. DASHBOARDS (Most accessed)
 	{
 		id: 'dashboard',
-		name: 'Dashboard',
+		name: 'Dashboards',
 		icon: LayoutDashboard,
-		href: '/',
-	},
-	{
-		id: 'ops-dashboard',
-		name: 'Ops Dashboard',
-		icon: Activity,
-		href: '/ops-dashboard',
-	},
-	{
-		id: 'menu-management',
-		name: 'Menu Management',
-		icon: Menu,
-		href: '/menu-management',
-	},
-	{
-		id: 'ops-admin',
-		name: 'Ops Admin',
-		icon: Building2,
 		children: [
 			{
-				id: 'clients',
-				name: 'Clients',
-				icon: Users,
-				children: [
-					{
-						id: 'clients-add',
-						name: 'Add Client',
-						icon: UserPlus,
-						href: '/clients/add',
-					},
-					{
-						id: 'clients-manage',
-						name: 'Manage Clients',
-						icon: Eye,
-						href: '/clients/manage',
-					},
-					{
-						id: 'clients-disable',
-						name: 'Disable Clients',
-						icon: UserX,
-						href: '/clients/disable',
-					},
-				],
+				id: 'impact-home',
+				name: 'Impact Home',
+				icon: LayoutDashboard,
+				href: '/',
 			},
 			{
-				id: 'sku-mapping',
-				name: 'SKU Mapping',
-				icon: Package,
-				children: [
-					{
-						id: 'add-sku-mapping',
-						name: 'Add Mapping',
-						icon: Link,
-						href: '/ops-admin/map-sku/add',
-					},
-					{
-						id: 'sku-listing',
-						name: 'SKU Listing',
-						icon: FileText,
-						href: '/ops-admin/map-sku/listing',
-					},
-				],
-			},
-			{
-				id: 'ops-admin-revenue',
-				name: 'Revenue',
-				icon: TrendingUp,
-				children: [
-					{
-						id: 'review-cost-type',
-						name: 'Review Cost Type',
-						icon: FileText,
-						href: '/ops-admin/revenue/review-cost-type',
-					},
-					{
-						id: 'review-category-type',
-						name: 'Review Category Type',
-						icon: FileText,
-						href: '/ops-admin/revenue/review-category-type',
-					},
-				],
+				id: 'ops-dashboard',
+				name: 'Ops Dashboard',
+				icon: Activity,
+				href: '/ops-dashboard',
 			},
 		],
 	},
-	{
-		id: 'analytics',
-		name: 'Analytics',
-		icon: BarChart3,
-		children: [
-			{
-				id: 'analytics-revenue',
-				name: 'Revenue Reports',
-				icon: TrendingUp,
-				href: '/analytics/revenue',
-			},
-			{
-				id: 'analytics-trends',
-				name: 'Trend Analysis',
-				icon: TrendingUp,
-				href: '/analytics/trends',
-			},
-			{
-				id: 'analytics-users',
-				name: 'User Reports',
-				icon: Users,
-				href: '/analytics/users',
-			},
-			{
-				id: 'analytics-system',
-				name: 'System Reports',
-				icon: Server,
-				href: '/analytics/system',
-			},
-		],
-	},
-	{
-		id: 'reports',
-		name: 'Reports',
-		icon: FileText,
-		children: [
-			{
-				id: 'reports-financial',
-				name: 'Financial Reports',
-				icon: BarChart3,
-				href: '/reports/financial',
-			},
-			{
-				id: 'reports-operational',
-				name: 'Operational Reports',
-				icon: Database,
-				href: '/reports/operational',
-			},
-			{
-				id: 'reports-custom',
-				name: 'Custom Reports',
-				icon: FileText,
-				href: '/reports/custom',
-			},
-		],
-	},
-	{
-		id: 'settings',
-		name: 'Settings',
-		icon: Settings,
-		children: [
-			{
-				id: 'settings-general',
-				name: 'General Settings',
-				icon: Settings,
-				href: '/settings/general',
-			},
-			{
-				id: 'settings-security',
-				name: 'Security Settings',
-				icon: Shield,
-				href: '/settings/security',
-			},
-			{
-				id: 'settings-integration',
-				name: 'Integration Settings',
-				icon: Link,
-				href: '/settings/integration',
-			},
-			{
-				id: 'settings-notifications',
-				name: 'Notifications',
-				icon: Bell,
-				href: '/settings/notifications',
-			},
-		],
-	},
-	{
-		id: 'communication',
-		name: 'Communication',
-		icon: Mail,
-		children: [
-			{
-				id: 'communication-email',
-				name: 'Email Management',
-				icon: Mail,
-				href: '/communication/email',
-			},
-			{
-				id: 'communication-notifications',
-				name: 'Push Notifications',
-				icon: Bell,
-				href: '/communication/notifications',
-			},
-		],
-	},
+	// 2. CORE OPERATIONS (Daily work)
 	{
 		id: 'transit-plan',
 		name: 'Transit Plan',
@@ -303,29 +127,114 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 		],
 	},
 	{
+		id: 'operations-reporting',
+		name: 'Operations Reporting',
+		icon: ClipboardList,
+		children: [
+			{
+				id: 'shift-reporting',
+				name: 'Shift Reporting',
+				icon: FileText,
+				children: [
+					{
+						id: 'shift-reporting-add',
+						name: 'New Shift Report',
+						icon: UserPlus,
+						href: '/operations-reporting/shift-reporting/add',
+					},
+					{
+						id: 'shift-reporting-listing',
+						name: 'Shift Report Listing',
+						icon: FileText,
+						href: '/operations-reporting/shift-reporting/listing',
+					},
+				],
+			},
+			{
+				id: 'qc-rejection',
+				name: 'QC Rejection',
+				icon: FileText,
+				children: [
+					{
+						id: 'qc-rejection-add',
+						name: 'New QC Rejection',
+						icon: UserPlus,
+						href: '/operations-reporting/qc-rejection/add',
+					},
+					{
+						id: 'qc-rejection-listing',
+						name: 'QC Rejection Listing',
+						icon: FileText,
+						href: '/operations-reporting/qc-rejection/listing',
+					},
+				],
+			},
+			{
+				id: 'client-escalation',
+				name: 'Client Escalation',
+				icon: FileText,
+				children: [
+					{
+						id: 'client-escalation-add',
+						name: 'New Client Escalation',
+						icon: UserPlus,
+						href: '/operations-reporting/client-escalation/add',
+					},
+					{
+						id: 'client-escalation-listing',
+						name: 'Client Escalation Listing',
+						icon: FileText,
+						href: '/operations-reporting/client-escalation/listing',
+					},
+				],
+			},
+		],
+	},
+	{
 		id: 'kam',
 		name: 'KAM',
 		icon: Briefcase,
 		children: [
 			{
 				id: 'kam-clients',
-				name: 'Client',
+				name: 'Client List',
 				icon: Users,
 				href: '/kam/clients',
 			},
 			{
 				id: 'kam-inventory',
-				name: 'Inventory Client Listing',
+				name: 'Client Inventory',
 				icon: Package,
 				href: '/kam/inventory',
 			},
 		],
 	},
+	// 3. FINANCIAL (Grouped together)
 	{
-		id: 'help',
-		name: 'Help & Support',
-		icon: HelpCircle,
-		href: '/help',
+		id: 'revenue',
+		name: 'Revenue',
+		icon: TrendingUp,
+		children: [
+			{
+				id: 'monthly-estimate',
+				name: 'Monthly Estimate',
+				icon: BarChart3,
+				children: [
+					{
+						id: 'monthly-estimate-add',
+						name: 'New Monthly Estimate',
+						icon: UserPlus,
+						href: '/revenue/monthly-estimate/add',
+					},
+					{
+						id: 'monthly-estimate-list',
+						name: 'Monthly Estimate Listing',
+						icon: FileText,
+						href: '/revenue/monthly-estimate/list',
+					},
+				],
+			},
+		],
 	},
 	{
 		id: 'p-and-l',
@@ -346,95 +255,158 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 			},
 		],
 	},
+	// 4. ANALYTICS & REPORTS (Combined)
 	{
-		id: 'revenue',
-		name: 'Revenue',
-		icon: TrendingUp,
+		id: 'analytics',
+		name: 'Analytics',
+		icon: BarChart3,
 		children: [
 			{
-				id: 'monthly-estimate',
-				name: 'Monthly Estimate',
+				id: 'analytics-revenue',
+				name: 'Revenue Reports',
+				icon: TrendingUp,
+				href: '/analytics/revenue',
+			},
+			{
+				id: 'analytics-trends',
+				name: 'Trend Analysis',
+				icon: TrendingUp,
+				href: '/analytics/trends',
+			},
+			{
+				id: 'analytics-users',
+				name: 'User Reports',
+				icon: Users,
+				href: '/analytics/users',
+			},
+			{
+				id: 'analytics-system',
+				name: 'System Reports',
+				icon: Server,
+				href: '/analytics/system',
+			},
+		],
+	},
+	{
+		id: 'reports',
+		name: 'Reports',
+		icon: FileText,
+		children: [
+			{
+				id: 'reports-financial',
+				name: 'Financial Reports',
 				icon: BarChart3,
+				href: '/reports/financial',
+			},
+			{
+				id: 'reports-operational',
+				name: 'Operational Reports',
+				icon: Database,
+				href: '/reports/operational',
+			},
+			{
+				id: 'reports-custom',
+				name: 'Custom Reports',
+				icon: FileText,
+				href: '/reports/custom',
+			},
+		],
+	},
+	// 5. ADMIN & CONFIGURATION (Less frequent)
+	{
+		id: 'ops-admin',
+		name: 'Ops Admin',
+		icon: Building2,
+		children: [
+			{
+				id: 'clients',
+				name: 'Clients',
+				icon: Users,
 				children: [
 					{
-						id: 'monthly-estimate-add',
-						name: 'Add',
+						id: 'clients-add',
+						name: 'New Client',
 						icon: UserPlus,
-						href: '/revenue/monthly-estimate/add',
+						href: '/clients/add',
 					},
 					{
-						id: 'monthly-estimate-list',
-						name: 'List',
+						id: 'clients-manage',
+						name: 'Manage Clients',
+						icon: Eye,
+						href: '/clients/manage',
+					},
+					{
+						id: 'clients-disable',
+						name: 'Disable Clients',
+						icon: UserX,
+						href: '/clients/disable',
+					},
+				],
+			},
+			{
+				id: 'sku-mapping',
+				name: 'SKU Mapping',
+				icon: Package,
+				children: [
+					{
+						id: 'add-sku-mapping',
+						name: 'New Mapping',
+						icon: Link,
+						href: '/ops-admin/map-sku/add',
+					},
+					{
+						id: 'sku-listing',
+						name: 'SKU Listing',
 						icon: FileText,
-						href: '/revenue/monthly-estimate/list',
+						href: '/ops-admin/map-sku/listing',
+					},
+				],
+			},
+			{
+				id: 'ops-admin-revenue',
+				name: 'Revenue Setup',
+				icon: TrendingUp,
+				children: [
+					{
+						id: 'review-cost-type',
+						name: 'Cost Types',
+						icon: FileText,
+						href: '/ops-admin/revenue/review-cost-type',
+					},
+					{
+						id: 'review-category-type',
+						name: 'Category Types',
+						icon: FileText,
+						href: '/ops-admin/revenue/review-category-type',
+					},
+				],
+			},
+			{
+				id: 'ops-admin-escalations',
+				name: 'Escalations',
+				icon: AlertCircle,
+				children: [
+					{
+						id: 'escalation-type',
+						name: 'Escalation Type',
+						icon: FileText,
+						href: '/ops-admin/escalations/escalation-type',
 					},
 				],
 			},
 		],
 	},
 	{
-		id: 'operations-reporting',
-		name: 'Operations Reporting',
-		icon: ClipboardList,
-		children: [
-			{
-				id: 'shift-reporting',
-				name: 'Shift Reporting',
-				icon: FileText,
-				children: [
-					{
-						id: 'shift-reporting-add',
-						name: 'Add',
-						icon: UserPlus,
-						href: '/operations-reporting/shift-reporting/add',
-					},
-					{
-						id: 'shift-reporting-listing',
-						name: 'Listing',
-						icon: FileText,
-						href: '/operations-reporting/shift-reporting/listing',
-					},
-				],
-			},
-			{
-				id: 'qc-rejection',
-				name: 'QC Rejection',
-				icon: FileText,
-				children: [
-					{
-						id: 'qc-rejection-add',
-						name: 'Add',
-						icon: UserPlus,
-						href: '/operations-reporting/qc-rejection/add',
-					},
-					{
-						id: 'qc-rejection-listing',
-						name: 'Listing',
-						icon: FileText,
-						href: '/operations-reporting/qc-rejection/listing',
-					},
-				],
-			},
-			{
-				id: 'client-escalation',
-				name: 'Client Escalation',
-				icon: FileText,
-				children: [
-					{
-						id: 'client-escalation-add',
-						name: 'Add',
-						icon: UserPlus,
-						href: '/operations-reporting/client-escalation/add',
-					},
-					{
-						id: 'client-escalation-listing',
-						name: 'Listing',
-						icon: FileText,
-						href: '/operations-reporting/client-escalation/listing',
-					},
-				],
-			},
-		],
+		id: 'menu-management',
+		name: 'Menu Management',
+		icon: Menu,
+		href: '/menu-management',
+	},
+	{
+		id: 'help',
+		name: 'Help & Support',
+		icon: HelpCircle,
+		href: '/help',
 	},
 ];
 

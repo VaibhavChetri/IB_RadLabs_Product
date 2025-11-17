@@ -15,6 +15,8 @@ import { SkuMapListing } from '../pages/ops-admin/sku-mapping/SkuMapListing';
 // Ops Admin - Revenue
 import { ReviewCostType } from '../pages/ops-admin/revenue/ReviewCostType';
 import { ReviewCategoryType } from '../pages/ops-admin/revenue/ReviewCategoryType';
+// Ops Admin - Escalations
+import { EscalationType } from '../pages/ops-admin/escalations/EscalationType';
 // Transit Plan - Master Plan
 import CreateMasterPlan from '../pages/transit-plan/master-plan/CreateMasterPlan';
 import EditMasterPlan from '../pages/transit-plan/master-plan/EditMasterPlan';
@@ -45,6 +47,7 @@ import { ShiftReportingListing } from '../pages/operations-reporting/shift-repor
 // Operations Reporting - QC Rejection
 import { QCRejectionAdd } from '../pages/operations-reporting/qc-rejection/QCRejectionAdd';
 import { QCRejectionListing } from '../pages/operations-reporting/qc-rejection/QCRejectionListing';
+import { QCRejectionDetails } from '../pages/operations-reporting/qc-rejection/QCRejectionDetails';
 // Operations Reporting - Client Escalation
 import { ClientEscalationAdd } from '../pages/operations-reporting/client-escalation/ClientEscalationAdd';
 import { ClientEscalationListing } from '../pages/operations-reporting/client-escalation/ClientEscalationListing';
@@ -87,6 +90,7 @@ export const routes: RouteConfig[] = [
 	{ path: '/ops-admin/map-sku/:clientId/edit', component: EditClientSkuMapping },
 	{ path: '/ops-admin/revenue/review-cost-type', component: ReviewCostType },
 	{ path: '/ops-admin/revenue/review-category-type', component: ReviewCategoryType },
+	{ path: '/ops-admin/escalations/escalation-type', component: EscalationType },
 	{ path: '/p-and-l/summary', component: PLSummary },
 	{ path: '/p-and-l/graphs', component: PLGraphs },
 	{ path: '/revenue/monthly-estimate/add', component: MonthlyEstimateAdd },
@@ -96,6 +100,10 @@ export const routes: RouteConfig[] = [
 	{ path: '/operations-reporting/shift-reporting/listing', component: ShiftReportingListing },
 	{ path: '/operations-reporting/qc-rejection/add', component: QCRejectionAdd },
 	{ path: '/operations-reporting/qc-rejection/listing', component: QCRejectionListing },
+	{
+		path: '/operations-reporting/qc-rejection/details/:clientId/:transitId',
+		component: QCRejectionDetails,
+	},
 	{ path: '/operations-reporting/client-escalation/add', component: ClientEscalationAdd },
 	{ path: '/operations-reporting/client-escalation/listing', component: ClientEscalationListing },
 ];

@@ -22,8 +22,12 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
 		<div className={cn('mb-6', className)}>
 			<h1 className='text-2xl font-semibold text-gray-900 mb-2'>{title}</h1>
 			<div className='flex items-center gap-4'>
-				<span className='text-sm text-gray-600'>📍 {locationName || 'All Locations'}</span>
-				<span className='text-sm text-gray-500'>•</span>
+				{locationName && (
+					<>
+						<span className='text-sm text-gray-600'>📍 {locationName}</span>
+						<span className='text-sm text-gray-500'>•</span>
+					</>
+				)}
 				<span className='text-sm text-gray-600'>
 					{icon} {totalItems} {itemType}
 				</span>

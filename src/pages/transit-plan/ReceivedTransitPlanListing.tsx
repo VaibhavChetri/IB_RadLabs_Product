@@ -12,6 +12,7 @@ import {
 	Badge,
 	PageHeader,
 } from '../../components/ui';
+import { FacilityDropdown } from '../../components/FacilityDropdown';
 import { TransitPlanApi, SentTransitPlanRow, RestaurantOption } from '../../services/transitPlanApi';
 import {
 	generateDeliveryChallanPDF,

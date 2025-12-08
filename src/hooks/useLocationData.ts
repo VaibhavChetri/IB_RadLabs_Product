@@ -221,7 +221,6 @@ export const useBillingSubTypes = (billingTypeId?: string | number) => {
 		BillingApiService.getBillingSubTypes(1, 10)
 	);
 	const [billingSubTypes, setBillingSubTypes] = useState<DropdownOption[]>([]);
-	const [allBillingSubTypes, setAllBillingSubTypes] = useState<any[]>([]);
 
 	const loadBillingSubTypes = useCallback(async () => {
 		try {
@@ -232,8 +231,6 @@ export const useBillingSubTypes = (billingTypeId?: string | number) => {
 				if (responseData) {
 					// Handle both direct array and paginated response
 					const result = Array.isArray(responseData) ? responseData : responseData.data || [];
-					// Store all billing sub types
-					setAllBillingSubTypes(result);
 					
 					// Filter by billing_type_id if provided
 					let filteredResult = result;

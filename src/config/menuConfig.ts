@@ -408,6 +408,19 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 					},
 				],
 			},
+			{
+				id: 'container-types',
+				name: 'Container Types',
+				icon: Package,
+				children: [
+					{
+						id: 'container-listing',
+						name: 'Container Listing',
+						icon: FileText,
+						href: '/ops-admin/containers/listing',
+					},
+				],
+			},
 		],
 	},
 	{

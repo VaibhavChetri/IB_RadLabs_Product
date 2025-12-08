@@ -15,6 +15,7 @@ export interface FloatingInputProps {
 	errorMessage?: string;
 	required?: boolean;
 	className?: string;
+	step?: string | number;
 }
 
 // -----------------------
@@ -33,6 +34,7 @@ export const FloatingInput = forwardRef<HTMLInputElement, FloatingInputProps>(
 			errorMessage,
 			required = false,
 			className,
+			step,
 		},
 		ref
 	) => {
@@ -48,6 +50,7 @@ export const FloatingInput = forwardRef<HTMLInputElement, FloatingInputProps>(
 					onFocus={() => setIsFocused(true)}
 					onBlur={() => setIsFocused(false)}
 					disabled={disabled}
+					step={step}
 					className={cn(
 						'w-full px-4 py-4 text-sm bg-white border border-gray-300 rounded-md',
 						'focus:outline-none focus:border-green-400 focus:ring-1 focus:ring-green-200',

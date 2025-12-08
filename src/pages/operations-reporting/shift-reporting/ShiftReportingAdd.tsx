@@ -334,7 +334,7 @@ export const ShiftReportingAdd: React.FC = () => {
 	return (
 		<div className='min-h-screen bg-white p-4'>
 			<div className='max-w-7xl mx-auto'>
-				<PageHeader title='Add Shift Reporting' itemType='shift reports' icon='📋' />
+				<PageHeader title='Add Shift Reporting' totalItems={0} itemType='shift reports' icon='📋' />
 
 				{/* Filter Section */}
 				<div className='mt-6 bg-white border border-gray-200 rounded-lg p-6'>

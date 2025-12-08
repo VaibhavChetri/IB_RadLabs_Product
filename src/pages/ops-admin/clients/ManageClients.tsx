@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { SearchButton, FloatingDropdown, Pagination, Button, PageHeader } from '../../../components/ui';
+import {
+	SearchButton,
+	FloatingDropdown,
+	Pagination,
+	Button,
+	PageHeader,
+} from '../../../components/ui';
 import { Table } from '../../../components/ui/DataDisplay';
 import { useApi } from '../../../hooks/useApi';
 import {
@@ -26,11 +32,6 @@ export const ManageClients: React.FC = () => {
 	const navigate = useNavigate();
 	const dispatch = useDispatch();
 	const { user } = useSelector((state: RootState) => state.auth);
-
-	// Debug Redux state
-	console.log('🔍 Redux user state:', user);
-	console.log('🔍 Redux user city_id:', user?.city_id);
-	console.log('🔍 Redux user userTypeId:', user?.userTypeId);
 
 	// Check if city filter should be shown (only for user_type_id 1,2,3,4)
 	const shouldShowCityFilter = user?.userTypeId && [1, 2, 3, 4].includes(user.userTypeId);
@@ -102,12 +103,6 @@ export const ManageClients: React.FC = () => {
 		setClientLocations(sortedData);
 	};
 
-	// Debug component state
-	console.log('🔍 Component filters:', filters);
-	console.log('🔍 Component clientLocations:', clientLocations);
-	console.log('🔍 Component loading:', loading);
-	console.log('🔍 Component error:', error);
-
 	// Load client locations
 	const loadClientLocations = useCallback(
 		async (customFilters?: ClientLocationFilters) => {
@@ -115,16 +110,8 @@ export const ManageClients: React.FC = () => {
 			try {
 				setLoading(true);
 				setError(null);
-				console.log('Loading client locations with filters:', filtersToUse);
 
 				const response = await clientLocationsApi.execute(filtersToUse);
-				console.log('🔍 FULL API Response:', response);
-				console.log(
-					'📊 Response statusCode:',
-					(response as unknown as { statusCode: number }).statusCode
-				);
-				console.log('📊 Response status_code:', response.status_code);
-				console.log('📦 Response data:', response.data);
 
 				// Check both statusCode and status_code for compatibility
 				const isSuccess =
@@ -137,28 +124,28 @@ export const ManageClients: React.FC = () => {
 
 					// The backend returns data directly as an array
 					const locations = (response.data as unknown as ClientLocation[]) || [];
+					// Map facility_id to facilityId if needed (API inconsistency)
+					const mappedLocations = locations.map(loc => ({
+						...loc,
+						facilityId: (loc as any).facility_id ?? loc.facilityId,
+					}));
 					const paginationData =
 						(response as unknown as { pagination: PaginationData }).pagination || {};
 
-					console.log('📍 Locations found:', locations.length);
-					console.log('📍 First location:', locations[0]);
-					console.log('📍 Pagination data:', paginationData);
-
-					setClientLocations(locations);
+					setClientLocations(mappedLocations);
 					// Store locations in Redux for edit page navigation
-					dispatch(setLocations(locations));
+					dispatch(setLocations(mappedLocations));
 					setPagination({
-						totalCount: paginationData.totalCount || locations.length,
+						totalCount: paginationData.totalCount || mappedLocations.length,
 						pageSize: paginationData.pageSize || filters.limit || 25,
 						currentPage: paginationData.currentPage || filters.page || 1,
 						totalPages:
 							paginationData.totalPages ||
 							Math.ceil(
-								(paginationData.totalCount || locations.length) /
+								(paginationData.totalCount || mappedLocations.length) /
 									(paginationData.pageSize || filters.limit || 25)
 							),
 					});
-					console.log('✅ State updated with locations and pagination');
 				} else {
 					setError(
 						`API Error: ${(response as unknown as { message?: string; status?: string }).message || (response as unknown as { message?: string; status?: string }).status || 'Unknown error'}`

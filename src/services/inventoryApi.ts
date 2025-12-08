@@ -150,10 +150,12 @@ export class InventoryApiService {
 	/**
 	 * Get clients by city
 	 */
-	static async getClientByCity(location_id: number): Promise<ClientByCityResponse> {
-		return this.api.get(
-			`/inventory/getClientByCity?location_id=${location_id}`
-		) as Promise<ClientByCityResponse>;
+	static async getClientByCity(
+		location_id: number,
+		all?: boolean
+	): Promise<ClientByCityResponse> {
+		const url = `/inventory/getClientByCity?location_id=${location_id}${all ? '&all=1' : ''}`;
+		return this.api.get(url) as Promise<ClientByCityResponse>;
 	}
 
 	/**

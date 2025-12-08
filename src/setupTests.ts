@@ -22,7 +22,8 @@ Object.defineProperty(window, 'matchMedia', {
 
 // Suppress console errors in tests
 const originalError = console.error;
-beforeAll(() => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(global as any).beforeAll = () => {
 	console.error = (...args: unknown[]) => {
 		if (
 			typeof args[0] === 'string' &&
@@ -33,8 +34,9 @@ beforeAll(() => {
 		}
 		originalError.call(console, ...args);
 	};
-});
+};
 
-afterAll(() => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(global as any).afterAll = () => {
 	console.error = originalError;
-});
+};

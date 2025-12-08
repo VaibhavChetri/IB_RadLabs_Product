@@ -3,7 +3,7 @@ import { OnSiteManPowerClient, OnSiteManPowerItem } from '../../../services/pAnd
 import { Table } from '../../../components/ui/DataDisplay';
 import { TableColumn } from '../../../components/ui/DataDisplay';
 
-interface OnSiteManPowerRow {
+interface OnSiteManPowerRow extends Record<string, unknown> {
 	id: number;
 	clientName: string;
 	estimate: string;
@@ -39,12 +39,10 @@ export const OnSiteManPowerTable: React.FC<OnSiteManPowerTableProps> = ({
 		const rows = clients.map(client => {
 			// Check if we have estimate from API (manPowerResults) or from state
 			let estimateValue = estimates[client.client_id] || '0';
-			
+
 			// If no estimate in state, check manPowerResults
 			if (!estimates[client.client_id] && manPowerResults) {
-				const manPowerItem = manPowerResults.find(
-					item => item.client_id === client.client_id
-				);
+				const manPowerItem = manPowerResults.find(item => item.client_id === client.client_id);
 				if (manPowerItem) {
 					estimateValue = parseFloat(manPowerItem.est).toString();
 				}
@@ -140,13 +138,12 @@ export const OnSiteManPowerTable: React.FC<OnSiteManPowerTableProps> = ({
 			<div className='bg-gray-50 border-b border-gray-200 px-6 py-3'>
 				<h3 className='text-sm font-semibold text-gray-900'>On-Site Manpower Budget</h3>
 			</div>
-			<Table
+			<Table<OnSiteManPowerRow>
 				data={tableData}
 				columns={columns}
 				size='sm'
-				emptyMessage='No clients found'
+				emptyText='No clients found'
 			/>
 		</div>
 	);
 };
-

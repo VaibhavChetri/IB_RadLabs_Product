@@ -18,7 +18,7 @@ type DropdownOption = { label: string; value: string };
 const InventoryListing: React.FC = () => {
 	const dispatch = useDispatch();
 	const { user } = useSelector((state: RootState) => state.auth);
-	const { data, totals, pagination, loading } = useSelector(
+	const { data, pagination, loading } = useSelector(
 		(state: RootState) => state.kam.inventoryListing
 	);
 
@@ -82,9 +82,10 @@ const InventoryListing: React.FC = () => {
 	useEffect(() => {
 		if (user?.city_id) {
 			InventoryApiService.getClientByCity(user.city_id).then(res => {
+				const clients = res.result || [];
 				setClients([
 					{ label: 'All Clients', value: '' },
-					...res.result.map((c: any) => ({ label: c.clientName, value: String(c.clientId) })),
+					...clients.map((c: any) => ({ label: c.clientName, value: String(c.clientId) })),
 				]);
 			});
 		}
@@ -103,9 +104,9 @@ const InventoryListing: React.FC = () => {
 
 			dispatch(
 				setInventoryListing({
-					data: response.data,
-					totals: response.totals || { totalDispatch: '0', totalReturned: '0' },
-					pagination: response.pagination,
+					data: response.data?.data || response.data || [],
+					totals: response.data?.totals || { totalDispatch: '0', totalReturned: '0' },
+					pagination: response.data?.pagination || {},
 					loading: false,
 				})
 			);
@@ -140,34 +141,13 @@ const InventoryListing: React.FC = () => {
 
 	return (
 		<div className='space-y-6'>
-			<div className='flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4'>
-				<PageHeader
-					title='Inventory Client Listing'
-					locationName={user?.city_name || 'City'}
-					totalItems={totalItems}
-					itemType='inventory entries'
-					icon='📦'
-				/>
-				<div className='flex items-center gap-6 lg:gap-8'>
-					<div className='flex items-start gap-2'>
-						<span className='text-2xl'>🚛</span>
-						<div>
-							<div className='text-xs text-gray-500 uppercase tracking-wide mb-0.5'>Dispatch</div>
-							<div className='text-xl font-bold text-blue-600'>{totals?.totalDispatch || '0'}</div>
-						</div>
-					</div>
-					<div className='w-px h-10 bg-gray-300'></div>
-					<div className='flex items-start gap-2'>
-						<span className='text-2xl transform scale-x-[-1]'>🚚</span>
-						<div>
-							<div className='text-xs text-gray-500 uppercase tracking-wide mb-0.5'>Returned</div>
-							<div className='text-xl font-bold text-orange-600'>
-								{totals?.totalReturned || '0'}
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
+			<PageHeader
+				title='Inventory Client Listing'
+				locationName={user?.city_name || 'City'}
+				totalItems={totalItems}
+				itemType='inventory entries'
+				icon='📦'
+			/>
 
 			<div className='bg-white p-4 shadow-sm rounded-lg flex flex-wrap gap-4 items-center mb-6'>
 				<FloatingInput
@@ -208,7 +188,7 @@ const InventoryListing: React.FC = () => {
 			{loading ? (
 				<div className='text-center py-8'>Loading...</div>
 			) : (
-				<Table
+				<Table<InventoryValueRow>
 					columns={allColumns.filter(col => visibleColumns.includes(col.key))}
 					data={filteredData}
 					className='bg-white'

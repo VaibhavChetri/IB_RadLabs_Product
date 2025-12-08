@@ -261,7 +261,7 @@ const ClientInventoryDetails: React.FC = () => {
 			{loading ? (
 				<div className='text-center py-8'>Loading...</div>
 			) : (
-				<Table columns={columns} data={data || []} />
+				<Table<ClientInventoryRow> columns={columns} data={data || []} />
 			)}
 
 			<div className='flex justify-end mt-6'>

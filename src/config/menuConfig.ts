@@ -27,6 +27,7 @@ import {
 	Briefcase,
 	Activity,
 	ClipboardList,
+	Receipt,
 	// ArrowLeft, // Deprecated - Received section commented out
 } from 'lucide-react';
 
@@ -394,6 +395,19 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 					},
 				],
 			},
+			{
+				id: 'vehicles',
+				name: 'Vehicles',
+				icon: Truck,
+				children: [
+					{
+						id: 'vehicle-listing',
+						name: 'Vehicle Listing',
+						icon: FileText,
+						href: '/ops-admin/vehicles/listing',
+					},
+				],
+			},
 		],
 	},
 	{
@@ -401,6 +415,25 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 		name: 'Menu Management',
 		icon: Menu,
 		href: '/menu-management',
+	},
+	{
+		id: 'invoice-menu',
+		name: 'Invoice Menu',
+		icon: Receipt,
+		children: [
+			{
+				id: 'billing-details',
+				name: 'Billing Details',
+				icon: FileText,
+				href: '/billing-details',
+			},
+			{
+				id: 'invoice-list',
+				name: 'Invoice List',
+				icon: FileText,
+				href: '/invoice-list',
+			},
+		],
 	},
 	{
 		id: 'help',

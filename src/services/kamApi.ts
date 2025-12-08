@@ -1,11 +1,11 @@
 import { apiService } from './api';
 
-export interface ClientPlanRow {
+export interface ClientPlanRow extends Record<string, unknown> {
 	clientId: number;
 	clientName: string;
 }
 
-export interface ClientInventoryRow {
+export interface ClientInventoryRow extends Record<string, unknown> {
 	id: number;
 	clientId: number;
 	clientName: string;
@@ -17,7 +17,7 @@ export interface ClientInventoryRow {
 	containerType: string;
 }
 
-export interface InventoryValueRow {
+export interface InventoryValueRow extends Record<string, unknown> {
 	id: number;
 	clientId: number;
 	clientName: string;

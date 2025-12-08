@@ -62,7 +62,7 @@ export const MenuManagement: React.FC = () => {
 			const response = await MenuManagementApiService.getMenuPermissions(menu.id);
 			console.log('📡 Raw API response:', response);
 			console.log('📡 Response data:', response.data);
-			console.log('📡 Response data children:', response.data?.children);
+			console.log('📡 Response data descendants:', response.data?.descendants);
 
 			if (response.status_code === 200) {
 				// The API returns descendants, not children, and they already contain the full hierarchy
@@ -95,16 +95,52 @@ export const MenuManagement: React.FC = () => {
 	const handlePermissionChange = (menuId: number, userTypeId: number, access: boolean) => {
 		if (!permissionData) return;
 
+		// Helper function to find if a menu is a parent (has children)
+		const hasChildren = (menu: any): boolean => {
+			return menu.children && menu.children.length > 0;
+		};
+
+		// Helper function to recursively update all descendants
+		const cascadeToChildren = (menu: any, userTypeId: number, access: boolean): any => {
+			if (!menu.children || menu.children.length === 0) {
+				return menu;
+			}
+
+			return {
+				...menu,
+				children: menu.children.map((child: any) => {
+					// Update the child's permission
+					const updatedChild = {
+						...child,
+						permissions: child.permissions.map((p: any) =>
+							p.user_type_id === userTypeId ? { ...p, access } : p
+						),
+					};
+
+					// Recursively cascade to grandchildren
+					return cascadeToChildren(updatedChild, userTypeId, access);
+				}),
+			};
+		};
+
 		const updateMenuPermissions = (menu: any): any => {
 			if (menu.id === menuId) {
-				return {
+				const updatedMenu = {
 					...menu,
 					permissions: menu.permissions.map((p: any) =>
 						p.user_type_id === userTypeId ? { ...p, access } : p
 					),
 				};
+
+				// If this menu has children, cascade the permission change to all descendants
+				if (hasChildren(updatedMenu)) {
+					return cascadeToChildren(updatedMenu, userTypeId, access);
+				}
+
+				return updatedMenu;
 			}
 
+			// Continue searching in children
 			if (menu.children) {
 				return {
 					...menu,
@@ -430,13 +466,6 @@ export const MenuManagement: React.FC = () => {
 					<div className='flex items-center justify-center py-8'>
 						<div className='animate-spin rounded-full h-6 w-6 border-b-2 border-primary'></div>
 						<span className='ml-2 text-sm text-foreground-muted'>Loading menus...</span>
-					</div>
-				) : null ? (
-					<div className='text-center py-8'>
-						<p className='text-error mb-3'>Failed to load menus</p>
-						<Button onClick={loadMenus} variant='outline' size='sm'>
-							Try Again
-						</Button>
 					</div>
 				) : menus.length === 0 ? (
 					<div className='text-center py-8'>

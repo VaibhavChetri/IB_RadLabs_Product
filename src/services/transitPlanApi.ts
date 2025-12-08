@@ -98,6 +98,8 @@ export interface TransitPlanListingApiResponse {
 	status: string;
 	data: TransitPlanListingResponse;
 	pagination: TransitPlanPagination;
+	totalDispatch?: number;
+	totalPickup?: number;
 }
 
 // Sent Transit Plan Interfaces
@@ -299,7 +301,15 @@ export const TransitPlanApi = {
 		const response = await api.get(
 			`/inventory/getClientSkuMap?clientId=${clientId}&facilityId=${facilityId}`
 		);
-		return response.result || [];
+		// api.get() returns response.data from axios, so response is already the API response object
+		// The result array is in response.result
+		const rawData = (response as any)?.result || (response as any)?.data || [];
+		
+		// Map the data to ensure containerType field is correctly set
+		return rawData.map((item: any) => ({
+			...item,
+			containerType: item.containerType || item.container_type || item.containerTypeName || '',
+		})) as ClientSkuMapItem[];
 	},
 
 	async uploadImage(file: File): Promise<unknown> {
@@ -328,9 +338,16 @@ export const TransitPlanApi = {
 		message: string;
 		dc_number: string;
 	}> {
-		const response = await api.post('/inventory/sendB2BInventory', payload);
+		const response = (await api.post('/inventory/sendB2BInventory', payload)) as ApiResponse<{
+			dc_number: string;
+		}>;
 		console.log('🔍 sendB2BInventory response:', response);
-		return response;
+		return {
+			status: response.status,
+			status_code: response.status_code,
+			message: response.message || '',
+			dc_number: (response.data as any)?.dc_number || '',
+		};
 	},
 
 	async initiateTransitPlan(payload: {
@@ -342,8 +359,12 @@ export const TransitPlanApi = {
 			challanPic: unknown[];
 			signaturePic: string;
 			loadedVehiclePic: Array<{ path: string }>;
-		};
-		pickupImages: null;
+		} | null;
+		pickupImages: {
+			challanPic: unknown[];
+			signaturePic: string;
+			loadedVehiclePic: Array<{ path: string }>;
+		} | null;
 		containerTypes: unknown[];
 	}): Promise<{
 		status: string;
@@ -351,9 +372,17 @@ export const TransitPlanApi = {
 		message: string;
 		data: unknown[];
 	}> {
-		const response = await api.post('/transit-plan/initiate-transit-plan', payload);
+		const response = (await api.post(
+			'/transit-plan/initiate-transit-plan',
+			payload
+		)) as ApiResponse<unknown[]>;
 		console.log('🔍 initiateTransitPlan response:', response);
-		return response;
+		return {
+			status: response.status,
+			status_code: response.status_code,
+			message: response.message || '',
+			data: Array.isArray(response.data) ? response.data : [],
+		};
 	},
 
 	async getSentCount(params: {
@@ -416,9 +445,16 @@ export const TransitPlanApi = {
 		message: string;
 		dc_number: string;
 	}> {
-		const response = await api.post('/inventory/receivedB2BInventory', payload);
+		const response = (await api.post('/inventory/receivedB2BInventory', payload)) as ApiResponse<{
+			dc_number: string;
+		}>;
 		console.log('🔍 receivedB2BInventory response:', response);
-		return response;
+		return {
+			status: response.status,
+			status_code: response.status_code,
+			message: response.message || '',
+			dc_number: (response.data as any)?.dc_number || '',
+		};
 	},
 
 	async getReceivedCount(params: {

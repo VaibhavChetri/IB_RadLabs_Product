@@ -17,6 +17,8 @@ import { ReviewCostType } from '../pages/ops-admin/revenue/ReviewCostType';
 import { ReviewCategoryType } from '../pages/ops-admin/revenue/ReviewCategoryType';
 // Ops Admin - Escalations
 import { EscalationType } from '../pages/ops-admin/escalations/EscalationType';
+// Ops Admin - Vehicles
+import { VehicleListing } from '../pages/ops-admin/vehicles/VehicleListing';
 // Transit Plan - Master Plan
 import CreateMasterPlan from '../pages/transit-plan/master-plan/CreateMasterPlan';
 import EditMasterPlan from '../pages/transit-plan/master-plan/EditMasterPlan';
@@ -51,6 +53,9 @@ import { QCRejectionDetails } from '../pages/operations-reporting/qc-rejection/Q
 // Operations Reporting - Client Escalation
 import { ClientEscalationAdd } from '../pages/operations-reporting/client-escalation/ClientEscalationAdd';
 import { ClientEscalationListing } from '../pages/operations-reporting/client-escalation/ClientEscalationListing';
+// Billing
+import BillingDetails from '../pages/billing/BillingDetails';
+import InvoiceList from '../pages/billing/InvoiceList';
 
 export interface RouteConfig {
 	path: string;
@@ -91,6 +96,7 @@ export const routes: RouteConfig[] = [
 	{ path: '/ops-admin/revenue/review-cost-type', component: ReviewCostType },
 	{ path: '/ops-admin/revenue/review-category-type', component: ReviewCategoryType },
 	{ path: '/ops-admin/escalations/escalation-type', component: EscalationType },
+	{ path: '/ops-admin/vehicles/listing', component: VehicleListing },
 	{ path: '/p-and-l/summary', component: PLSummary },
 	{ path: '/p-and-l/graphs', component: PLGraphs },
 	{ path: '/revenue/monthly-estimate/add', component: MonthlyEstimateAdd },
@@ -106,4 +112,6 @@ export const routes: RouteConfig[] = [
 	},
 	{ path: '/operations-reporting/client-escalation/add', component: ClientEscalationAdd },
 	{ path: '/operations-reporting/client-escalation/listing', component: ClientEscalationListing },
+	{ path: '/billing-details', component: BillingDetails },
+	{ path: '/invoice-list', component: InvoiceList },
 ];

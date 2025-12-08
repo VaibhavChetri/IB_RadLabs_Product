@@ -184,7 +184,6 @@ const EditMasterPlan: React.FC = () => {
 	};
 
 	const transitType = editMasterPlanData.type || 'Unknown';
-	const isDispatch = transitType.toLowerCase().includes('dispatch');
 
 	const transitEntry = {
 		id: '1',
@@ -196,37 +195,14 @@ const EditMasterPlan: React.FC = () => {
 	return (
 		<div className='min-h-screen bg-white p-6'>
 			<div className='max-w-6xl mx-auto'>
-				<PageHeader
-					title='Edit Master Plan'
-					infoItems={[
-						{
-							label: 'Restaurant',
-							value: editMasterPlanData.restaurant_name || 'N/A',
-							icon: '🏪',
-							color: 'bg-green-100',
-						},
-						{
-							label: 'Facility',
-							value: editMasterPlanData.facility || 'N/A',
-							icon: '🏭',
-							color: 'bg-blue-100',
-						},
-						{
-							label: 'Transit Type',
-							value: transitType,
-							icon: isDispatch ? '🚚' : '📦',
-							color: isDispatch ? 'bg-blue-100' : 'bg-green-100',
-						},
-					]}
-				/>
+			<PageHeader title='Edit Master Plan' totalItems={0} itemType='' />
 
 				{/* Display using same components as Create */}
-				<TransitSection
-					type={transitType.toLowerCase().includes('dispatch') ? 'dispatch' : 'pickup'}
-					transits={[transitEntry]}
-					label={transitType}
-					color={isDispatch ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}
-					vehicles={vehicles}
+			<TransitSection
+				type={transitType.toLowerCase().includes('dispatch') ? 'dispatch' : 'pickup'}
+				transits={[transitEntry]}
+				label={transitType}
+				vehicles={vehicles}
 					onAdd={() => {
 						// No-op: Edit mode doesn't support adding new entries
 					}}
@@ -234,6 +210,7 @@ const EditMasterPlan: React.FC = () => {
 						// No-op: Edit mode doesn't support removing entries
 					}}
 					onUpdate={handleUpdateCallback}
+					showAddButton={false}
 				/>
 
 				{/* Update Button */}

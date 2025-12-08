@@ -183,11 +183,15 @@ export const useMasterPlanData = (isEditMode: boolean = false) => {
 	};
 
 	const isFormValid = () => {
+		const hasValidDispatch = data.dispatchTransits.length > 0 && 
+			data.dispatchTransits.every(t => t.date && t.time && t.vehicleType);
+		const hasValidPickup = data.pickupTransits.length > 0 && 
+			data.pickupTransits.every(t => t.date && t.time && t.vehicleType);
+		
 		return (
 			data.facilityId &&
 			data.clientId &&
-			data.dispatchTransits.every(t => t.date && t.time && t.vehicleType) &&
-			data.pickupTransits.every(t => t.date && t.time && t.vehicleType)
+			(hasValidDispatch || hasValidPickup)
 		);
 	};
 

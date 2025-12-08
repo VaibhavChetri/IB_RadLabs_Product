@@ -1,7 +1,6 @@
 import React from 'react';
-import { Menu, Search, Bell, User, LogOut } from 'lucide-react';
+import { Menu, Bell, User, LogOut } from 'lucide-react';
 import { Button } from './ui/Button';
-import { Input } from './ui/Input';
 import TokenManager from '../utils/tokenManager';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store';
@@ -25,13 +24,6 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
 					<Button variant='ghost' size='sm' onClick={onMenuClick} className='lg:hidden'>
 						<Menu className='w-5 h-5' />
 					</Button>
-
-					<div className='hidden md:block'>
-						<div className='relative'>
-							<Search className='absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-foreground-muted' />
-							<Input placeholder='Search...' className='pl-10 w-48 sm:w-64' />
-						</div>
-					</div>
 				</div>
 
 				{/* Right side */}

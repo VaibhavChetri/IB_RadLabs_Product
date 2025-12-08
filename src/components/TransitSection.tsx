@@ -11,6 +11,7 @@ interface TransitSectionProps {
 	onAdd: () => void;
 	onRemove: (id: string) => void;
 	onUpdate: (id: string, field: keyof TransitEntry, value: string) => void;
+	showAddButton?: boolean;
 }
 
 export const TransitSection: React.FC<TransitSectionProps> = ({
@@ -21,6 +22,7 @@ export const TransitSection: React.FC<TransitSectionProps> = ({
 	onAdd,
 	onRemove,
 	onUpdate,
+	showAddButton = true,
 }) => {
 	return (
 		<div className='mb-8'>
@@ -33,17 +35,19 @@ export const TransitSection: React.FC<TransitSectionProps> = ({
 				>
 					{label}
 				</Badge>
-				<Button
-					variant='outline'
-					size='sm'
-					onClick={e => {
-						onAdd();
-						e.currentTarget.blur();
-					}}
-					className='rounded-md border border-green-400 text-green-600 hover:bg-green-50'
-				>
-					+ Add
-				</Button>
+				{showAddButton && (
+					<Button
+						variant='outline'
+						size='sm'
+						onClick={e => {
+							onAdd();
+							e.currentTarget.blur();
+						}}
+						className='rounded-md border border-green-400 text-green-600 hover:bg-green-50'
+					>
+						+ Add
+					</Button>
+				)}
 			</div>
 
 			{/* Auto-layout Table */}

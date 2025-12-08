@@ -76,23 +76,8 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
 };
 
 const TransitPlanListing: React.FC = () => {
-	// Date filters
-	const [startDate, setStartDate] = useState<string>('');
-	const [endDate, setEndDate] = useState<string>('');
-
-	// Data and pagination
-	const [rows, setRows] = useState<TransitPlanRow[]>([]);
-	const [loading, setLoading] = useState(false);
-	const [pageNumber, setPageNumber] = useState(1);
-	const [itemsPerPage, setItemsPerPage] = useState(10);
-	const [totalItems, setTotalItems] = useState(0);
-
-	// Sorting state
-	const [sortBy, setSortBy] = useState<string>('transit_date');
-	const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-
-	// Column visibility state
-	const [visibleColumns, setVisibleColumns] = useState<string[]>([
+	const STORAGE_KEY = 'transitPlanListing_filters';
+	const DEFAULT_VISIBLE_COLUMNS = [
 		'serial',
 		'transit_date',
 		'transit_time',
@@ -110,7 +95,50 @@ const TransitPlanListing: React.FC = () => {
 		'signature_name',
 		'creation_date',
 		'created_by',
-	]);
+	];
+
+	// Load saved filters from localStorage on mount
+	const loadSavedFilters = (): { startDate: string; endDate: string; visibleColumns: string[] } => {
+		try {
+			const saved = localStorage.getItem(STORAGE_KEY);
+			if (saved) {
+				const parsed = JSON.parse(saved);
+				return {
+					startDate: parsed.startDate || '',
+					endDate: parsed.endDate || '',
+					visibleColumns: parsed.visibleColumns || DEFAULT_VISIBLE_COLUMNS,
+				};
+			}
+		} catch (error) {
+			console.error('Error loading saved filters:', error);
+		}
+		return {
+			startDate: '',
+			endDate: '',
+			visibleColumns: DEFAULT_VISIBLE_COLUMNS,
+		};
+	};
+
+	// Date filters - load from localStorage
+	const savedFilters = loadSavedFilters();
+	const [startDate, setStartDate] = useState<string>(savedFilters.startDate);
+	const [endDate, setEndDate] = useState<string>(savedFilters.endDate);
+
+	// Data and pagination
+	const [rows, setRows] = useState<TransitPlanRow[]>([]);
+	const [loading, setLoading] = useState(false);
+	const [pageNumber, setPageNumber] = useState(1);
+	const [itemsPerPage, setItemsPerPage] = useState(10);
+	const [totalItems, setTotalItems] = useState(0);
+	const [totalDispatch, setTotalDispatch] = useState(0);
+	const [totalPickup, setTotalPickup] = useState(0);
+
+	// Sorting state
+	const [sortBy, setSortBy] = useState<string>('transit_date');
+	const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+	// Column visibility state - load from localStorage
+	const [visibleColumns, setVisibleColumns] = useState<string[]>(savedFilters.visibleColumns);
 
 	// Handle column sorting
 	const handleSort = (key: string, order: 'asc' | 'desc') => {
@@ -140,35 +168,84 @@ const TransitPlanListing: React.FC = () => {
 			console.log('  - Page:', pageNumber);
 			console.log('  - Limit:', itemsPerPage);
 
-			const res = await TransitPlanApi.getTransitPlanListing({
+			// Cap limit at 1000 (API maximum)
+			const apiLimit = Math.min(itemsPerPage, 1000);
+
+			const res = (await TransitPlanApi.getTransitPlanListing({
 				start_date: start,
 				end_date: end,
 				page: pageNumber,
-				limit: itemsPerPage,
+				limit: apiLimit,
 				sortField: sortBy,
 				sortOrder: sortOrder,
-			});
+			})) as any;
 
-			setRows(res.data.rows || []);
+			setRows(res.data?.rows || res.data || []);
 			setTotalItems(res.pagination?.totalItems || 0);
+			setTotalDispatch(res.data?.totalDispatch || 0);
+			setTotalPickup(res.data?.totalPickup || 0);
 		} catch (error) {
 			console.error('❌ Error fetching transit plan listing:', error);
 			console.error('❌ Error details:', error);
 			setRows([]);
 			setTotalItems(0);
+			setTotalDispatch(0);
+			setTotalPickup(0);
 		} finally {
 			setLoading(false);
 		}
 	};
 
-	// Set default date range (last 30 days)
+	// Set default date range (last 30 days) only if no saved dates
 	useEffect(() => {
-		const today = new Date();
-		const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+		if (!startDate || !endDate) {
+			const today = new Date();
+			const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-		setStartDate(formatDateForInput(thirtyDaysAgo));
-		setEndDate(formatDateForInput(today));
-	}, []);
+			setStartDate(formatDateForInput(thirtyDaysAgo));
+			setEndDate(formatDateForInput(today));
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []); // Only run once on mount
+
+	// Save date filters to localStorage when they change
+	useEffect(() => {
+		if (startDate || endDate) {
+			try {
+				const saved = localStorage.getItem(STORAGE_KEY);
+				const current = saved ? JSON.parse(saved) : {};
+				localStorage.setItem(
+					STORAGE_KEY,
+					JSON.stringify({
+						...current,
+						startDate,
+						endDate,
+					})
+				);
+			} catch (error) {
+				console.error('Error saving date filters:', error);
+			}
+		}
+	}, [startDate, endDate]);
+
+	// Save visible columns to localStorage when they change
+	useEffect(() => {
+		if (visibleColumns.length > 0) {
+			try {
+				const saved = localStorage.getItem(STORAGE_KEY);
+				const current = saved ? JSON.parse(saved) : {};
+				localStorage.setItem(
+					STORAGE_KEY,
+					JSON.stringify({
+						...current,
+						visibleColumns,
+					})
+				);
+			} catch (error) {
+				console.error('Error saving visible columns:', error);
+			}
+		}
+	}, [visibleColumns]);
 
 	// Initial load after dates are set
 	useEffect(() => {
@@ -351,15 +428,38 @@ const TransitPlanListing: React.FC = () => {
 		return date.toISOString().split('T')[0];
 	};
 
+	// Use totals from API response
+	const dispatchCount = totalDispatch;
+	const returnedCount = totalPickup;
+
 	return (
 		<>
-			<PageHeader
-				title='Transit Plan Listing'
-				locationName={rows.length > 0 ? rows[0].city_name : undefined}
-				totalItems={totalItems}
-				itemType='transit plans'
-				icon='🚛'
-			/>
+			<div className='flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-6'>
+				<PageHeader
+					title='Transit Plan Listing'
+					locationName={rows.length > 0 ? rows[0].city_name : undefined}
+					totalItems={totalItems}
+					itemType='transit plans'
+					icon='🚛'
+				/>
+				<div className='flex items-center gap-6 lg:gap-8'>
+					<div className='flex items-start gap-2'>
+						<span className='text-2xl'>🚛</span>
+						<div>
+							<div className='text-xs text-gray-500 uppercase tracking-wide mb-0.5'>Dispatch</div>
+							<div className='text-xl font-bold text-blue-600'>{dispatchCount}</div>
+						</div>
+					</div>
+					<div className='w-px h-10 bg-gray-300'></div>
+					<div className='flex items-start gap-2'>
+						<span className='text-2xl transform scale-x-[-1]'>🚚</span>
+						<div>
+							<div className='text-xs text-gray-500 uppercase tracking-wide mb-0.5'>Pickup</div>
+							<div className='text-xl font-bold text-orange-600'>{returnedCount}</div>
+						</div>
+					</div>
+				</div>
+			</div>
 
 			<div className='bg-white p-4 shadow-sm rounded-lg flex flex-wrap gap-4 items-center mb-6'>
 				<div className='w-56'>
@@ -414,7 +514,12 @@ const TransitPlanListing: React.FC = () => {
 				}}
 				onItemsPerPageChange={items => {
 					console.log('📄 Items per page changed to:', items);
-					setItemsPerPage(items);
+					// Cap at 1000 (API maximum)
+					const cappedItems = Math.min(items, 1000);
+					if (cappedItems !== items) {
+						console.warn(`⚠️ Items per page capped at 1000 (API limit). Requested: ${items}`);
+					}
+					setItemsPerPage(cappedItems);
 				}}
 				className='mt-4'
 			/>

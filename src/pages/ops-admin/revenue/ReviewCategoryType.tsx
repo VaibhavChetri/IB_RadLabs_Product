@@ -9,7 +9,7 @@ import { useURLFilters } from '../../../features/review-category-type/hooks/useU
 import { getReviewCategoryTypeColumns } from '../../../features/review-category-type/config/tableColumns';
 import { STATUS_OPTIONS } from '../../../features/review-category-type/config/constants';
 import { useDebounce } from '../../../hooks/useDebounce';
-import type { ReviewCategoryType } from '../../../services/pAndLApi';
+import type { ReviewCategoryType as ReviewCategoryTypeItem } from '../../../services/pAndLApi';
 
 export const ReviewCategoryType: React.FC = () => {
 	const { filters: urlFilters, updateFilters } = useURLFilters();
@@ -20,7 +20,7 @@ export const ReviewCategoryType: React.FC = () => {
 		pageSize: urlFilters.pageSize,
 	});
 	const [showModal, setShowModal] = useState(false);
-	const [editingItem, setEditingItem] = useState<ReviewCategoryType | null>(null);
+	const [editingItem, setEditingItem] = useState<ReviewCategoryTypeItem | null>(null);
 	const [snackbar, setSnackbar] = useState<{
 		open: boolean;
 		message: string;
@@ -82,7 +82,7 @@ export const ReviewCategoryType: React.FC = () => {
 		setShowModal(true);
 	};
 
-	const handleEdit = React.useCallback((item: ReviewCategoryType) => {
+	const handleEdit = React.useCallback((item: ReviewCategoryTypeItem) => {
 		setEditingItem(item);
 		setShowModal(true);
 	}, []);

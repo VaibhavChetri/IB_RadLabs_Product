@@ -208,7 +208,6 @@ export const AddClientSkuMapping: React.FC = () => {
 										selectedContainerTypes={rowsForImpactType
 											.map(r => r.containerTypeId as number)
 											.filter(id => id > 0)}
-										_isEditMode={false}
 									/>
 								</div>
 							);

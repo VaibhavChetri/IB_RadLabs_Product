@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Button, Snackbar, Table } from '../../../components/ui';
+import { Snackbar, Table } from '../../../components/ui';
 import { PageHeader } from '../../../components/ui/PageHeader';
-import { Plus } from 'lucide-react';
 import { SkuApiService, ClientSkuMapping } from '../../../services/skuApi';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../../store';
@@ -130,26 +129,14 @@ export const SkuMapListing: React.FC = () => {
 	return (
 		<div className='min-h-screen bg-background-default p-6'>
 			<div className='max-w-7xl mx-auto'>
-				<div className='flex items-center justify-between mb-6'>
-					<div className='flex-1'>
-						<PageHeader
-							title='SKU Mapping Listing'
-							locationName={user?.city_name || 'City'}
-							totalItems={mappings.length}
-							itemType='mappings'
-							icon='📦'
-						/>
-					</div>
-					<Button
-						onClick={() => {
-							sessionStorage.removeItem('sku-add-navigation'); // Clear flag for fresh start
-							navigate('/ops-admin/map-sku/add');
-						}}
-						className='flex items-center space-x-2'
-					>
-						<Plus className='w-4 h-4' />
-						<span>Add Mapping</span>
-					</Button>
+				<div className='mb-6'>
+					<PageHeader
+						title='SKU Mapping Listing'
+						locationName={user?.city_name || 'City'}
+						totalItems={mappings.length}
+						itemType='mappings'
+						icon='📦'
+					/>
 				</div>
 
 				{/* Filters */}

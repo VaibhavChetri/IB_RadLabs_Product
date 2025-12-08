@@ -138,23 +138,26 @@ export const useImpactTypes = () => {
 
 	const loadImpactTypes = useCallback(async () => {
 		try {
-			console.log('Loading impact types...');
 			const response = await impactTypesApi.execute({});
-			console.log('Impact types response:', response);
-			if (response.status_code === 200 && response.result) {
-				// Handle both direct array and paginated response
-				const data = Array.isArray(response.result) ? response.result : response.result.data || [];
-				const impactTypeOptions: DropdownOption[] = data.map((impactType: any) => ({
-					value: impactType.id.toString(),
-					label: impactType.name,
-				}));
-				console.log('Impact type options:', impactTypeOptions);
-				setImpactTypes(impactTypeOptions);
+			if (response.status_code === 200) {
+				// Handle both response.data and response.result (API inconsistency)
+				const responseData = (response as any).result || response.data;
+				if (responseData) {
+					// Handle both direct array and paginated response
+					const result = responseData as { data?: any[] } | any[];
+					const data = Array.isArray(result) ? result : result.data || [];
+					const impactTypeOptions: DropdownOption[] = data.map((impactType: any) => ({
+						value: impactType.id.toString(),
+						label: impactType.name,
+					}));
+					setImpactTypes(impactTypeOptions);
+				}
 			}
-		} catch (error) {
+		} catch (error: unknown) {
+			const err = error as { response?: { data?: unknown; status?: number }; message?: string };
 			console.error('Failed to load impact types:', error);
-			console.error('Error details:', error.response?.data || error.message);
-			console.error('Error status:', error.response?.status);
+			console.error('Error details:', err.response?.data || err.message);
+			console.error('Error status:', err.response?.status);
 		}
 	}, []); // Remove dependency to prevent infinite loop
 
@@ -177,23 +180,26 @@ export const useBillingTypes = () => {
 
 	const loadBillingTypes = useCallback(async () => {
 		try {
-			console.log('Loading billing types...');
 			const response = await billingTypesApi.execute({});
-			console.log('Billing types response:', response);
-			if (response.status_code === 200 && response.result) {
-				// Handle both direct array and paginated response
-				const data = Array.isArray(response.result) ? response.result : response.result.data || [];
-				const billingTypeOptions: DropdownOption[] = data.map((billingType: any) => ({
-					value: billingType.id.toString(),
-					label: billingType.name,
-				}));
-				console.log('Billing type options:', billingTypeOptions);
-				setBillingTypes(billingTypeOptions);
+			if (response.status_code === 200) {
+				// Handle both response.data and response.result (API inconsistency)
+				const responseData = (response as any).result || response.data;
+				if (responseData) {
+					// Handle both direct array and paginated response
+					const result = responseData as { data?: any[] } | any[];
+					const data = Array.isArray(result) ? result : result.data || [];
+					const billingTypeOptions: DropdownOption[] = data.map((billingType: any) => ({
+						value: billingType.id.toString(),
+						label: billingType.name,
+					}));
+					setBillingTypes(billingTypeOptions);
+				}
 			}
-		} catch (error) {
+		} catch (error: unknown) {
+			const err = error as { response?: { data?: unknown; status?: number }; message?: string };
 			console.error('Failed to load billing types:', error);
-			console.error('Error details:', error.response?.data || error.message);
-			console.error('Error status:', error.response?.status);
+			console.error('Error details:', err.response?.data || err.message);
+			console.error('Error status:', err.response?.status);
 		}
 	}, []); // Remove dependency to prevent infinite loop
 
@@ -219,13 +225,12 @@ export const useBillingSubTypes = () => {
 	const loadBillingSubTypes = useCallback(async () => {
 		try {
 			const response = await billingSubTypesApi.execute({});
-			if (response.status_code === 200 && response.result) {
-				const billingSubTypeOptions: DropdownOption[] = response.result.map(
-					(billingSubType: any) => ({
-						value: billingSubType.id.toString(),
-						label: billingSubType.name,
-					})
-				);
+			if (response.status_code === 200 && response.data) {
+				const result = Array.isArray(response.data) ? response.data : [];
+				const billingSubTypeOptions: DropdownOption[] = result.map((billingSubType: any) => ({
+					value: billingSubType.id.toString(),
+					label: billingSubType.name,
+				}));
 				setBillingSubTypes(billingSubTypeOptions);
 			}
 		} catch (error) {

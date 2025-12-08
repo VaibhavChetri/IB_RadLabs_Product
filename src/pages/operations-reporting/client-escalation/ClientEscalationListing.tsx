@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader, Button, Pagination, Snackbar } from '../../../components/ui';
-import { Table } from '../../../components/ui/DataDisplay';
+import { Table, TableColumn } from '../../../components/ui/DataDisplay';
 import { TableSkeleton } from '../../../components/ui/Skeleton';
 import { Plus } from 'lucide-react';
 
@@ -24,13 +24,13 @@ export const ClientEscalationListing: React.FC = () => {
 		pageSize: 10,
 	});
 
-	const columns = [
-		{ key: 'id', label: 'ID' },
-		{ key: 'escalation_date', label: 'Escalation Date' },
-		{ key: 'client_name', label: 'Client' },
-		{ key: 'issue', label: 'Issue' },
-		{ key: 'status', label: 'Status' },
-		{ key: 'actions', label: 'Actions' },
+	const columns: TableColumn<Record<string, unknown>>[] = [
+		{ key: 'id', title: 'ID' },
+		{ key: 'escalation_date', title: 'Escalation Date' },
+		{ key: 'client_name', title: 'Client' },
+		{ key: 'issue', title: 'Issue' },
+		{ key: 'status', title: 'Status' },
+		{ key: 'actions', title: 'Actions' },
 	];
 
 	const tableData: Record<string, unknown>[] = [];

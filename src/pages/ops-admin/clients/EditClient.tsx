@@ -1,7 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '../../../components/ui/Button';
 import { Card } from '../../../components/ui/Card';
-import { FloatingInput, FloatingDropdown, MultiSelectDropdown, Snackbar } from '../../../components/ui';
+import {
+	FloatingInput,
+	FloatingDropdown,
+	MultiSelectDropdown,
+	Snackbar,
+} from '../../../components/ui';
 import { ArrowLeft, DollarSign, Target, Building } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
@@ -56,9 +61,6 @@ export const EditClient: React.FC = () => {
 	const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
 	const { selectedLocation } = useSelector((state: RootState) => state.client);
 
-	// Debug authentication
-	console.log('🔍 EditClient - Auth state:', { user, isAuthenticated });
-
 	// Redirect if not authenticated
 	useEffect(() => {
 		if (!isAuthenticated) {
@@ -80,7 +82,6 @@ export const EditClient: React.FC = () => {
 					navigate('/clients/manage');
 				}
 			} else {
-				console.log('❌ No selected location, redirecting to manage clients');
 				navigate('/clients/manage');
 			}
 		}
@@ -92,11 +93,6 @@ export const EditClient: React.FC = () => {
 	const { cities, loading: citiesLoading } = useCities();
 	const { locationTypes, loading: locationTypesLoading } = useLocationTypes();
 
-	// Debug: Check location types data
-	useEffect(() => {
-		console.log('🔍 EditClient: Location Types:', locationTypes);
-		console.log('🔍 EditClient: Location Types Loading:', locationTypesLoading);
-	}, [locationTypes, locationTypesLoading]);
 	const { impactTypes, loading: impactTypesLoading } = useImpactTypes();
 	const { billingTypes, loading: billingTypesLoading } = useBillingTypes();
 	const { billingSubTypes, loading: billingSubTypesLoading } = useBillingSubTypes();
@@ -108,76 +104,115 @@ export const EditClient: React.FC = () => {
 		if (user?.city_id) {
 			params.append('city_id', user.city_id.toString());
 		}
-		console.log('🏢 EditClient: Fetching facilities with params:', params.toString());
 		const response = await apiService.get(`/locations/getLocations?${params.toString()}`);
-		console.log('🏢 EditClient: Facilities API response:', response);
 		return response;
 	});
 
-	// Form state with prefilled values from selectedLocation
-	const [formData, setFormData] = useState<ClientFormData>({
-		// Basic Information - prefilled from selectedLocation
-		name: selectedLocation?.restaurant_name || '',
-		address1: selectedLocation?.address_1 || '',
-		address2: selectedLocation?.address_2 || '',
-		zipcode: selectedLocation?.zipcode || '',
-		landmark: selectedLocation?.landmark || '',
-		latitude: selectedLocation?.latitude || '',
-		longitude: selectedLocation?.longitude || '',
-		onSiteManpower: Boolean(selectedLocation?.hasOnSiteManPower),
-		operationalDays: selectedLocation?.operationalDays?.toString() || '',
-
-		// Location - prefilled from selectedLocation
-		locationType: selectedLocation?.locationTypeId?.toString() || '',
-		country: selectedLocation?.country_id?.toString() || '',
-		state: selectedLocation?.state_id?.toString() || '',
-		city: selectedLocation?.city_id?.toString() || '',
-
-		// Billing Type - prefilled from selectedLocation
-		billingType: selectedLocation?.billing_type_id?.toString() || '',
-		fixedPrice: selectedLocation?.fixedPrice?.toString() || '',
-		billingSubType: selectedLocation?.billing_sub_type_id?.toString() || '',
-
-		// Impact Type - prefilled from selectedLocation (all impact types if multiple)
-
-		impactTypes:
-			(selectedLocation?.impactTypes as any[])?.map((impact: any) => impact.id?.toString()) || [],
-		facility: selectedLocation?.facilityId?.toString() || '',
-	});
-
-	// Update form data when selectedLocation changes
-	useEffect(() => {
-		if (selectedLocation) {
-			const billingTypeId = selectedLocation.billing_type_id;
-
-			setFormData({
-				name: selectedLocation.restaurant_name || '',
-				address1: selectedLocation.address_1 || '',
-				address2: selectedLocation.address_2 || '',
-				zipcode: selectedLocation.zipcode || '',
-				landmark: selectedLocation.landmark || '',
-				latitude: selectedLocation.latitude || '',
-				longitude: selectedLocation.longitude || '',
-				onSiteManpower: Boolean(selectedLocation.hasOnSiteManPower),
-				operationalDays: selectedLocation.operationalDays?.toString() || '',
-				locationType: selectedLocation.locationTypeId?.toString() || '',
-				country: selectedLocation.country_id?.toString() || '',
-				state: selectedLocation.state_id?.toString() || '',
-				city: selectedLocation.city_id?.toString() || '',
-				billingType: billingTypeId?.toString() || '',
-				fixedPrice: selectedLocation.fixedPrice?.toString() || '',
-				billingSubType: selectedLocation.billing_sub_type_id?.toString() || '',
-
-				impactTypes:
-					(selectedLocation.impactTypes as any[])?.map((impact: any) => impact.id?.toString()) ||
-					[],
-				facility: selectedLocation.facilityId?.toString() || '',
-			});
-
-			// Initialize dynamic fields based on billing type
-			// Note: Fixed Price and Billing Sub Type are now handled by direct conditional rendering
+	// Derive initial form data from Redux state (selectedLocation)
+	// This ensures form data is always in sync with Redux state
+	const initialFormData = useMemo<ClientFormData>(() => {
+		if (!selectedLocation) {
+			return {
+				name: '',
+				address1: '',
+				address2: '',
+				zipcode: '',
+				landmark: '',
+				latitude: '',
+				longitude: '',
+				onSiteManpower: false,
+				operationalDays: '',
+				locationType: '',
+				country: '',
+				state: '',
+				city: '',
+				billingType: '',
+				fixedPrice: '',
+				billingSubType: '',
+				impactTypes: [],
+				facility: '',
+			};
 		}
+
+		// Set billing type from Redux state (selectedLocation already has billing_type_id)
+		const billingTypeValue = selectedLocation.billing_type_id?.toString() || '';
+
+		return {
+			// Basic Information
+			name: selectedLocation.restaurant_name || '',
+			address1: selectedLocation.address_1 || '',
+			address2: selectedLocation.address_2 || '',
+			zipcode: selectedLocation.zipcode || '',
+			landmark: selectedLocation.landmark || '',
+			latitude: selectedLocation.latitude || '',
+			longitude: selectedLocation.longitude || '',
+			onSiteManpower: Boolean(selectedLocation.hasOnSiteManPower),
+			operationalDays: selectedLocation.operationalDays?.toString() || '',
+
+			// Location - all from Redux state (selectedLocation)
+			locationType: selectedLocation.locationTypeId?.toString() || '',
+			country: selectedLocation.country_id?.toString() || '',
+			state: selectedLocation.state_id?.toString() || '',
+			city: selectedLocation.city_id?.toString() || '',
+
+			// Billing Type - from Redux state (selectedLocation.billing_type_id)
+			billingType: billingTypeValue,
+			fixedPrice: selectedLocation.fixedPrice?.toString() || '',
+			billingSubType: selectedLocation.billing_sub_type_id?.toString() || '',
+
+			// Impact Type - from Redux state
+			impactTypes:
+				(selectedLocation.impactTypes as any[])?.map((impact: any) => impact.id?.toString()) || [],
+			facility: selectedLocation.facilityId?.toString() || '',
+		};
 	}, [selectedLocation]);
+
+	// Form state - initialized from Redux, but can be edited by user
+	const [formData, setFormData] = useState<ClientFormData>(initialFormData);
+
+	// Update form data when initialFormData changes
+	useEffect(() => {
+		setFormData(initialFormData);
+	}, [initialFormData]);
+
+	// Ensure billing type is set when billingTypes finish loading (only once)
+	// This handles the case where billingTypes load after form initialization
+	useEffect(() => {
+		if (
+			selectedLocation?.billing_type_id &&
+			billingTypes.length > 0 &&
+			!billingTypesLoading &&
+			!formData.billingType // Only set if billingType is empty (initial load)
+		) {
+			setFormData(prev => ({
+				...prev,
+				billingType: selectedLocation.billing_type_id.toString(),
+			}));
+		}
+	}, [selectedLocation?.billing_type_id, billingTypes.length, billingTypesLoading]);
+
+	// Ensure impact types are set when impactTypes finish loading (only once)
+	// This handles the case where impactTypes load after form initialization
+	useEffect(() => {
+		if (
+			selectedLocation?.impactTypes &&
+			impactTypes.length > 0 &&
+			!impactTypesLoading &&
+			formData.impactTypes.length === 0 // Only set if impactTypes is empty (initial load)
+		) {
+			const selectedImpactTypeIds =
+				(selectedLocation.impactTypes as any[])
+					?.map((impact: any) => impact.id?.toString())
+					.filter(Boolean) || [];
+
+			if (selectedImpactTypeIds.length > 0) {
+				setFormData(prev => ({
+					...prev,
+					impactTypes: selectedImpactTypeIds,
+				}));
+			}
+		}
+	}, [selectedLocation?.impactTypes, impactTypes.length, impactTypesLoading]);
 
 	const [facilities, setFacilities] = useState<unknown[]>([]); // Local state for facilities
 
@@ -188,18 +223,40 @@ export const EditClient: React.FC = () => {
 		type: 'success' as 'success' | 'error' | 'info',
 	});
 
-	// Trigger facilities API when onSiteManpower is checked
+	// Load facilities when onSiteManpower is true (from Redux state or form change)
 	useEffect(() => {
 		if (formData.onSiteManpower && user?.city_id) {
-			console.log('🏢 EditClient useEffect: Fetching facilities for city_id:', user.city_id);
 			facilitiesApi.execute({}).then(response => {
-				if (response.data) {
-					setFacilities(response.data);
-					console.log('🏢 EditClient Facilities stored:', response.data);
+				// Handle both response.data and response.result (API inconsistency)
+				// The API might return data directly as array or wrapped in result/data
+				let facilitiesData: any[] = [];
+				if ((response as any).result) {
+					facilitiesData = Array.isArray((response as any).result) ? (response as any).result : [];
+				} else if (response.data) {
+					facilitiesData = Array.isArray(response.data) ? response.data : [];
+				}
+
+				if (facilitiesData.length > 0) {
+					setFacilities(facilitiesData);
+
+					// Ensure facility value from Redux state is set after facilities load
+					if (selectedLocation?.facilityId) {
+						const facilityIdStr = selectedLocation.facilityId.toString();
+						const facilityExists = facilitiesData.some(
+							(f: any) => f.id?.toString() === facilityIdStr
+						);
+
+						if (facilityExists && formData.facility !== facilityIdStr) {
+							setFormData(prev => ({
+								...prev,
+								facility: facilityIdStr,
+							}));
+						}
+					}
 				}
 			});
 		}
-	}, [formData.onSiteManpower, user?.city_id]); // Removed facilitiesApi from dependencies
+	}, [formData.onSiteManpower, user?.city_id, selectedLocation?.facilityId, formData.facility]);
 
 	// Set user's city and state as default for non-super admins
 	useEffect(() => {
@@ -226,11 +283,9 @@ export const EditClient: React.FC = () => {
 
 		// Trigger facilities API when onSiteManpower is checked
 		if (field === 'onSiteManpower' && value === true) {
-			console.log('🏢 EditClient: On-site Manpower checked, fetching facilities...');
 			facilitiesApi.execute({}).then(response => {
 				if (response.data) {
 					setFacilities(response.data);
-					console.log('🏢 EditClient Facilities stored from handleInputChange:', response.data);
 				}
 			});
 		}
@@ -239,10 +294,8 @@ export const EditClient: React.FC = () => {
 	// Handle form submission
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		console.log('📝 Form submitted:', formData);
 
 		if (!selectedLocation) {
-			console.error('❌ No client selected for editing');
 			return;
 		}
 
@@ -277,12 +330,9 @@ export const EditClient: React.FC = () => {
 				updateData.fixed_pricing_id = selectedLocation.fixedPriceId || undefined;
 			}
 
-			console.log('🚀 Sending update data:', updateData);
-
 			const result = await ClientApiService.updateClient(updateData);
 
 			if (result.status === 'Success' && result.status_code === 200) {
-				console.log('✅ Client updated successfully!');
 				setSnackbar({
 					open: true,
 					message: result.message || 'Client updated successfully!',
@@ -421,7 +471,7 @@ export const EditClient: React.FC = () => {
 										options={
 											facilities.map((facility: unknown) => ({
 												// eslint-disable-next-line @typescript-eslint/no-explicit-any
-												value: (facility as any).id.toString(),
+												value: (facility as any).id?.toString() || '',
 												// eslint-disable-next-line @typescript-eslint/no-explicit-any
 												label: (facility as any).location || `Facility ${(facility as any).id}`,
 											})) || []
@@ -500,7 +550,7 @@ export const EditClient: React.FC = () => {
 						<div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
 							<FloatingDropdown
 								label='Billing Type'
-								options={billingTypes.map(type => ({ value: type.value, label: type.label }))}
+								options={billingTypes}
 								value={formData.billingType}
 								onChange={(value: string) => handleInputChange('billingType', value)}
 								loading={billingTypesLoading}

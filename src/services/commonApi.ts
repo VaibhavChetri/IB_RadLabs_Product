@@ -66,7 +66,7 @@ export class CommonApiService {
 				status_code: response.status_code,
 				status: response.status,
 				message: response.message,
-				data: (response.result || response.data || []).map((c: any) => ({
+				data: ((response.data as any)?.result || response.data || []).map((c: any) => ({
 					clientId: c.id,
 					clientName: c.name,
 				})),
@@ -115,13 +115,14 @@ export class CommonApiService {
 	 * Get all vehicles for dropdowns
 	 */
 	static async getVehicles(): Promise<ApiResponse<VehicleOption[]>> {
-		const response = await api.get('/vehicle/getVehicles');
+		const response = (await api.get('/vehicle/getVehicles')) as any;
 		// Transform the response to match our expected format
+		// API returns { status_code, status, result: [...], pagination: {...} }
 		return {
 			status_code: response.status_code,
 			status: response.status,
-			message: response.message,
-			data: response.result || [], // Use result array
+			message: response.message || '',
+			data: response.result || response.data || [], // Use result array or data as fallback
 		};
 	}
 
@@ -135,12 +136,12 @@ export class CommonApiService {
 				status_code: response.status_code,
 				status: response.status,
 				message: response.message,
-				data: (response.result || response.data || []).map((t: any) => ({
+				data: ((response.data as any)?.result || response.data || []).map((t: any) => ({
 					id: t.id,
 					name: t.type, // API returns 'type' field, not 'name'
 				})),
 			};
-		} catch (error) {
+		} catch {
 			// Fallback to hardcoded values if API is not available yet
 			console.warn('Transit types API not available, using fallback values');
 			return {

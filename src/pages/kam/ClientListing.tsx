@@ -30,17 +30,17 @@ const ClientListing: React.FC = () => {
 	const fetchData = useCallback(async () => {
 		dispatch(setClientListingLoading(true));
 		try {
-			const response = await KamApiService.getInventoryClientPlan({
+			const response = (await KamApiService.getInventoryClientPlan({
 				startDate: selectedDate,
 				page: pageNumber,
 				limit: itemsPerPage,
-			});
+			})) as any;
 
 			dispatch(
 				setClientListing({
-					data: response.data,
-					stats: response.stats,
-					pagination: response.pagination,
+					data: response.data || [],
+					stats: response.stats || {},
+					pagination: response.pagination || {},
 					loading: false,
 				})
 			);
@@ -88,7 +88,7 @@ const ClientListing: React.FC = () => {
 
 	const visibleColumns = useMemo(() => allColumns, [allColumns]);
 
-	const totalItems = pagination?.totalItems || 0;
+	const totalItems = stats?.total || pagination?.totalItems || 0;
 	const totalPages = pagination?.totalPages || 0;
 
 	return (
@@ -186,7 +186,7 @@ const ClientListing: React.FC = () => {
 			{loading ? (
 				<div className='text-center py-8'>Loading...</div>
 			) : (
-				<Table columns={visibleColumns} data={data} className='bg-white' />
+				<Table<ClientPlanRow> columns={visibleColumns} data={data} className='bg-white' />
 			)}
 
 			{totalPages > 1 && (

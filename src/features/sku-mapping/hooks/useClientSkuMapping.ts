@@ -61,7 +61,8 @@ export const useClientSkuMapping = (clientId?: string) => {
 		if (!location_id) return;
 		try {
 			setLoading(true);
-			const response = await SkuApiService.getClientByCity(location_id);
+			// In add mode, pass clientMap=true; in edit mode, don't pass it
+			const response = await SkuApiService.getClientByCity(location_id, !isEditMode);
 			if (response.status_code === 200 && response.result) {
 				setClients(response.result);
 			}

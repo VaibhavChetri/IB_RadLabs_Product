@@ -379,7 +379,7 @@ export const MonthlyEstimateEdit: React.FC = () => {
 	if (!user) {
 		return (
 			<div className='space-y-6'>
-				<PageHeader title='Monthly Actuals' subtitle='Fill required details' />
+				<PageHeader title='Monthly Actuals' totalItems={0} itemType='revenue entries' />
 				<div className='text-center text-gray-500 py-8'>Loading user data...</div>
 			</div>
 		);
@@ -388,7 +388,7 @@ export const MonthlyEstimateEdit: React.FC = () => {
 	if (isLoading) {
 		return (
 			<div className='space-y-6'>
-				<PageHeader title='Monthly Actuals' subtitle='Fill required details' />
+				<PageHeader title='Monthly Actuals' totalItems={0} itemType='revenue entries' />
 				<div className='text-center text-gray-500 py-8'>Loading data...</div>
 			</div>
 		);
@@ -397,7 +397,7 @@ export const MonthlyEstimateEdit: React.FC = () => {
 	if (!month || !year || !facilityId || !cityId) {
 		return (
 			<div className='space-y-6'>
-				<PageHeader title='Monthly Actuals' subtitle='Fill required details' />
+				<PageHeader title='Monthly Actuals' totalItems={0} itemType='revenue entries' />
 				<div className='text-center text-gray-500 py-8'>
 					Missing required parameters. Please navigate from the listing page.
 					<br />
@@ -411,7 +411,7 @@ export const MonthlyEstimateEdit: React.FC = () => {
 
 	return (
 		<div className='space-y-6'>
-			<PageHeader title='Edit Monthly Estimate' subtitle='Fill required details' />
+			<PageHeader title='Edit Monthly Estimate' totalItems={0} itemType='revenue entries' />
 
 			{/* Budget Table */}
 			{recordsWithUpdatedValues.length > 0 && (

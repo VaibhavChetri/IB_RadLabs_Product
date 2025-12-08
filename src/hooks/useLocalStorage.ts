@@ -2,7 +2,8 @@ import { useCallback } from 'react';
 
 interface LocalStorageData {
 	adhocTransportation: boolean;
-	dispatchVehicleNumber: string;
+	dispatchVehicleNumber?: string;
+	pickupVehicleNumber?: string;
 	signatureName: string;
 	containerCounts: Record<number, number>;
 	uploadedImageUrl: string;

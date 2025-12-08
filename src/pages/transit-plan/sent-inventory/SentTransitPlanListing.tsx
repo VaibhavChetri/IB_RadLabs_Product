@@ -159,8 +159,8 @@ const SentTransitPlanListing: React.FC = () => {
 
 		// Client-side sorting
 		const sortedRows = [...rows].sort((a, b) => {
-			let aValue = a[key as keyof SentTransitPlanRow];
-			let bValue = b[key as keyof SentTransitPlanRow];
+			let aValue: unknown = a[key as keyof SentTransitPlanRow];
+			let bValue: unknown = b[key as keyof SentTransitPlanRow];
 
 			// Handle different data types
 			if (typeof aValue === 'string' && typeof bValue === 'string') {
@@ -168,12 +168,24 @@ const SentTransitPlanListing: React.FC = () => {
 				bValue = bValue.toLowerCase();
 			}
 
-			if (aValue < bValue) {
-				return order === 'asc' ? -1 : 1;
+			// Type-safe comparison
+			if (typeof aValue === 'number' && typeof bValue === 'number') {
+				if (aValue < bValue) return order === 'asc' ? -1 : 1;
+				if (aValue > bValue) return order === 'asc' ? 1 : -1;
+				return 0;
 			}
-			if (aValue > bValue) {
-				return order === 'asc' ? 1 : -1;
+
+			if (typeof aValue === 'string' && typeof bValue === 'string') {
+				if (aValue < bValue) return order === 'asc' ? -1 : 1;
+				if (aValue > bValue) return order === 'asc' ? 1 : -1;
+				return 0;
 			}
+
+			// Fallback: convert to string for comparison
+			const aStr = String(aValue ?? '');
+			const bStr = String(bValue ?? '');
+			if (aStr < bStr) return order === 'asc' ? -1 : 1;
+			if (aStr > bStr) return order === 'asc' ? 1 : -1;
 			return 0;
 		});
 

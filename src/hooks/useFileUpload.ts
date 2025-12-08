@@ -36,7 +36,11 @@ export const useFileUpload = () => {
 
 			try {
 				console.log('📸 Uploading image immediately...');
-				const imageResponse = await TransitPlanApi.uploadImage(file);
+				const imageResponse = (await TransitPlanApi.uploadImage(file)) as {
+					data?: {
+						imgLocation?: string[];
+					};
+				};
 				console.log('📸 Full image upload response:', imageResponse);
 				console.log('📸 Response keys:', Object.keys(imageResponse));
 

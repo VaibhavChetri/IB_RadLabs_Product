@@ -93,8 +93,11 @@ export class SkuApiService {
 	 * Get clients by location ID
 	 * Reuses existing method from InventoryApiService
 	 */
-	static async getClientByCity(location_id: number): Promise<any> {
-		return this.api.get(`/inventory/getClientByCity?location_id=${location_id}`);
+	static async getClientByCity(location_id: number, clientMap?: boolean): Promise<any> {
+		const url = `/inventory/getClientByCity?location_id=${location_id}${
+			clientMap ? '&clientMap=true' : ''
+		}`;
+		return this.api.get(url);
 	}
 
 	/**

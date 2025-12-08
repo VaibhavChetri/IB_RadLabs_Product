@@ -56,7 +56,7 @@ export const QCRejectionDetails: React.FC = () => {
 					setSkus(skuResponse.result);
 					// Initialize form data - try to restore from localStorage first
 					const initialData: QCRejectionFormData = {};
-					skuResponse.result.forEach(sku => {
+					skuResponse.result.forEach((sku: any) => {
 						initialData[sku.containerTypeId.toString()] = {};
 					});
 

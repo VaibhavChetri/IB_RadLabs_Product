@@ -25,12 +25,16 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
 				{locationName && (
 					<>
 						<span className='text-sm text-gray-600'>📍 {locationName}</span>
-						<span className='text-sm text-gray-500'>•</span>
+						{!(totalItems === 0 && (itemType === 'analysis' || itemType === 'dashboard')) && itemType && (
+							<span className='text-sm text-gray-500'>•</span>
+						)}
 					</>
 				)}
-				<span className='text-sm text-gray-600'>
-					{icon} {totalItems} {itemType}
-				</span>
+				{!(totalItems === 0 && (itemType === 'analysis' || itemType === 'dashboard')) && itemType && (
+					<span className='text-sm text-gray-600'>
+						{icon} {totalItems} {itemType}
+					</span>
+				)}
 			</div>
 		</div>
 	);

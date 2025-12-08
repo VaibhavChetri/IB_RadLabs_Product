@@ -165,7 +165,7 @@ export const AddClient: React.FC = () => {
 		}
 	}, [formData.onSiteManpower, user?.city_id]);
 
-	const [errors, setErrors] = useState<Partial<ClientFormData>>({});
+	const [errors, setErrors] = useState<Partial<Record<keyof ClientFormData, string>>>({});
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	// Snackbar state
@@ -273,7 +273,7 @@ export const AddClient: React.FC = () => {
 		console.log('🚀 AddClient: Submit button clicked!');
 
 		// Validate form and get errors
-		const newErrors: Partial<ClientFormData> = {};
+		const newErrors: Partial<Record<keyof ClientFormData, string>> = {};
 
 		// Required fields validation
 		if (!formData.name.trim()) newErrors.name = 'Name is required';
@@ -310,31 +310,31 @@ export const AddClient: React.FC = () => {
 		console.log('✅ AddClient: Form validation passed');
 		setIsSubmitting(true);
 		try {
-			// Prepare API payload matching the expected format
-			const payload = {
-				location: formData.name,
-				address_1: formData.address1,
-				address_2: formData.address2,
-				landmark: formData.landmark,
-				zipcode: formData.zipcode,
-				latitude: formData.latitude,
-				longitude: formData.longitude,
-				city_id: parseInt(formData.city),
-				state_id: parseInt(formData.state),
-				country_id: parseInt(formData.country),
-				location_type: parseInt(formData.locationType),
-				billing_type_id: parseInt(formData.billingType),
-				billing_sub_type_id: formData.billingSubType
-					? parseInt(formData.billingSubType)
-					: undefined,
-				impact_type_ids: formData.impactTypes.map(id => parseInt(id)),
-				onSiteManPower: formData.onSiteManpower ? 1 : 0,
-				facility_id: formData.facility ? parseInt(formData.facility) : undefined,
-			};
+		// Prepare API payload matching the expected format
+		const payload: any = {
+			location: formData.name,
+			address_1: formData.address1,
+			address_2: formData.address2,
+			landmark: formData.landmark,
+			zipcode: formData.zipcode,
+			latitude: formData.latitude,
+			longitude: formData.longitude,
+			city_id: parseInt(formData.city),
+			state_id: parseInt(formData.state),
+			country_id: parseInt(formData.country),
+			location_type: parseInt(formData.locationType),
+			billing_type_id: parseInt(formData.billingType),
+			billing_sub_type_id: formData.billingSubType
+				? parseInt(formData.billingSubType)
+				: undefined,
+			impact_type_ids: formData.impactTypes.map(id => parseInt(id)),
+			onSiteManPower: formData.onSiteManpower ? 1 : 0,
+			facility_id: formData.facility ? parseInt(formData.facility) : undefined,
+		};
 
-			// Add optional fields based on billing type
-			if (formData.billingType === '3' && formData.fixedPrice) {
-				payload.fixed_price = formData.fixedPrice;
+		// Add optional fields based on billing type
+		if (formData.billingType === '3' && formData.fixedPrice) {
+			payload.fixed_price = formData.fixedPrice;
 				// For new clients, we don't have a fixed_pricing_id yet, so we'll let the backend handle it
 			}
 
@@ -602,8 +602,8 @@ export const AddClient: React.FC = () => {
 								placeholder=''
 								loading={impactTypesLoading}
 								required
-								error={!!errors.impactTypes}
-								errorMessage={errors.impactTypes}
+							error={!!errors.impactTypes}
+							errorMessage={errors.impactTypes}
 								searchable
 								maxDisplayItems={2}
 							/>

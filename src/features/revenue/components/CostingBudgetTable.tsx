@@ -3,7 +3,7 @@ import { Table } from '../../../components/ui/DataDisplay';
 import { TableColumn } from '../../../components/ui/DataDisplay';
 import { ReviewCostingType } from '../../../services/pAndLApi';
 
-interface CostingBudgetRow {
+interface CostingBudgetRow extends Record<string, unknown> {
 	id: number;
 	costingType: string;
 	budget: string;
@@ -72,7 +72,11 @@ export const CostingBudgetTable: React.FC<CostingBudgetTableProps> = ({
 						const totalValue = parseFloat(record.budget) || 0;
 						return (
 							<div className='text-sm font-semibold text-gray-900 text-right'>
-								₹{totalValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+								₹
+								{totalValue.toLocaleString('en-IN', {
+									minimumFractionDigits: 2,
+									maximumFractionDigits: 2,
+								})}
 							</div>
 						);
 					}
@@ -112,13 +116,12 @@ export const CostingBudgetTable: React.FC<CostingBudgetTableProps> = ({
 			<div className='bg-gray-50 border-b border-gray-200 px-6 py-3'>
 				<h3 className='text-sm font-semibold text-gray-900'>Budget</h3>
 			</div>
-			<Table
+			<Table<CostingBudgetRow>
 				data={tableData}
 				columns={columns}
 				size='sm'
-				emptyMessage='No costing types found'
+				emptyText='No costing types found'
 			/>
 		</div>
 	);
 };
-

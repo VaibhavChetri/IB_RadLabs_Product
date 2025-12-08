@@ -7,7 +7,6 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
 	VehicleApiService,
 	GetVehiclesResponse,
-	Vehicle,
 	AddVehicleRequest,
 	UpdateVehicleRequest,
 	DeleteVehicleRequest,

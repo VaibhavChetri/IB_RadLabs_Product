@@ -155,7 +155,6 @@ export const VehicleModal: React.FC<VehicleModalProps> = ({
 						value={driverPhone}
 						onChange={setDriverPhone}
 						required
-						type='tel'
 						error={!!(error && (!driverPhone.trim() || !/^\d{10,12}$/.test(driverPhone.trim())))}
 						errorMessage={
 							error && (!driverPhone.trim() || !/^\d{10,12}$/.test(driverPhone.trim()))

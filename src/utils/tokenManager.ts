@@ -273,8 +273,11 @@ class TokenManager {
 		// Dispatch logout action
 		store.dispatch(logout());
 
-		// Redirect to login
-		window.location.href = '/login';
+		// Use replace instead of href to avoid history entry and ensure clean navigation
+		// Small delay to ensure all cleanup completes before redirect
+		setTimeout(() => {
+			window.location.replace('/login');
+		}, 100);
 	}
 
 	/**

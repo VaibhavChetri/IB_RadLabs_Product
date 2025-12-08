@@ -12,8 +12,8 @@ import { useFormApi } from '../hooks/useApi';
 export const Login: React.FC = () => {
 	const dispatch = useDispatch<AppDispatch>();
 	const navigate = useNavigate();
-	const [username, setUsername] = useState('ch-mumbai');
-	const [password, setPassword] = useState('ch-mumbai');
+	const [username, setUsername] = useState('');
+	const [password, setPassword] = useState('');
 	const [error, setError] = useState('');
 
 	// Use the form API hook for login
@@ -68,13 +68,6 @@ export const Login: React.FC = () => {
 					<p className='mt-2 text-body2 text-foreground-secondary'>
 						Welcome back! Please sign in to continue.
 					</p>
-					<div className='mt-4 p-3 bg-background-secondary rounded-lg'>
-						<p className='text-sm text-foreground-muted'>
-							<strong>Demo Credentials:</strong>
-						</p>
-						<p className='text-sm text-foreground-muted'>Username: ch-mumbai</p>
-						<p className='text-sm text-foreground-muted'>Password: ch-mumbai</p>
-					</div>
 				</div>
 
 				<Card className='p-8'>

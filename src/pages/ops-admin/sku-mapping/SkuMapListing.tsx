@@ -52,6 +52,8 @@ export const SkuMapListing: React.FC = () => {
 		}
 	}, [location_id, dispatch]);
 
+	const [showCombineSku, setShowCombineSku] = useState(false);
+
 	const loadMappings = useCallback(async () => {
 		if (!selectedClientId) return;
 
@@ -59,17 +61,32 @@ export const SkuMapListing: React.FC = () => {
 			dispatch(setLoading(true));
 			const response = await SkuApiService.getClientSkuMap(selectedClientId);
 
-			if (response.status_code === 200 && response.result) {
-				let filteredMappings = response.result;
-
-				// Filter by status if selected
-				if (selectedStatus) {
-					filteredMappings = response.result.filter(
-						(mapping: any) => mapping.status === selectedStatus
-					);
+			if (response.status_code === 200) {
+				// Extract combineSkuInfo from response
+				const combineSkuInfo = response.combineSkuInfo || response.data?.combineSkuInfo;
+				const shouldShowCombineSku = combineSkuInfo?.showCombineSku === true;
+				
+				// Also check if any mapping item has showCombineSku: true
+				let itemShowCombineSku = false;
+				if (response.result && Array.isArray(response.result)) {
+					itemShowCombineSku = response.result.some((item: any) => item.showCombineSku === true);
 				}
+				
+				// Show combine SKU if either combineSkuInfo.showCombineSku is true OR any item has showCombineSku: true
+				setShowCombineSku(shouldShowCombineSku || itemShowCombineSku);
 
-				dispatch(setMappings(filteredMappings));
+				if (response.result) {
+					let filteredMappings = response.result;
+
+					// Filter by status if selected
+					if (selectedStatus) {
+						filteredMappings = response.result.filter(
+							(mapping: any) => mapping.status === selectedStatus
+						);
+					}
+
+					dispatch(setMappings(filteredMappings));
+				}
 			}
 		} catch (error) {
 			console.error('Failed to load mappings:', error);
@@ -152,7 +169,7 @@ export const SkuMapListing: React.FC = () => {
 				{selectedClientId && mappings.length > 0 ? (
 					<div className='overflow-x-auto'>
 						<Table
-							columns={getSkuListingTableColumns(handleEdit)}
+							columns={getSkuListingTableColumns(handleEdit, showCombineSku)}
 							data={mappings as any[]}
 							loading={loading}
 							emptyText='No SKU mappings found.'

@@ -10,36 +10,50 @@ interface TableColumn {
 	) => React.ReactElement;
 }
 
-export const getColumnsForImpactType = (impactType: string): TableColumn[] => {
-	if (impactType === 'Water Inefficiency') {
-		return [
+export const getColumnsForImpactType = (impactType: string, showCombineSku: boolean = false): TableColumn[] => {
+	const baseColumns = {
+		'Water Inefficiency': [
 			{ key: 'containerType', label: 'Container Type', fullLabel: 'Container Type' },
 			{ key: 'price', label: 'Price', fullLabel: 'Price' },
 			{ key: 'distanceFromWarehouse', label: 'Distance', fullLabel: 'Distance From Warehouse' },
 			{ key: 'platesWashedPerCycle', label: 'Plates/Cycle', fullLabel: 'Plates Washed Per Cycle' },
-			{ key: 'selectSku', label: 'Combine SKU', fullLabel: 'Combine SKU' },
 			{ key: 'status', label: 'Status', fullLabel: 'Status' },
-		];
-	} else if (impactType === 'Single use PP') {
-		return [
+		],
+		'Single use PP': [
 			{ key: 'containerType', label: 'Container Type', fullLabel: 'Container Type' },
 			{ key: 'price', label: 'Price', fullLabel: 'Price' },
 			{ key: 'disposableWeight', label: 'Weight', fullLabel: 'Disposable Weight' },
 			{ key: 'qtyTransportedOneEv', label: 'Qty/EV', fullLabel: 'Qty Transported in 1 EV' },
-			{ key: 'selectSku', label: 'Combine SKU', fullLabel: 'Combine SKU' },
 			{ key: 'status', label: 'Status', fullLabel: 'Status' },
-		];
-	} else if (impactType === 'Clamshell' || impactType === 'Clampshell') {
-		// Clamshell (spelled both ways by API)
-		return [
+		],
+		'Clamshell': [
 			{ key: 'containerType', label: 'Container Type', fullLabel: 'Container Type' },
 			{ key: 'price', label: 'Price', fullLabel: 'Price' },
 			{ key: 'weight', label: 'Weight', fullLabel: 'Weight' },
 			{ key: 'numberOfClamshell', label: 'Count', fullLabel: 'Number of Clamshell' },
-			{ key: 'selectSku', label: 'Combine SKU', fullLabel: 'Combine SKU' },
 			{ key: 'status', label: 'Status', fullLabel: 'Status' },
-		];
-	} else {
-		return [];
+		],
+	};
+
+	let columns: TableColumn[] = [];
+
+	if (impactType === 'Water Inefficiency') {
+		columns = [...baseColumns['Water Inefficiency']];
+	} else if (impactType === 'Single use PP') {
+		columns = [...baseColumns['Single use PP']];
+	} else if (impactType === 'Clamshell' || impactType === 'Clampshell') {
+		columns = [...baseColumns['Clamshell']];
 	}
+
+	// Insert combine SKU column before status if showCombineSku is true
+	if (showCombineSku && columns.length > 0) {
+		const statusIndex = columns.findIndex(col => col.key === 'status');
+		if (statusIndex !== -1) {
+			columns.splice(statusIndex, 0, { key: 'selectSku', label: 'Combine SKU', fullLabel: 'Combine SKU' });
+		} else {
+			columns.push({ key: 'selectSku', label: 'Combine SKU', fullLabel: 'Combine SKU' });
+		}
+	}
+
+	return columns;
 };

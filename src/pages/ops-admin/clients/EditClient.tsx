@@ -95,7 +95,6 @@ export const EditClient: React.FC = () => {
 
 	const { impactTypes, loading: impactTypesLoading } = useImpactTypes();
 	const { billingTypes, loading: billingTypesLoading } = useBillingTypes();
-	const { billingSubTypes, loading: billingSubTypesLoading } = useBillingSubTypes();
 
 	// Facility API
 	const facilitiesApi = useApi('facilities', async () => {
@@ -169,6 +168,11 @@ export const EditClient: React.FC = () => {
 
 	// Form state - initialized from Redux, but can be edited by user
 	const [formData, setFormData] = useState<ClientFormData>(initialFormData);
+
+	// Billing sub types hook - must be called after formData is initialized
+	const { billingSubTypes, loading: billingSubTypesLoading } = useBillingSubTypes(
+		formData.billingType || undefined
+	);
 
 	// Update form data when initialFormData changes
 	useEffect(() => {

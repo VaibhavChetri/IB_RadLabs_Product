@@ -12,6 +12,7 @@ import {
 	Badge,
 	PageHeader,
 } from '../../../components/ui';
+import { FacilityDropdown } from '../../../components/FacilityDropdown';
 import { TransitPlanApi, SentTransitPlanRow, RestaurantOption } from '../../../services/transitPlanApi';
 import {
 	generateDeliveryChallanPDF,
@@ -64,6 +65,7 @@ const SentTransitPlanListing: React.FC = () => {
 	const [endDate, setEndDate] = useState<string>('');
 	const [restaurants, setRestaurants] = useState<DropdownOption[]>([]);
 	const [selectedClientId, setSelectedClientId] = useState<string>('');
+	const [selectedFacilityId, setSelectedFacilityId] = useState<string>('');
 	const [rows, setRows] = useState<SentTransitPlanRow[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [pageNumber, setPageNumber] = useState(1);
@@ -100,6 +102,7 @@ const SentTransitPlanListing: React.FC = () => {
 					setStartDate(parsed.startDate || '');
 					setEndDate(parsed.endDate || '');
 					setSelectedClientId(parsed.selectedClientId || '');
+					setSelectedFacilityId(parsed.selectedFacilityId || '');
 					setVisibleColumns(
 						parsed.visibleColumns || [
 							'actions',
@@ -216,7 +219,7 @@ const SentTransitPlanListing: React.FC = () => {
 				start_date: start,
 				end_date: end,
 				location_id: selectedClientId || undefined,
-				facility_id: 115, // Default facility
+				facility_id: selectedFacilityId && selectedFacilityId.trim() !== '' ? Number(selectedFacilityId) : undefined,
 				transit_type_id: 1, // Default to dispatch
 				page: pageNumber,
 				limit: itemsPerPage,
@@ -235,13 +238,13 @@ const SentTransitPlanListing: React.FC = () => {
 		} finally {
 			setLoading(false);
 		}
-	}, [startDate, endDate, selectedClientId, pageNumber, itemsPerPage]);
+	}, [startDate, endDate, selectedClientId, selectedFacilityId, pageNumber, itemsPerPage]);
 
 	useEffect(() => {
 		if (startDate && endDate) {
 			fetchData();
 		}
-	}, [startDate, endDate, selectedClientId, pageNumber, itemsPerPage, fetchData]);
+	}, [startDate, endDate, selectedClientId, selectedFacilityId, pageNumber, itemsPerPage, fetchData]);
 
 	// Auto-save filters when they change
 	useEffect(() => {
@@ -250,6 +253,7 @@ const SentTransitPlanListing: React.FC = () => {
 				startDate,
 				endDate,
 				selectedClientId,
+				selectedFacilityId,
 				visibleColumns,
 				itemsPerPage,
 				sortBy,
@@ -263,6 +267,7 @@ const SentTransitPlanListing: React.FC = () => {
 		startDate,
 		endDate,
 		selectedClientId,
+		selectedFacilityId,
 		visibleColumns,
 		itemsPerPage,
 		sortBy,
@@ -507,6 +512,16 @@ const SentTransitPlanListing: React.FC = () => {
 				</div>
 				<div className='w-56'>
 					<FloatingInput label='To Date' type='date' value={endDate} onChange={setEndDate} />
+				</div>
+				<div className='w-56'>
+					<FacilityDropdown
+						value={selectedFacilityId}
+						onChange={setSelectedFacilityId}
+						cityId={cityId}
+						autoSelectFirst={true}
+						includeAllOption={true}
+						className='w-full'
+					/>
 				</div>
 				<FloatingDropdown
 					label='Client'

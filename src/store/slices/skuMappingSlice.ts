@@ -27,6 +27,7 @@ interface SkuMappingState {
 	qtyTransportedOneTrip: string;
 	isClientLocked: boolean;
 	shouldAddDefaultRow: boolean; // NEW: Flag to indicate if default row should be added
+	showCombineSku: boolean; // Flag to show/hide combine SKU field
 }
 
 const initialState: SkuMappingState = {
@@ -41,6 +42,7 @@ const initialState: SkuMappingState = {
 	qtyTransportedOneTrip: '',
 	isClientLocked: false,
 	shouldAddDefaultRow: false,
+	showCombineSku: false,
 };
 
 const skuMappingSlice = createSlice({
@@ -143,6 +145,9 @@ const skuMappingSlice = createSlice({
 		setShouldAddDefaultRow: (state, action: PayloadAction<boolean>) => {
 			state.shouldAddDefaultRow = action.payload;
 		},
+		setShowCombineSku: (state, action: PayloadAction<boolean>) => {
+			state.showCombineSku = action.payload;
+		},
 		resetSkuMapping: () => {
 			return initialState;
 		},
@@ -164,6 +169,7 @@ export const {
 	setClientLocked,
 	clearAllRows,
 	setShouldAddDefaultRow,
+	setShowCombineSku,
 	resetSkuMapping,
 } = skuMappingSlice.actions;
 

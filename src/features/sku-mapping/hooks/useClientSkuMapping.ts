@@ -2,7 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { SkuApiService, ClientWithImpactTypes } from '../../../services/skuApi';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../../store';
-import { setSelectedClient as setSelectedClientRedux } from '../../../store/slices/skuMappingSlice';
+import {
+	setSelectedClient as setSelectedClientRedux,
+	setShowCombineSku,
+} from '../../../store/slices/skuMappingSlice';
 
 export const useClientSkuMapping = (clientId?: string) => {
 	const { user } = useSelector((state: RootState) => state.auth);
@@ -87,9 +90,18 @@ export const useClientSkuMapping = (clientId?: string) => {
 
 			try {
 				const response = await SkuApiService.getClientSkuMap(numClientId);
-				if (response.status_code === 200 && response.result && response.result.length > 0) {
-					setError(`${client.clientName} already has existing mappings.`);
-					return;
+				if (response.status_code === 200) {
+					// Extract combineSkuInfo from response
+					const combineSkuInfo = response.combineSkuInfo || response.data?.combineSkuInfo;
+					const showCombineSku = combineSkuInfo?.showCombineSku === true;
+					
+					// Store showCombineSku in Redux
+					dispatch(setShowCombineSku(showCombineSku));
+
+					if (response.result && response.result.length > 0) {
+						setError(`${client.clientName} already has existing mappings.`);
+						return;
+					}
 				}
 
 				// Update both local state AND Redux

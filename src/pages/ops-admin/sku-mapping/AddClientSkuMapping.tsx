@@ -28,6 +28,8 @@ export const AddClientSkuMapping: React.FC = () => {
 		error,
 		handleClientChange,
 	} = useClientSkuMapping();
+	
+	const showCombineSku = useSelector((state: RootState) => state.skuMapping.showCombineSku);
 
 	const {
 		waterInefficiencyRows,
@@ -208,6 +210,7 @@ export const AddClientSkuMapping: React.FC = () => {
 										selectedContainerTypes={rowsForImpactType
 											.map(r => r.containerTypeId as number)
 											.filter(id => id > 0)}
+										showCombineSku={showCombineSku}
 									/>
 								</div>
 							);

@@ -184,35 +184,35 @@ const VariableCostDetailsTable: React.FC<{
 										row.isSummary ? 'bg-gray-50 font-semibold' : ''
 									}`}
 								>
-									<td className='px-4 py-3 text-xs font-normal text-gray-900'>{row.slNo}</td>
-									<td className='px-4 py-3 text-xs font-normal text-gray-900'>{row.costingType}</td>
+									<td className='px-4 py-3 text-sm font-normal text-gray-900'>{row.slNo}</td>
+									<td className='px-4 py-3 text-sm font-normal text-gray-900'>{row.costingType}</td>
 									<td
-										className={`px-4 py-3 text-[11px] font-normal text-gray-900 text-right ${getWeekBgColor('w1')}`}
+										className={`px-4 py-3 text-sm font-normal text-gray-900 text-right ${getWeekBgColor('w1')}`}
 									>
 										{formatNumber(row.w1)}
 									</td>
 									<td
-										className={`px-4 py-3 text-[11px] font-normal text-gray-900 text-right ${getWeekBgColor('w2')}`}
+										className={`px-4 py-3 text-sm font-normal text-gray-900 text-right ${getWeekBgColor('w2')}`}
 									>
 										{formatNumber(row.w2)}
 									</td>
 									<td
-										className={`px-4 py-3 text-[11px] font-normal text-gray-900 text-right ${getWeekBgColor('w3')}`}
+										className={`px-4 py-3 text-sm font-normal text-gray-900 text-right ${getWeekBgColor('w3')}`}
 									>
 										{formatNumber(row.w3)}
 									</td>
 									<td
-										className={`px-4 py-3 text-[11px] font-normal text-gray-900 text-right ${getWeekBgColor('w4')}`}
+										className={`px-4 py-3 text-sm font-normal text-gray-900 text-right ${getWeekBgColor('w4')}`}
 									>
 										{formatNumber(row.w4)}
 									</td>
 									<td
-										className={`px-4 py-3 text-[11px] font-normal text-gray-900 text-right ${getWeekBgColor('cumulative')}`}
+										className={`px-4 py-3 text-sm font-normal text-gray-900 text-right ${getWeekBgColor('cumulative')}`}
 									>
 										{formatNumber(row.cumulative)}
 									</td>
 									<td
-										className={`px-4 py-3 text-[11px] font-normal text-gray-900 text-right ${getWeekBgColor('estimated')}`}
+										className={`px-4 py-3 text-sm font-normal text-gray-900 text-right ${getWeekBgColor('estimated')}`}
 									>
 										{formatNumber(row.estimated)}
 									</td>
@@ -329,35 +329,35 @@ const IndirectExpenseDetailsTable: React.FC<{
 										row.isSummary ? 'bg-gray-50 font-semibold' : ''
 									}`}
 								>
-									<td className='px-4 py-3 text-xs font-normal text-gray-900'>{row.slNo}</td>
-									<td className='px-4 py-3 text-xs font-normal text-gray-900'>{row.costingType}</td>
+									<td className='px-4 py-3 text-sm font-normal text-gray-900'>{row.slNo}</td>
+									<td className='px-4 py-3 text-sm font-normal text-gray-900'>{row.costingType}</td>
 									<td
-										className={`px-4 py-3 text-[11px] font-normal text-gray-900 text-right ${getWeekBgColor('w1')}`}
+										className={`px-4 py-3 text-sm font-normal text-gray-900 text-right ${getWeekBgColor('w1')}`}
 									>
 										{formatNumber(row.w1)}
 									</td>
 									<td
-										className={`px-4 py-3 text-[11px] font-normal text-gray-900 text-right ${getWeekBgColor('w2')}`}
+										className={`px-4 py-3 text-sm font-normal text-gray-900 text-right ${getWeekBgColor('w2')}`}
 									>
 										{formatNumber(row.w2)}
 									</td>
 									<td
-										className={`px-4 py-3 text-[11px] font-normal text-gray-900 text-right ${getWeekBgColor('w3')}`}
+										className={`px-4 py-3 text-sm font-normal text-gray-900 text-right ${getWeekBgColor('w3')}`}
 									>
 										{formatNumber(row.w3)}
 									</td>
 									<td
-										className={`px-4 py-3 text-[11px] font-normal text-gray-900 text-right ${getWeekBgColor('w4')}`}
+										className={`px-4 py-3 text-sm font-normal text-gray-900 text-right ${getWeekBgColor('w4')}`}
 									>
 										{formatNumber(row.w4)}
 									</td>
 									<td
-										className={`px-4 py-3 text-[11px] font-normal text-gray-900 text-right ${getWeekBgColor('cumulative')}`}
+										className={`px-4 py-3 text-sm font-normal text-gray-900 text-right ${getWeekBgColor('cumulative')}`}
 									>
 										{formatNumber(row.cumulative)}
 									</td>
 									<td
-										className={`px-4 py-3 text-[11px] font-normal text-gray-900 text-right ${getWeekBgColor('estimated')}`}
+										className={`px-4 py-3 text-sm font-normal text-gray-900 text-right ${getWeekBgColor('estimated')}`}
 									>
 										{formatNumber(row.estimated)}
 									</td>

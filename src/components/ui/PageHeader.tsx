@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '../../utils/cn';
 
 export interface PageHeaderProps {
-	title: string;
+	title: string | React.ReactNode;
 	locationName?: string;
 	totalItems: number;
 	itemType: string;

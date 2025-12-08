@@ -11,6 +11,11 @@
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
   
+  # Don't rewrite service worker URLs - return 404
+  # This prevents service worker files from being served as HTML (which causes "Unexpected token <" errors)
+  RewriteCond %{REQUEST_URI} ^/(service-worker|firebase-messaging-sw|sw|worker|workbox-.*)\.js$
+  RewriteRule ^ - [R=404,L]
+  
   # Don't rewrite assets directory
   RewriteCond %{REQUEST_URI} ^/assets/ [OR]
   RewriteCond %{REQUEST_URI} \.(js|css|map|json|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$

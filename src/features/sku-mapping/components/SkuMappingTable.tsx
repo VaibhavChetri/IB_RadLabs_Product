@@ -45,6 +45,7 @@ interface SkuMappingTableProps {
 	removeRow: (impactType: string, rowId: number) => void;
 	containerTypes?: any[];
 	selectedContainerTypes?: number[];
+	showCombineSku?: boolean; // Flag to show/hide combine SKU column
 }
 
 export const SkuMappingTable: React.FC<SkuMappingTableProps> = ({
@@ -55,6 +56,7 @@ export const SkuMappingTable: React.FC<SkuMappingTableProps> = ({
 	removeRow,
 	containerTypes = [],
 	selectedContainerTypes = [],
+	showCombineSku = false,
 }) => {
 	const dispatch = useDispatch();
 	const renderDropdown = (
@@ -153,7 +155,9 @@ export const SkuMappingTable: React.FC<SkuMappingTableProps> = ({
 	};
 
 	// If columns is empty, build them internally based on impact type
-	const effectiveColumns = columns.length > 0 ? columns : getColumnsForImpactType(impactType);
+	const effectiveColumns = columns.length > 0 
+		? (showCombineSku ? columns : columns.filter(col => col.key !== 'selectSku'))
+		: getColumnsForImpactType(impactType, showCombineSku);
 
 	// Override render functions in columns
 	const customColumns = effectiveColumns.map(col => ({

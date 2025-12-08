@@ -216,31 +216,47 @@ export const useBillingTypes = () => {
 };
 
 // Custom hook for billing sub types
-export const useBillingSubTypes = () => {
+export const useBillingSubTypes = (billingTypeId?: string | number) => {
 	const billingSubTypesApi = useApi('billingSubTypes', () =>
 		BillingApiService.getBillingSubTypes(1, 10)
 	);
 	const [billingSubTypes, setBillingSubTypes] = useState<DropdownOption[]>([]);
+	const [allBillingSubTypes, setAllBillingSubTypes] = useState<any[]>([]);
 
 	const loadBillingSubTypes = useCallback(async () => {
 		try {
 			const response = await billingSubTypesApi.execute({});
-			if (response.status_code === 200 && response.data) {
-				const result = Array.isArray(response.data) ? response.data : [];
-				const billingSubTypeOptions: DropdownOption[] = result.map((billingSubType: any) => ({
-					value: billingSubType.id.toString(),
-					label: billingSubType.name,
-				}));
-				setBillingSubTypes(billingSubTypeOptions);
+			if (response.status_code === 200) {
+				// Handle both response.result and response.data (API inconsistency)
+				const responseData = (response as any).result || response.data;
+				if (responseData) {
+					// Handle both direct array and paginated response
+					const result = Array.isArray(responseData) ? responseData : responseData.data || [];
+					// Store all billing sub types
+					setAllBillingSubTypes(result);
+					
+					// Filter by billing_type_id if provided
+					let filteredResult = result;
+					if (billingTypeId !== undefined && billingTypeId !== null && billingTypeId !== '') {
+						const billingTypeIdNum = typeof billingTypeId === 'string' ? parseInt(billingTypeId) : billingTypeId;
+						filteredResult = result.filter((item: any) => item.billing_type_id === billingTypeIdNum);
+					}
+					
+					const billingSubTypeOptions: DropdownOption[] = filteredResult.map((billingSubType: any) => ({
+						value: billingSubType.id.toString(),
+						label: billingSubType.name,
+					}));
+					setBillingSubTypes(billingSubTypeOptions);
+				}
 			}
 		} catch (error) {
 			console.error('Failed to load billing sub types:', error);
 		}
-	}, []); // Remove dependency to prevent infinite loop
+	}, [billingTypeId]); // Include billingTypeId in dependencies
 
 	useEffect(() => {
 		loadBillingSubTypes();
-	}, []); // Run only once
+	}, [loadBillingSubTypes]);
 
 	return {
 		billingSubTypes,

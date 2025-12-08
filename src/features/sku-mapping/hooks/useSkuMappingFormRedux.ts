@@ -13,6 +13,7 @@ import {
 	updateClamshellRow,
 	setConstantFields,
 	clearAllRows,
+	setShowCombineSku,
 } from '../../../store/slices/skuMappingSlice';
 import { SkuApiService } from '../../../services/skuApi';
 
@@ -139,8 +140,16 @@ export const useSkuMappingFormRedux = () => {
 		async (clientId: number) => {
 			try {
 				const response = await SkuApiService.getClientSkuMap(clientId);
-				if (response.status_code === 200 && response.result) {
-					const rows = response.result;
+				if (response.status_code === 200) {
+					// Extract combineSkuInfo from response
+					const combineSkuInfo = response.combineSkuInfo || response.data?.combineSkuInfo;
+					const showCombineSku = combineSkuInfo?.showCombineSku === true;
+					
+					// Store showCombineSku in Redux
+					dispatch(setShowCombineSku(showCombineSku));
+
+					if (response.result) {
+						const rows = response.result;
 
 					const mapRow = (r: any): SkuMappingRow => {
 						return {
@@ -200,6 +209,7 @@ export const useSkuMappingFormRedux = () => {
 										: undefined, // Don't update if empty/0/null
 							})
 						);
+					}
 					}
 				}
 			} catch (error) {

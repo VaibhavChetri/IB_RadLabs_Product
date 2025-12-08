@@ -37,7 +37,7 @@ export const EditClientSkuMapping: React.FC = () => {
 	} = useSkuMappingFormRedux();
 
 	const { submit, submitting, snackbar, setSnackbar } = useSkuSubmission();
-	const { selectedClient } = useSelector((state: RootState) => state.skuMapping);
+	const { selectedClient, showCombineSku } = useSelector((state: RootState) => state.skuMapping);
 	const [loading, setLoading] = useState(false);
 	const [containerTypes, setContainerTypes] = useState<any[]>([]);
 	const hasInitializedRef = useRef(false);
@@ -209,6 +209,7 @@ export const EditClientSkuMapping: React.FC = () => {
 									selectedContainerTypes={rowsForImpactType
 										.map(r => r.containerTypeId as number)
 										.filter(id => id > 0)}
+									showCombineSku={showCombineSku}
 								/>
 							</div>
 						);

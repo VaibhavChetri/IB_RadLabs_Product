@@ -10,6 +10,17 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Cleanup old service workers and caches
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(regs => {
+          regs.forEach(r => r.unregister());
+        });
+        if (caches && caches.keys) {
+          caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+        }
+      }
+    </script>
   </body>
 </html>
 

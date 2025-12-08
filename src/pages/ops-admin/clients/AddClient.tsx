@@ -75,7 +75,6 @@ export const AddClient: React.FC = () => {
 	}, [locationTypes, locationTypesLoading]);
 	const { impactTypes, loading: impactTypesLoading } = useImpactTypes();
 	const { billingTypes, loading: billingTypesLoading } = useBillingTypes();
-	const { billingSubTypes, loading: billingSubTypesLoading } = useBillingSubTypes();
 
 	// Facility API
 	const facilitiesApi = useApi('facilities', async () => {
@@ -151,6 +150,11 @@ export const AddClient: React.FC = () => {
 		impactTypes: [],
 		facility: '',
 	});
+
+	// Billing sub types hook - must be called after formData is initialized
+	const { billingSubTypes, loading: billingSubTypesLoading } = useBillingSubTypes(
+		formData.billingType || undefined
+	);
 
 	// Trigger facilities API when onSiteManpower is checked
 	useEffect(() => {

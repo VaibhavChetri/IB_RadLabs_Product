@@ -11,6 +11,7 @@ import {
 	useEscalationData,
 } from '../hooks/usePLTabData';
 import { Table, TableColumn } from '../../../components/ui/DataDisplay';
+import { MultiSelectDropdown } from '../../../components/ui';
 
 interface PLTabContentProps {
 	cityId?: number;
@@ -771,14 +772,6 @@ export const ClientWisePLTab: React.FC<PLTabContentProps> = ({
 					formatNumber(record.logistics as number | string | null | undefined),
 			},
 			{
-				key: 'monthlyRevenueEst',
-				title: 'Monthly Rev',
-				align: 'right',
-				sortable: true,
-				render: (_value, record) =>
-					formatNumber(record.monthlyRevenueEst as number | string | null | undefined),
-			},
-			{
 				key: 'onSiteManpower',
 				title: 'On Site MP',
 				align: 'right',
@@ -804,6 +797,29 @@ export const ClientWisePLTab: React.FC<PLTabContentProps> = ({
 			},
 		],
 		[]
+	);
+
+	// Column visibility state
+	const [visibleColumns, setVisibleColumns] = React.useState<string[]>(
+		columns.map(col => col.key).filter(key => key !== 'monthlyRevenueEst')
+	);
+
+	// Column options for MultiSelectDropdown
+	const columnOptions = React.useMemo(
+		() =>
+			columns
+				.filter(col => col.key !== 'slNo') // Always keep SL column visible
+				.map(col => ({
+					label: col.title,
+					value: col.key,
+				})),
+		[columns]
+	);
+
+	// Filter columns based on visibility
+	const visibleTableColumns = React.useMemo(
+		() => columns.filter(col => visibleColumns.includes(col.key) || col.key === 'slNo'),
+		[columns, visibleColumns]
 	);
 
 	// Transform data for table
@@ -832,7 +848,6 @@ export const ClientWisePLTab: React.FC<PLTabContentProps> = ({
 			consumables: totals.consumables,
 			chemicals: totals.chemicals,
 			logistics: totals.logistics,
-			monthlyRevenueEst: totals.monthlyRevenueEst,
 			onSiteManpower: totals.onSiteManpower,
 			contribution: totals.contribution,
 			marginPercentage: totals.marginPercentage,
@@ -853,7 +868,6 @@ export const ClientWisePLTab: React.FC<PLTabContentProps> = ({
 			consumables: client.Consumables || 0,
 			chemicals: client.Chemicals || 0,
 			logistics: client.Logistics || 0,
-			monthlyRevenueEst: client['Monthly Revenue Est'] || 0,
 			onSiteManpower: client['On Site Manpower'] || 0,
 			contribution: client.contribution || 0,
 			marginPercentage: client.marginPercentage,
@@ -881,9 +895,26 @@ export const ClientWisePLTab: React.FC<PLTabContentProps> = ({
 	return (
 		<div className='p-6'>
 			<h2 className='text-xl font-semibold text-gray-900 mb-4'>Client Wise P&L Listing</h2>
+			
+			{/* Column Filter */}
+			<div className='mb-4'>
+				<MultiSelectDropdown
+					label='Show Columns'
+					options={columnOptions}
+					value={visibleColumns.filter(col => col !== 'slNo')}
+					onChange={selectedValues => {
+						// Always keep SL column visible
+						setVisibleColumns(['slNo', ...selectedValues]);
+					}}
+					className='w-56'
+					searchable={true}
+					showSelectedCount={true}
+				/>
+			</div>
+
 			<div className='bg-white rounded-lg border border-gray-200 overflow-hidden'>
 				<Table
-					columns={columns}
+					columns={visibleTableColumns}
 					data={tableData}
 					loading={isLoading}
 					emptyText='No data available'

@@ -49,6 +49,26 @@ export const MonthlyEstimateEdit: React.FC = () => {
 	const facilityId = searchParams.get('facility_id') || '';
 	const cityId = user?.city_id;
 
+	// Get month name from month number
+	const getMonthName = (monthNum: string): string => {
+		const monthNames = [
+			'January',
+			'February',
+			'March',
+			'April',
+			'May',
+			'June',
+			'July',
+			'August',
+			'September',
+			'October',
+			'November',
+			'December',
+		];
+		const num = parseInt(monthNum, 10);
+		return monthNames[num - 1] || '';
+	};
+
 	// Debug logging
 	React.useEffect(() => {
 		console.log('MonthlyEstimateEdit - URL params:', {
@@ -379,7 +399,7 @@ export const MonthlyEstimateEdit: React.FC = () => {
 	if (!user) {
 		return (
 			<div className='space-y-6'>
-				<PageHeader title='Monthly Actuals' totalItems={0} itemType='revenue entries' />
+				<PageHeader title='Monthly Actuals' totalItems={0} itemType='' />
 				<div className='text-center text-gray-500 py-8'>Loading user data...</div>
 			</div>
 		);
@@ -388,7 +408,7 @@ export const MonthlyEstimateEdit: React.FC = () => {
 	if (isLoading) {
 		return (
 			<div className='space-y-6'>
-				<PageHeader title='Monthly Actuals' totalItems={0} itemType='revenue entries' />
+				<PageHeader title='Monthly Actuals' totalItems={0} itemType='' />
 				<div className='text-center text-gray-500 py-8'>Loading data...</div>
 			</div>
 		);
@@ -397,7 +417,7 @@ export const MonthlyEstimateEdit: React.FC = () => {
 	if (!month || !year || !facilityId || !cityId) {
 		return (
 			<div className='space-y-6'>
-				<PageHeader title='Monthly Actuals' totalItems={0} itemType='revenue entries' />
+				<PageHeader title='Monthly Actuals' totalItems={0} itemType='' />
 				<div className='text-center text-gray-500 py-8'>
 					Missing required parameters. Please navigate from the listing page.
 					<br />
@@ -409,9 +429,16 @@ export const MonthlyEstimateEdit: React.FC = () => {
 		);
 	}
 
+	const monthName = getMonthName(month);
+	const pageTitle = (
+		<span>
+			Edit Monthly Estimate - <strong>{monthName} {year}</strong>
+		</span>
+	);
+
 	return (
 		<div className='space-y-6'>
-			<PageHeader title='Edit Monthly Estimate' totalItems={0} itemType='revenue entries' />
+			<PageHeader title={pageTitle} totalItems={0} itemType='' />
 
 			{/* Budget Table */}
 			{recordsWithUpdatedValues.length > 0 && (

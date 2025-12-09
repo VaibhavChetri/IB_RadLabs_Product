@@ -32,3 +32,4 @@ export const useVehicleData = (
 	return queryResult as UseQueryResult<GetVehiclesResponse, Error>;
 };
 
+

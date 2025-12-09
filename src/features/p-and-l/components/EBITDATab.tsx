@@ -82,7 +82,18 @@ const VariableCostDetailsTable: React.FC<{
 
 		// Variable cost detail rows
 		if (report?.variableCostDetails && Array.isArray(report.variableCostDetails)) {
-			report.variableCostDetails.forEach((item, index) => {
+			// Find On Site Manpower from variable costs first
+			const onSiteManpower = report.variableCostDetails.find(
+				item => item.costingTypeName === 'On Site Manpower'
+			);
+
+			// Filter out On Site Manpower from regular rows to avoid duplication
+			const filteredCostDetails = report.variableCostDetails.filter(
+				item => item.costingTypeName !== 'On Site Manpower'
+			);
+
+			// Add all variable cost details except On Site Manpower
+			filteredCostDetails.forEach((item, index) => {
 				rows.push({
 					slNo: index + 1,
 					costingType: item.costingTypeName || '',
@@ -95,15 +106,10 @@ const VariableCostDetailsTable: React.FC<{
 				});
 			});
 
-			// Find On Site Manpower from variable costs
-			const onSiteManpower = report.variableCostDetails.find(
-				item => item.costingTypeName === 'On Site Manpower'
-			);
-
-			// Summary rows
+			// Add On Site Manpower as a summary row (only once)
 			if (onSiteManpower) {
 				rows.push({
-					slNo: report.variableCostDetails.length + 1,
+					slNo: filteredCostDetails.length + 1,
 					costingType: 'On Site Manpower',
 					w1: parseFloat(onSiteManpower.week1_actual_value || '0'),
 					w2: parseFloat(onSiteManpower.week2_actual_value || '0'),

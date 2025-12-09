@@ -22,3 +22,4 @@ export const isActiveStatus = (status: number): boolean => {
 export const getStatusLabel = (status: number): string => {
 	return status === VEHICLE_STATUS.ACTIVE ? 'Active' : 'Inactive';
 };
+

@@ -419,12 +419,27 @@ export class PAndLApiService {
 		searchParams.set('end_date', params.end_date);
 		searchParams.set('groupByClient', params.groupByClient.toString());
 
-		const response = await apiService.get<EBITDAResponse>(
-			`/review/getEBITDA?${searchParams.toString()}`
-		);
-		// apiService.get already returns response.data from axios
-		// So response is already the EBITDAResponse structure { status_code, status, report }
-		return response as unknown as EBITDAResponse;
+		const endpoint = `/review/getEBITDA?${searchParams.toString()}`;
+		const fullUrl = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3099/v1/api'}${endpoint}`;
+
+		try {
+			const response = await apiService.get<EBITDAResponse>(endpoint);
+			// apiService.get already returns response.data from axios
+			// So response is already the EBITDAResponse structure { status_code, status, report }
+			return response as unknown as EBITDAResponse;
+		} catch (error: unknown) {
+			const axiosError = error as {
+				response?: { status?: number; data?: unknown; statusText?: string };
+				message?: string;
+				config?: { url?: string };
+			};
+			console.error('PAndLApiService.getEBITDA - Error:', error);
+			console.error('PAndLApiService.getEBITDA - Full URL:', fullUrl);
+			console.error('PAndLApiService.getEBITDA - Error status:', axiosError?.response?.status);
+			console.error('PAndLApiService.getEBITDA - Error response:', axiosError?.response);
+			console.error('PAndLApiService.getEBITDA - Request URL:', axiosError?.config?.url);
+			throw error;
+		}
 	}
 
 	/**

@@ -139,7 +139,7 @@ export const PLSummary: React.FC = () => {
 					title='P&L Summary'
 					locationName={user?.city_name || 'City'}
 					totalItems={0}
-					itemType='summary'
+					itemType=''
 					icon='💰'
 				/>
 

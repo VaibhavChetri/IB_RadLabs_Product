@@ -14,3 +14,4 @@ export const isActiveStatus = (status: number | undefined): boolean => {
 export const getStatusLabel = (status: number | undefined): string => {
 	return isActiveStatus(status) ? 'Active' : 'Inactive';
 };
+

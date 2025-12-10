@@ -161,9 +161,13 @@ const ClientInventoryDetails: React.FC = () => {
 		};
 
 		// Calculate closing stock
+		// Formula: Closing = Opening (client-side) - Dispatch + Returned
+		// Opening is client-side stock at start of day
+		// Dispatch reduces client stock (sent to facility)
+		// Returned increases client stock (received from facility)
 		const closing = Math.max(
 			0,
-			updatedValues.openingStock + updatedValues.returned - updatedValues.dispatch
+			updatedValues.openingStock + updatedValues.dispatch - updatedValues.returned
 		);
 
 		const newEditedData = {

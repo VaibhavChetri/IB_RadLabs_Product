@@ -7,7 +7,6 @@ import FloatingLabelDemo from '../pages/FloatingLabelDemo';
 import { AddClient } from '../pages/ops-admin/clients/AddClient';
 import { EditClient } from '../pages/ops-admin/clients/EditClient';
 import { ManageClients } from '../pages/ops-admin/clients/ManageClients';
-import DisableClients from '../pages/ops-admin/clients/DisableClients';
 // Ops Admin - SKU Mapping
 import { AddClientSkuMapping } from '../pages/ops-admin/sku-mapping/AddClientSkuMapping';
 import EditClientSkuMapping from '../pages/ops-admin/sku-mapping/EditClientSkuMapping';
@@ -71,7 +70,6 @@ export const routes: RouteConfig[] = [
 	{ path: '/clients/add', component: AddClient },
 	{ path: '/clients/edit', component: EditClient },
 	{ path: '/clients/manage', component: ManageClients },
-	{ path: '/clients/disable', component: DisableClients },
 	{ path: '/transit-plan/master-plan/listing', component: MasterPlanListing },
 	{ path: '/transit-plan/listing', component: TransitPlanListing },
 	{ path: '/transit-plan/sent/plan', component: SentTransitPlanListing },

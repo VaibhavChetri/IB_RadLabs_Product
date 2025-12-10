@@ -5,6 +5,7 @@ import {
 	Pagination,
 	Button,
 	PageHeader,
+	Snackbar,
 } from '../../../components/ui';
 import { Table } from '../../../components/ui/DataDisplay';
 import { useApi } from '../../../hooks/useApi';
@@ -27,6 +28,40 @@ interface PaginationData {
 	currentPage: number;
 	totalPages: number;
 }
+
+/**
+ * Status Toggle Component
+ * Toggle switch for enabling/disabling client status
+ */
+const StatusToggle: React.FC<{
+	isActive: boolean;
+	onToggle: () => void;
+	disabled?: boolean;
+}> = ({ isActive, onToggle, disabled = false }) => {
+	return (
+		<div className='flex items-center justify-center'>
+			<button
+				onClick={onToggle}
+				disabled={disabled}
+				className={`
+					relative inline-flex h-4 w-8 items-center justify-center rounded-full transition-all duration-200 ease-in-out focus:outline-none
+					${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+					${isActive ? 'bg-green-500' : 'bg-gray-300 hover:bg-gray-400'}
+				`}
+			>
+				<span
+					className={`
+						absolute h-3 w-3 transform rounded-full bg-white transition-all duration-200 ease-in-out
+						${isActive ? 'translate-x-2' : '-translate-x-2'}
+					`}
+				/>
+			</button>
+			<span className={`ml-2 text-xs font-medium ${isActive ? 'text-green-600' : 'text-gray-500'}`}>
+				{isActive ? 'Active' : 'Inactive'}
+			</span>
+		</div>
+	);
+};
 
 export const ManageClients: React.FC = () => {
 	const navigate = useNavigate();
@@ -59,6 +94,7 @@ export const ManageClients: React.FC = () => {
 		limit: 10, // Fixed to match pagination default
 		city_id: user?.city_id || undefined, // Use user's city_id from profile
 		location_type: 3, // Default location type as requested
+		status: 'All', // Default status filter
 	});
 	const [clientLocations, setClientLocations] = useState<ClientLocation[]>([]);
 	const [clients, setClients] = useState<Client[]>([]);
@@ -73,6 +109,47 @@ export const ManageClients: React.FC = () => {
 
 	const [sortBy, setSortBy] = useState<string>('');
 	const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+	const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+	const [snackbar, setSnackbar] = useState({
+		open: false,
+		message: '',
+		type: 'success' as 'success' | 'error' | 'info',
+	});
+
+	// Handle status toggle
+	const handleStatusToggle = async (clientId: number, currentStatus: string) => {
+		try {
+			setIsUpdatingStatus(true);
+			// Toggle status: Active (1) -> InActive (0), InActive (0) -> Active (1)
+			const newStatus = currentStatus === 'Active' ? 0 : 1;
+			const response = await ClientApiService.updateClientStatus(clientId, newStatus);
+
+			if (response.status_code === 200) {
+				setSnackbar({
+					open: true,
+					message: `Client ${newStatus === 1 ? 'enabled' : 'disabled'} successfully`,
+					type: 'success',
+				});
+				// Reload the client locations
+				loadClientLocations();
+			} else {
+				setSnackbar({
+					open: true,
+					message: 'Failed to update client status',
+					type: 'error',
+				});
+			}
+		} catch (error) {
+			console.error('Error updating client status:', error);
+			setSnackbar({
+				open: true,
+				message: 'Error updating client status',
+				type: 'error',
+			});
+		} finally {
+			setIsUpdatingStatus(false);
+		}
+	};
 
 	// Handle sorting
 	const handleSort = (key: string, order: 'asc' | 'desc') => {
@@ -284,6 +361,7 @@ export const ManageClients: React.FC = () => {
 						}
 					}}
 					className='text-green-600 hover:text-green-700 hover:bg-green-50 px-2 py-1 rounded'
+					title='Edit Client'
 				>
 					<Edit className='w-4 h-4' />
 				</Button>
@@ -379,15 +457,17 @@ export const ManageClients: React.FC = () => {
 			label: 'Status',
 			title: 'Status',
 			sortable: true,
-			render: (value: unknown) => (
-				<span
-					className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-						String(value) === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-					}`}
-				>
-					{String(value)}
-				</span>
-			),
+			render: (value: unknown, row: Record<string, unknown>) => {
+				const status = String(value);
+				const isActive = status === 'Active';
+				return (
+					<StatusToggle
+						isActive={isActive}
+						onToggle={() => handleStatusToggle(row.id as number, status)}
+						disabled={isUpdatingStatus}
+					/>
+				);
+			},
 		},
 		{
 			key: 'coordinates',
@@ -454,7 +534,7 @@ export const ManageClients: React.FC = () => {
 						className='px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors'
 					>
 						<Plus className='w-4 h-4 mr-2' />
-						Add Client
+						Add New Client
 					</Button>
 				</div>
 
@@ -496,6 +576,18 @@ export const ManageClients: React.FC = () => {
 									handleFilterChange('client_id', value ? parseInt(value) : undefined)
 								}
 								loading={clientsApi.loading}
+								placeholder='All'
+							/>
+
+							<FloatingDropdown
+								label='Status'
+								options={[
+									{ value: 'All', label: 'All' },
+									{ value: 'Active', label: 'Active' },
+									{ value: 'InActive', label: 'InActive' },
+								]}
+								value={filters.status || 'All'}
+								onChange={(value: string) => handleFilterChange('status', value)}
 								placeholder='All'
 							/>
 
@@ -562,6 +654,14 @@ export const ManageClients: React.FC = () => {
 						</div>
 					)}
 				</div>
+
+				{/* Snackbar for notifications */}
+				<Snackbar
+					open={snackbar.open}
+					onClose={() => setSnackbar({ ...snackbar, open: false })}
+					message={snackbar.message}
+					type={snackbar.type}
+				/>
 			</div>
 		</div>
 	);

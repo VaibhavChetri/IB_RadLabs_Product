@@ -192,13 +192,12 @@ const ClientDispatchDetails: React.FC = () => {
 			console.log('🚀 Starting dispatch submission...');
 
 			// Generate inventory payload
+			// Include all containers, even those with 0 count
 			const inventoryPayload = {
-				containers: Object.entries(containerCounts)
-					.filter(([_, count]) => count > 0)
-					.map(([id, count]) => ({
-						container_type_id: parseInt(id),
-						count,
-					})),
+				containers: Object.entries(containerCounts).map(([id, count]) => ({
+					container_type_id: parseInt(id),
+					count: count || 0,
+				})),
 				facility_id: transitPlanRow.facilityId,
 				transit_date: transitPlanRow.transitDate,
 				client_location_id: transitPlanRow.clientLocationId,

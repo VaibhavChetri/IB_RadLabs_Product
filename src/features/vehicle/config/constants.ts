@@ -23,3 +23,4 @@ export const getStatusLabel = (status: number): string => {
 	return status === VEHICLE_STATUS.ACTIVE ? 'Active' : 'Inactive';
 };
 
+

@@ -113,6 +113,12 @@ const CreateMasterPlan: React.FC = () => {
 						onAdd={() => addTransit('dispatch')}
 						onRemove={id => removeTransit('dispatch', id)}
 						onUpdate={(id, field, value) => updateTransit('dispatch', id, field, value)}
+						onBulkUpdateDays={days => {
+							// Update all dispatch entries with the same days
+							data.dispatchTransits.forEach(transit => {
+								updateTransit('dispatch', transit.id, 'days', days);
+							});
+						}}
 					/>
 				</div>
 
@@ -125,6 +131,12 @@ const CreateMasterPlan: React.FC = () => {
 						onAdd={() => addTransit('pickup')}
 						onRemove={id => removeTransit('pickup', id)}
 						onUpdate={(id, field, value) => updateTransit('pickup', id, field, value)}
+						onBulkUpdateDays={days => {
+							// Update all pickup entries with the same days
+							data.pickupTransits.forEach(transit => {
+								updateTransit('pickup', transit.id, 'days', days);
+							});
+						}}
 					/>
 				</div>
 

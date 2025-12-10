@@ -1,11 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { Pagination, SearchButton, FloatingInput, PageHeader } from '../../../components/ui';
+import {
+	Pagination,
+	SearchButton,
+	FloatingInput,
+	PageHeader,
+	Button,
+} from '../../../components/ui';
 import { FacilityDropdown } from '../../../components/FacilityDropdown';
 import {
 	InventoryApiService,
 	SentInventoryResponse,
 	SentInventoryRow,
 } from '../../../services/inventoryApi';
+import { exportToExcel } from '../../../utils/excelExport';
+import { Download } from 'lucide-react';
 
 const SentInventoryListing: React.FC = () => {
 	// State management
@@ -18,6 +26,79 @@ const SentInventoryListing: React.FC = () => {
 	const [itemsPerPage, setItemsPerPage] = useState(10);
 	const [totalItems, setTotalItems] = useState(0);
 	const [openAccordion, setOpenAccordion] = useState<string | null>(null);
+	const [exporting, setExporting] = useState(false);
+
+	// Fetch all data for export (without pagination)
+	const fetchAllDataForExport = async (): Promise<SentInventoryRow[]> => {
+		if (!selectedFacility) return [];
+
+		try {
+			const start = startDate || '2025-01-01';
+			const end = endDate || '2025-12-31';
+
+			const response = await InventoryApiService.getSentCount({
+				location_id: parseInt(selectedFacility),
+				start_date: start,
+				end_date: end,
+				pageNumber: 1,
+				pageSize: 10000, // Get all data for export
+			});
+
+			if (response.status === 'success') {
+				return transformDataForTable(response);
+			}
+			return [];
+		} catch (error) {
+			console.error('❌ Error fetching data for export:', error);
+			return [];
+		}
+	};
+
+	// Handle Excel export
+	const handleExportToExcel = async () => {
+		if (!selectedFacility || !startDate || !endDate) {
+			alert('Please select facility and date range before exporting');
+			return;
+		}
+
+		setExporting(true);
+		try {
+			const allData = await fetchAllDataForExport();
+
+			// Flatten the data for Excel - each SKU becomes a row
+			const excelData = allData.flatMap((row, index) => {
+				if (row.skus.length === 0) {
+					// If no SKUs, still create one row
+					return [
+						{
+							'Sl. No': index + 1,
+							Client: row.clientName,
+							'Dispatch Date & Time': new Date(row.dispatchDateTime).toLocaleString(),
+							SKU: 'N/A',
+							Count: 0,
+						},
+					];
+				}
+
+				return row.skus.map(sku => ({
+					'Sl. No': index + 1,
+					Client: row.clientName,
+					'Dispatch Date & Time': new Date(row.dispatchDateTime).toLocaleString(),
+					SKU: sku.sku,
+					Count: sku.count,
+				}));
+			});
+
+			// Generate filename with date range
+			const filename = `Sent_Inventory_${startDate}_to_${endDate}`;
+			exportToExcel(excelData, filename, 'Sent Inventory');
+		} catch (error) {
+			console.error('❌ Error exporting to Excel:', error);
+			alert('Failed to export data. Please try again.');
+		} finally {
+			setExporting(false);
+		}
+	};
 
 	// Fetch data from API
 	const fetchData = async (_useFilters = true) => {
@@ -197,6 +278,16 @@ const SentInventoryListing: React.FC = () => {
 					}}
 					disabled={loading || !startDate || !endDate || !selectedFacility}
 				/>
+				<Button
+					onClick={handleExportToExcel}
+					disabled={
+						loading || exporting || !startDate || !endDate || !selectedFacility || rows.length === 0
+					}
+					className='px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center'
+					title={exporting ? 'Exporting...' : 'Download Excel'}
+				>
+					<Download className='w-5 h-5' />
+				</Button>
 			</div>
 
 			{rows.length > 0 && (

@@ -18,7 +18,6 @@ import {
 	HelpCircle,
 	AlertCircle,
 	Building2,
-	UserX,
 	Menu,
 	Truck,
 	MapPin,
@@ -325,22 +324,10 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 				icon: Users,
 				children: [
 					{
-						id: 'clients-add',
-						name: 'New Client',
-						icon: UserPlus,
-						href: '/clients/add',
-					},
-					{
 						id: 'clients-manage',
 						name: 'Manage Clients',
 						icon: Eye,
 						href: '/clients/manage',
-					},
-					{
-						id: 'clients-disable',
-						name: 'Disable Clients',
-						icon: UserX,
-						href: '/clients/disable',
 					},
 				],
 			},

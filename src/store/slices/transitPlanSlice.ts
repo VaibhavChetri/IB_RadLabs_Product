@@ -18,6 +18,14 @@ export interface MasterPlan {
 	facility: string;
 	transit_type_id?: number;
 	city_id?: number;
+	sun?: number; // 0 or 1
+	mon?: number; // 0 or 1
+	tue?: number; // 0 or 1
+	wed?: number; // 0 or 1
+	thu?: number; // 0 or 1
+	fri?: number; // 0 or 1
+	sat?: number; // 0 or 1
+	days?: number[]; // Array of day numbers: 0=Sunday, 1=Monday, 2=Tuesday, 3=Wednesday, 4=Thursday, 5=Friday, 6=Saturday
 }
 
 export interface TransitPlanFilters {
@@ -76,7 +84,10 @@ export const transitPlanSlice = createSlice({
 			state.editMasterPlanData = action.payload;
 		},
 
-		updateEditMasterPlanData: (state, action: PayloadAction<{ field: string; value: any }>) => {
+		updateEditMasterPlanData: (
+			state,
+			action: PayloadAction<{ field: string; value: string | number | number[] | undefined | null }>
+		) => {
 			if (state.editMasterPlanData) {
 				state.editMasterPlanData = {
 					...state.editMasterPlanData,

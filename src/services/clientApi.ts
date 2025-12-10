@@ -62,6 +62,7 @@ export interface ClientLocationFilters {
 	city_id?: number;
 	location_type?: number;
 	client_id?: number;
+	status?: string;
 }
 
 export interface ClientLocationResponse {
@@ -140,6 +141,15 @@ export class ClientApiService {
 		if (filters.city_id) params.append('city_id', filters.city_id.toString());
 		if (filters.location_type) params.append('location_type', filters.location_type.toString());
 		if (filters.client_id) params.append('client_id', filters.client_id.toString());
+		// Add status parameter - convert to numeric: Active=1, InActive=0, All="All"
+		const statusValue = filters.status || 'All';
+		if (statusValue === 'Active') {
+			params.append('status', '1');
+		} else if (statusValue === 'InActive') {
+			params.append('status', '0');
+		} else {
+			params.append('status', 'All');
+		}
 
 		return apiService.get(`/locations/getLocations?${params.toString()}`);
 	}

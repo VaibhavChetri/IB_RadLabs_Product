@@ -61,7 +61,7 @@ const EditMasterPlan: React.FC = () => {
 
 	// Memoize the update callback
 	const handleUpdateCallback = useCallback(
-		(id: string, field: string, value: string | number) => {
+		(id: string, field: string, value: string | number | number[]) => {
 			console.log('🔄 Update callback called:', { id, field, value });
 			if (field === 'vehicleType') {
 				// When vehicle type changes, update vehicle_id, driver_name, and driver_phone
@@ -73,9 +73,18 @@ const EditMasterPlan: React.FC = () => {
 						updateEditMasterPlanData({ field: 'driver_name', value: selectedVehicle.driver_name })
 					);
 					dispatch(
-						updateEditMasterPlanData({ field: 'driver_phone', value: selectedVehicle.driver_phone })
+						updateEditMasterPlanData({
+							field: 'driver_phone',
+							value: selectedVehicle.driver_phone || '',
+						})
 					);
 				}
+			} else if (field === 'days') {
+				// Handle days array - store in Redux (will be sent to API later)
+				console.log('📅 Updating days:', value);
+				// For now, we'll store it in a custom field in Redux
+				// The API parameter structure will be defined later
+				dispatch(updateEditMasterPlanData({ field: 'days', value }));
 			} else {
 				// Map other field names from TransitEntry to Redux field names
 				const fieldMapping: Record<string, string> = {
@@ -148,6 +157,7 @@ const EditMasterPlan: React.FC = () => {
 				transitDate: editMasterPlanData.transit_date,
 				transitTime: convertTimeFormat(editMasterPlanData.transit_time),
 				facilityId: editMasterPlanData.facility_id!,
+				days: (editMasterPlanData.days as number[]) || [0, 1, 2, 3, 4, 5, 6], // Include days array, default to all days
 			};
 
 			console.log('Update payload:', payload);
@@ -190,19 +200,20 @@ const EditMasterPlan: React.FC = () => {
 		date: editMasterPlanData.transit_date,
 		time: editMasterPlanData.transit_time,
 		vehicleType: String(editMasterPlanData.vehicle_id),
+		days: (editMasterPlanData.days as number[]) || [0, 1, 2, 3, 4, 5, 6], // Read from Redux, default to all days if not set
 	};
 
 	return (
 		<div className='min-h-screen bg-white p-6'>
 			<div className='max-w-6xl mx-auto'>
-			<PageHeader title='Edit Master Plan' totalItems={0} itemType='' />
+				<PageHeader title='Edit Master Plan' totalItems={0} itemType='' />
 
 				{/* Display using same components as Create */}
-			<TransitSection
-				type={transitType.toLowerCase().includes('dispatch') ? 'dispatch' : 'pickup'}
-				transits={[transitEntry]}
-				label={transitType}
-				vehicles={vehicles}
+				<TransitSection
+					type={transitType.toLowerCase().includes('dispatch') ? 'dispatch' : 'pickup'}
+					transits={[transitEntry]}
+					label={transitType}
+					vehicles={vehicles}
 					onAdd={() => {
 						// No-op: Edit mode doesn't support adding new entries
 					}}
@@ -210,6 +221,10 @@ const EditMasterPlan: React.FC = () => {
 						// No-op: Edit mode doesn't support removing entries
 					}}
 					onUpdate={handleUpdateCallback}
+					onBulkUpdateDays={days => {
+						// Update the single entry's days
+						handleUpdateCallback('1', 'days', days);
+					}}
 					showAddButton={false}
 				/>
 

@@ -10,7 +10,8 @@ interface TransitSectionProps {
 	vehicles: VehicleOption[];
 	onAdd: () => void;
 	onRemove: (id: string) => void;
-	onUpdate: (id: string, field: keyof TransitEntry, value: string) => void;
+	onUpdate: (id: string, field: keyof TransitEntry, value: string | number[]) => void;
+	onBulkUpdateDays?: (days: number[]) => void;
 	showAddButton?: boolean;
 }
 
@@ -22,8 +23,19 @@ export const TransitSection: React.FC<TransitSectionProps> = ({
 	onAdd,
 	onRemove,
 	onUpdate,
+	onBulkUpdateDays,
 	showAddButton = true,
 }) => {
+	// Check if all rows have all days selected
+	const allRowsHaveAllDays = transits.length > 0 && transits.every(t => t.days?.length === 7);
+	const allDays = [0, 1, 2, 3, 4, 5, 6];
+
+	const handleBulkToggle = () => {
+		if (onBulkUpdateDays) {
+			onBulkUpdateDays(allRowsHaveAllDays ? [] : allDays);
+		}
+	};
+
 	return (
 		<div className='mb-8'>
 			{/* Header Row */}
@@ -59,6 +71,30 @@ export const TransitSection: React.FC<TransitSectionProps> = ({
 							<th className='px-3 py-2 text-center w-20'>Actions</th>
 							<th className='px-3 py-2 text-left'>Time</th>
 							<th className='px-3 py-2 text-left'>Vehicle Type</th>
+							<th className='px-3 py-2 text-left'>
+								<div className='flex items-center gap-2'>
+									<span>Days</span>
+									{onBulkUpdateDays && (
+										<div className='flex items-center gap-1'>
+											<span className='text-xs font-normal text-gray-500'>(All)</span>
+											<button
+												type='button'
+												onClick={handleBulkToggle}
+												className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+													allRowsHaveAllDays ? 'bg-green-600' : 'bg-gray-300'
+												}`}
+												title={allRowsHaveAllDays ? 'Disable all days' : 'Enable all days'}
+											>
+												<span
+													className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+														allRowsHaveAllDays ? 'translate-x-5' : 'translate-x-1'
+													}`}
+												/>
+											</button>
+										</div>
+									)}
+								</div>
+							</th>
 						</tr>
 					</thead>
 					<tbody>

@@ -22,6 +22,13 @@ export interface MasterPlanRow {
 	facility: string;
 	transit_type_id?: number;
 	city_id?: number;
+	sun?: number; // 0 or 1
+	mon?: number; // 0 or 1
+	tue?: number; // 0 or 1
+	wed?: number; // 0 or 1
+	thu?: number; // 0 or 1
+	fri?: number; // 0 or 1
+	sat?: number; // 0 or 1
 }
 
 export interface TransitPlanRow extends Record<string, unknown> {
@@ -235,6 +242,7 @@ export const TransitPlanApi = {
 				transitTime: string;
 				driverName: string;
 				driverPhone: string;
+				days: number[];
 			}>;
 		}>;
 	}): Promise<ApiResponse<{ id: number; message: string }>> {
@@ -252,6 +260,7 @@ export const TransitPlanApi = {
 		transitDate: string;
 		transitTime: string;
 		facilityId: number;
+		days: number[];
 	}): Promise<ApiResponse<{ id: number; message: string }>> {
 		return api.put('/transit-plan/edit-master-transit-plan', payload);
 	},

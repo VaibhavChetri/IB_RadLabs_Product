@@ -7,6 +7,7 @@ import FloatingLabelDemo from '../pages/FloatingLabelDemo';
 import { AddClient } from '../pages/ops-admin/clients/AddClient';
 import { EditClient } from '../pages/ops-admin/clients/EditClient';
 import { ManageClients } from '../pages/ops-admin/clients/ManageClients';
+import DisableClients from '../pages/ops-admin/clients/DisableClients';
 // Ops Admin - SKU Mapping
 import { AddClientSkuMapping } from '../pages/ops-admin/sku-mapping/AddClientSkuMapping';
 import EditClientSkuMapping from '../pages/ops-admin/sku-mapping/EditClientSkuMapping';
@@ -16,10 +17,6 @@ import { ReviewCostType } from '../pages/ops-admin/revenue/ReviewCostType';
 import { ReviewCategoryType } from '../pages/ops-admin/revenue/ReviewCategoryType';
 // Ops Admin - Escalations
 import { EscalationType } from '../pages/ops-admin/escalations/EscalationType';
-// Ops Admin - Vehicles
-import { VehicleListing } from '../pages/ops-admin/vehicles/VehicleListing';
-// Ops Admin - Containers
-import { ContainerListing } from '../pages/ops-admin/containers/ContainerListing';
 // Transit Plan - Master Plan
 import CreateMasterPlan from '../pages/transit-plan/master-plan/CreateMasterPlan';
 import EditMasterPlan from '../pages/transit-plan/master-plan/EditMasterPlan';
@@ -33,6 +30,7 @@ import ClientPickupDetails from '../pages/transit-plan/ClientPickupDetails';
 import SentTransitPlanListing from '../pages/transit-plan/sent-inventory/SentTransitPlanListing';
 import SentInventoryListing from '../pages/transit-plan/sent-inventory/SentInventoryListing';
 import ClientDispatchDetails from '../pages/transit-plan/sent-inventory/ClientDispatchDetails';
+import EditSentInventoryDetails from '../pages/transit-plan/sent-inventory/EditSentInventoryDetails';
 // KAM
 import ClientListing from '../pages/kam/ClientListing';
 import ClientInventoryDetails from '../pages/kam/ClientInventoryDetails';
@@ -54,9 +52,6 @@ import { QCRejectionDetails } from '../pages/operations-reporting/qc-rejection/Q
 // Operations Reporting - Client Escalation
 import { ClientEscalationAdd } from '../pages/operations-reporting/client-escalation/ClientEscalationAdd';
 import { ClientEscalationListing } from '../pages/operations-reporting/client-escalation/ClientEscalationListing';
-// Billing
-import BillingDetails from '../pages/billing/BillingDetails';
-import InvoiceList from '../pages/billing/InvoiceList';
 
 export interface RouteConfig {
 	path: string;
@@ -70,6 +65,7 @@ export const routes: RouteConfig[] = [
 	{ path: '/clients/add', component: AddClient },
 	{ path: '/clients/edit', component: EditClient },
 	{ path: '/clients/manage', component: ManageClients },
+	{ path: '/clients/disable', component: DisableClients },
 	{ path: '/transit-plan/master-plan/listing', component: MasterPlanListing },
 	{ path: '/transit-plan/listing', component: TransitPlanListing },
 	{ path: '/transit-plan/sent/plan', component: SentTransitPlanListing },
@@ -77,6 +73,10 @@ export const routes: RouteConfig[] = [
 	{
 		path: '/transit-plan/sent/client-details/:clientLocationId/:facilityId',
 		component: ClientDispatchDetails,
+	},
+	{
+		path: '/transit-plan/sent/inventory/edit/:clientLocationId/:facilityId',
+		component: EditSentInventoryDetails,
 	},
 	{ path: '/transit-plan/received/plan', component: ReceivedTransitPlanListing },
 	{ path: '/transit-plan/received/listing', component: ReceivedInventoryListing },
@@ -88,7 +88,7 @@ export const routes: RouteConfig[] = [
 	{ path: '/transit-plan/master-plan/edit', component: EditMasterPlan },
 	{ path: '/floating-demo', component: FloatingLabelDemo },
 	{ path: '/kam/clients', component: ClientListing },
-	{ path: '/kam/clients/:clientId', component: ClientInventoryDetails },
+	{ path: '/kam/clients/:clientId/:date', component: ClientInventoryDetails },
 	{ path: '/kam/inventory', component: InventoryListing },
 	{ path: '/ops-admin/map-sku/listing', component: SkuMapListing },
 	{ path: '/ops-admin/map-sku/add', component: AddClientSkuMapping },
@@ -96,8 +96,6 @@ export const routes: RouteConfig[] = [
 	{ path: '/ops-admin/revenue/review-cost-type', component: ReviewCostType },
 	{ path: '/ops-admin/revenue/review-category-type', component: ReviewCategoryType },
 	{ path: '/ops-admin/escalations/escalation-type', component: EscalationType },
-	{ path: '/ops-admin/vehicles/listing', component: VehicleListing },
-	{ path: '/ops-admin/containers/listing', component: ContainerListing },
 	{ path: '/p-and-l/summary', component: PLSummary },
 	{ path: '/p-and-l/graphs', component: PLGraphs },
 	{ path: '/revenue/monthly-estimate/add', component: MonthlyEstimateAdd },
@@ -113,6 +111,4 @@ export const routes: RouteConfig[] = [
 	},
 	{ path: '/operations-reporting/client-escalation/add', component: ClientEscalationAdd },
 	{ path: '/operations-reporting/client-escalation/listing', component: ClientEscalationListing },
-	{ path: '/billing-details', component: BillingDetails },
-	{ path: '/invoice-list', component: InvoiceList },
 ];

@@ -18,13 +18,19 @@ export const useOnSiteManPowerClients = (
 		queryKey: ['onSiteManPowerClients', facilityId],
 		queryFn: async () => {
 			if (!facilityId) return null;
+			console.log('🔍 useOnSiteManPowerClients - Fetching for facilityId:', facilityId);
 			const response = await ProjectedCostingService.getOnSiteManPowerClients(facilityId);
-			return response.data || [];
+			console.log('🔍 useOnSiteManPowerClients - API response:', response);
+			// Handle different response structures
+			const clients = (response as any)?.data || (response as any)?.result || response.data || [];
+			console.log('🔍 useOnSiteManPowerClients - Extracted clients:', clients);
+			return Array.isArray(clients) ? clients : [];
 		},
 		enabled: enabled && !!facilityId,
-		staleTime: 5 * 60 * 1000, // 5 minutes
-		refetchOnMount: false,
+		staleTime: 0, // Always consider stale to ensure fresh data
+		refetchOnMount: true, // Always refetch on mount
 		refetchOnWindowFocus: false,
+		retry: 2, // Retry on failure
 	});
 
 	return {

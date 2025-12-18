@@ -6,41 +6,98 @@ import { FloatingInput, Pagination, PageHeader, SearchButton, Table } from '../.
 import { KamApiService, ClientPlanRow } from '../../services/kamApi';
 import { setClientListing, setClientListingLoading } from '../../store/slices/kamSlice';
 
+const CLIENT_LISTING_DATE_KEY = 'kam_client_listing_selected_date';
+
 const ClientListing: React.FC = () => {
 	const dispatch = useDispatch();
 	const navigate = useNavigate();
+	// const location = useLocation();
 	const { user } = useSelector((state: RootState) => state.auth);
 	const { data, stats, pagination, loading } = useSelector(
 		(state: RootState) => state.kam.clientListing
 	);
 
-	// Load selected date from localStorage, default to today
-	const [selectedDate, setSelectedDate] = useState(() => {
-		const savedDate = localStorage.getItem('clientListing_selectedDate');
+	// Helper function to get saved date from localStorage
+	const getSavedDate = useCallback(() => {
+		// Check new key first
+		let savedDate = localStorage.getItem(CLIENT_LISTING_DATE_KEY);
+
+		// If not found, check old key and migrate
+		if (!savedDate) {
+			const oldKey = 'clientListing_selectedDate';
+			const oldDate = localStorage.getItem(oldKey);
+			if (oldDate) {
+				console.log(
+					'🔄 Migrating date from old key:',
+					oldKey,
+					'to new key:',
+					CLIENT_LISTING_DATE_KEY
+				);
+				localStorage.setItem(CLIENT_LISTING_DATE_KEY, oldDate);
+				localStorage.removeItem(oldKey); // Remove old key
+				savedDate = oldDate;
+			}
+		}
+
 		return savedDate || new Date().toISOString().split('T')[0];
-	});
+	}, []);
+
+	// Get date from localStorage, default to today
+	const [selectedDate, setSelectedDate] = useState(() => getSavedDate());
+
+	// Load date from localStorage on mount to ensure it's persisted
+	useEffect(() => {
+		const savedDate = getSavedDate();
+		if (savedDate && savedDate !== selectedDate) {
+			console.log('📅 Loading saved date from localStorage:', savedDate);
+			setSelectedDate(savedDate);
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
+
+	// Save date to localStorage whenever it changes
+	useEffect(() => {
+		if (selectedDate) {
+			localStorage.setItem(CLIENT_LISTING_DATE_KEY, selectedDate);
+			console.log('💾 Saved date to localStorage:', CLIENT_LISTING_DATE_KEY, selectedDate);
+
+			// Clean up old key if it still exists
+			const oldKey = 'clientListing_selectedDate';
+			if (localStorage.getItem(oldKey)) {
+				console.log('🧹 Removing old localStorage key:', oldKey);
+				localStorage.removeItem(oldKey);
+			}
+		}
+	}, [selectedDate]);
+
 	const [pageNumber, setPageNumber] = useState(1);
 	const [itemsPerPage] = useState(10);
-
-	// Save selected date to localStorage whenever it changes
-	useEffect(() => {
-		localStorage.setItem('clientListing_selectedDate', selectedDate);
-	}, [selectedDate]);
 
 	const fetchData = useCallback(async () => {
 		dispatch(setClientListingLoading(true));
 		try {
-			const response = (await KamApiService.getInventoryClientPlan({
+			const response = await KamApiService.getInventoryClientPlan({
 				startDate: selectedDate,
 				page: pageNumber,
 				limit: itemsPerPage,
-			})) as any;
+			});
+
+			const responseData = response as {
+				data?: ClientPlanRow[];
+				stats?: { pending: number; total: number; display: string };
+				pagination?: { page: number; limit: number; totalItems: number; totalPages: number };
+			};
 
 			dispatch(
 				setClientListing({
-					data: response.data || [],
-					stats: response.stats || {},
-					pagination: response.pagination || {},
+					data: responseData.data || [],
+					stats: responseData.stats || { pending: 0, total: 0, display: '0/0' },
+					pagination: responseData.pagination || {
+						page: pageNumber,
+						limit: itemsPerPage,
+						totalItems: 0,
+						totalPages: 0,
+					},
 					loading: false,
 				})
 			);
@@ -73,8 +130,8 @@ const ClientListing: React.FC = () => {
 					<button
 						className='text-blue-600 hover:text-blue-800 underline cursor-pointer font-medium'
 						onClick={() =>
-							navigate(`/kam/clients/${row.clientId}`, {
-								state: { clientName: row.clientName, selectedDate },
+							navigate(`/kam/clients/${row.clientId}/${selectedDate}`, {
+								state: { clientName: row.clientName },
 							})
 						}
 					>
@@ -83,7 +140,7 @@ const ClientListing: React.FC = () => {
 				),
 			},
 		],
-		[navigate, pageNumber, itemsPerPage]
+		[navigate, pageNumber, itemsPerPage, selectedDate]
 	);
 
 	const visibleColumns = useMemo(() => allColumns, [allColumns]);
@@ -177,7 +234,10 @@ const ClientListing: React.FC = () => {
 					type='date'
 					label='Date'
 					value={selectedDate}
-					onChange={setSelectedDate}
+					onChange={date => {
+						console.log('📅 Date changed in listing:', date);
+						setSelectedDate(date);
+					}}
 					className='w-48'
 				/>
 				<SearchButton onClick={fetchData} disabled={loading} />

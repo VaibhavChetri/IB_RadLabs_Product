@@ -82,18 +82,7 @@ const VariableCostDetailsTable: React.FC<{
 
 		// Variable cost detail rows
 		if (report?.variableCostDetails && Array.isArray(report.variableCostDetails)) {
-			// Find On Site Manpower from variable costs first
-			const onSiteManpower = report.variableCostDetails.find(
-				item => item.costingTypeName === 'On Site Manpower'
-			);
-
-			// Filter out On Site Manpower from regular rows to avoid duplication
-			const filteredCostDetails = report.variableCostDetails.filter(
-				item => item.costingTypeName !== 'On Site Manpower'
-			);
-
-			// Add all variable cost details except On Site Manpower
-			filteredCostDetails.forEach((item, index) => {
+			report.variableCostDetails.forEach((item, index) => {
 				rows.push({
 					slNo: index + 1,
 					costingType: item.costingTypeName || '',
@@ -106,10 +95,15 @@ const VariableCostDetailsTable: React.FC<{
 				});
 			});
 
-			// Add On Site Manpower as a summary row (only once)
+			// Find On Site Manpower from variable costs
+			const onSiteManpower = report.variableCostDetails.find(
+				item => item.costingTypeName === 'On Site Manpower'
+			);
+
+			// Summary rows
 			if (onSiteManpower) {
 				rows.push({
-					slNo: filteredCostDetails.length + 1,
+					slNo: report.variableCostDetails.length + 1,
 					costingType: 'On Site Manpower',
 					w1: parseFloat(onSiteManpower.week1_actual_value || '0'),
 					w2: parseFloat(onSiteManpower.week2_actual_value || '0'),
@@ -190,35 +184,35 @@ const VariableCostDetailsTable: React.FC<{
 										row.isSummary ? 'bg-gray-50 font-semibold' : ''
 									}`}
 								>
-									<td className='px-4 py-3 text-sm font-normal text-gray-900'>{row.slNo}</td>
-									<td className='px-4 py-3 text-sm font-normal text-gray-900'>{row.costingType}</td>
+									<td className='px-4 py-3 text-xs font-normal text-gray-900'>{row.slNo}</td>
+									<td className='px-4 py-3 text-xs font-normal text-gray-900'>{row.costingType}</td>
 									<td
-										className={`px-4 py-3 text-sm font-normal text-gray-900 text-right ${getWeekBgColor('w1')}`}
+										className={`px-4 py-3 text-[11px] font-normal text-gray-900 text-right ${getWeekBgColor('w1')}`}
 									>
 										{formatNumber(row.w1)}
 									</td>
 									<td
-										className={`px-4 py-3 text-sm font-normal text-gray-900 text-right ${getWeekBgColor('w2')}`}
+										className={`px-4 py-3 text-[11px] font-normal text-gray-900 text-right ${getWeekBgColor('w2')}`}
 									>
 										{formatNumber(row.w2)}
 									</td>
 									<td
-										className={`px-4 py-3 text-sm font-normal text-gray-900 text-right ${getWeekBgColor('w3')}`}
+										className={`px-4 py-3 text-[11px] font-normal text-gray-900 text-right ${getWeekBgColor('w3')}`}
 									>
 										{formatNumber(row.w3)}
 									</td>
 									<td
-										className={`px-4 py-3 text-sm font-normal text-gray-900 text-right ${getWeekBgColor('w4')}`}
+										className={`px-4 py-3 text-[11px] font-normal text-gray-900 text-right ${getWeekBgColor('w4')}`}
 									>
 										{formatNumber(row.w4)}
 									</td>
 									<td
-										className={`px-4 py-3 text-sm font-normal text-gray-900 text-right ${getWeekBgColor('cumulative')}`}
+										className={`px-4 py-3 text-[11px] font-normal text-gray-900 text-right ${getWeekBgColor('cumulative')}`}
 									>
 										{formatNumber(row.cumulative)}
 									</td>
 									<td
-										className={`px-4 py-3 text-sm font-normal text-gray-900 text-right ${getWeekBgColor('estimated')}`}
+										className={`px-4 py-3 text-[11px] font-normal text-gray-900 text-right ${getWeekBgColor('estimated')}`}
 									>
 										{formatNumber(row.estimated)}
 									</td>
@@ -335,35 +329,35 @@ const IndirectExpenseDetailsTable: React.FC<{
 										row.isSummary ? 'bg-gray-50 font-semibold' : ''
 									}`}
 								>
-									<td className='px-4 py-3 text-sm font-normal text-gray-900'>{row.slNo}</td>
-									<td className='px-4 py-3 text-sm font-normal text-gray-900'>{row.costingType}</td>
+									<td className='px-4 py-3 text-xs font-normal text-gray-900'>{row.slNo}</td>
+									<td className='px-4 py-3 text-xs font-normal text-gray-900'>{row.costingType}</td>
 									<td
-										className={`px-4 py-3 text-sm font-normal text-gray-900 text-right ${getWeekBgColor('w1')}`}
+										className={`px-4 py-3 text-[11px] font-normal text-gray-900 text-right ${getWeekBgColor('w1')}`}
 									>
 										{formatNumber(row.w1)}
 									</td>
 									<td
-										className={`px-4 py-3 text-sm font-normal text-gray-900 text-right ${getWeekBgColor('w2')}`}
+										className={`px-4 py-3 text-[11px] font-normal text-gray-900 text-right ${getWeekBgColor('w2')}`}
 									>
 										{formatNumber(row.w2)}
 									</td>
 									<td
-										className={`px-4 py-3 text-sm font-normal text-gray-900 text-right ${getWeekBgColor('w3')}`}
+										className={`px-4 py-3 text-[11px] font-normal text-gray-900 text-right ${getWeekBgColor('w3')}`}
 									>
 										{formatNumber(row.w3)}
 									</td>
 									<td
-										className={`px-4 py-3 text-sm font-normal text-gray-900 text-right ${getWeekBgColor('w4')}`}
+										className={`px-4 py-3 text-[11px] font-normal text-gray-900 text-right ${getWeekBgColor('w4')}`}
 									>
 										{formatNumber(row.w4)}
 									</td>
 									<td
-										className={`px-4 py-3 text-sm font-normal text-gray-900 text-right ${getWeekBgColor('cumulative')}`}
+										className={`px-4 py-3 text-[11px] font-normal text-gray-900 text-right ${getWeekBgColor('cumulative')}`}
 									>
 										{formatNumber(row.cumulative)}
 									</td>
 									<td
-										className={`px-4 py-3 text-sm font-normal text-gray-900 text-right ${getWeekBgColor('estimated')}`}
+										className={`px-4 py-3 text-[11px] font-normal text-gray-900 text-right ${getWeekBgColor('estimated')}`}
 									>
 										{formatNumber(row.estimated)}
 									</td>

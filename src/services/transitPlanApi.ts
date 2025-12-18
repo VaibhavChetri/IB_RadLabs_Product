@@ -22,13 +22,6 @@ export interface MasterPlanRow {
 	facility: string;
 	transit_type_id?: number;
 	city_id?: number;
-	sun?: number; // 0 or 1
-	mon?: number; // 0 or 1
-	tue?: number; // 0 or 1
-	wed?: number; // 0 or 1
-	thu?: number; // 0 or 1
-	fri?: number; // 0 or 1
-	sat?: number; // 0 or 1
 }
 
 export interface TransitPlanRow extends Record<string, unknown> {
@@ -105,8 +98,6 @@ export interface TransitPlanListingApiResponse {
 	status: string;
 	data: TransitPlanListingResponse;
 	pagination: TransitPlanPagination;
-	totalDispatch?: number;
-	totalPickup?: number;
 }
 
 // Sent Transit Plan Interfaces
@@ -242,7 +233,6 @@ export const TransitPlanApi = {
 				transitTime: string;
 				driverName: string;
 				driverPhone: string;
-				days: number[];
 			}>;
 		}>;
 	}): Promise<ApiResponse<{ id: number; message: string }>> {
@@ -260,7 +250,6 @@ export const TransitPlanApi = {
 		transitDate: string;
 		transitTime: string;
 		facilityId: number;
-		days: number[];
 	}): Promise<ApiResponse<{ id: number; message: string }>> {
 		return api.put('/transit-plan/edit-master-transit-plan', payload);
 	},
@@ -310,12 +299,13 @@ export const TransitPlanApi = {
 		const response = await api.get(
 			`/inventory/getClientSkuMap?clientId=${clientId}&facilityId=${facilityId}`
 		);
+		console.log('🔍 getClientSkuMap - Raw API response:', response);
 		// api.get() returns response.data from axios, so response is already the API response object
 		// The result array is in response.result
-		const rawData = (response as any)?.result || (response as any)?.data || [];
-		
-		// Map the data to ensure containerType field is correctly set
-		return rawData.map((item: any) => ({
+		const result = (response as any)?.result || (response as any)?.data || [];
+		console.log('🔍 getClientSkuMap - Extracted result:', result);
+		// Ensure containerType field is set for each item
+		return (Array.isArray(result) ? result : []).map((item: any) => ({
 			...item,
 			containerType: item.containerType || item.container_type || item.containerTypeName || '',
 		})) as ClientSkuMapItem[];
@@ -391,6 +381,30 @@ export const TransitPlanApi = {
 			status_code: response.status_code,
 			message: response.message || '',
 			data: Array.isArray(response.data) ? response.data : [],
+		};
+	},
+
+	async updateB2BInventory(payload: {
+		containers: Array<{
+			id: number | null;
+			client_id: number;
+			container_type_id: number;
+			count: number;
+			facility_id: number;
+		}>;
+	}): Promise<{
+		status: string;
+		status_code: number;
+		message: string;
+		data?: unknown;
+	}> {
+		const response = (await api.put('/inventory/updateB2BInventory', payload)) as ApiResponse<unknown>;
+		console.log('🔍 updateB2BInventory response:', response);
+		return {
+			status: response.status,
+			status_code: response.status_code,
+			message: response.message || '',
+			data: response.data,
 		};
 	},
 

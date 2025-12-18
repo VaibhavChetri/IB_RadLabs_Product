@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { Pencil } from 'lucide-react';
 import { RootState } from '../../store';
 import {
 	FloatingInput,
@@ -15,15 +17,58 @@ import { setInventoryListing, setInventoryListingLoading } from '../../store/sli
 
 type DropdownOption = { label: string; value: string };
 
+const INVENTORY_LISTING_DATES_KEY = 'kam_inventory_listing_dates';
+
 const InventoryListing: React.FC = () => {
 	const dispatch = useDispatch();
+	const navigate = useNavigate();
 	const { user } = useSelector((state: RootState) => state.auth);
 	const { data, pagination, loading } = useSelector(
 		(state: RootState) => state.kam.inventoryListing
 	);
 
-	const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
-	const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+	// Helper function to get saved dates from localStorage
+	const getSavedDates = useCallback(() => {
+		const saved = localStorage.getItem(INVENTORY_LISTING_DATES_KEY);
+		if (saved) {
+			try {
+				const parsed = JSON.parse(saved);
+				return {
+					startDate: parsed.startDate || new Date().toISOString().split('T')[0],
+					endDate: parsed.endDate || new Date().toISOString().split('T')[0],
+				};
+			} catch (error) {
+				console.error('Error parsing saved dates:', error);
+			}
+		}
+		return {
+			startDate: new Date().toISOString().split('T')[0],
+			endDate: new Date().toISOString().split('T')[0],
+		};
+	}, []);
+
+	// Get dates from localStorage, default to today
+	const savedDates = getSavedDates();
+	const [startDate, setStartDate] = useState(savedDates.startDate);
+	const [endDate, setEndDate] = useState(savedDates.endDate);
+
+	// Load dates from localStorage on mount
+	useEffect(() => {
+		const saved = getSavedDates();
+		if (saved.startDate !== startDate || saved.endDate !== endDate) {
+			setStartDate(saved.startDate);
+			setEndDate(saved.endDate);
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
+
+	// Save dates to localStorage whenever they change
+	useEffect(() => {
+		if (startDate && endDate) {
+			localStorage.setItem(INVENTORY_LISTING_DATES_KEY, JSON.stringify({ startDate, endDate }));
+			console.log('💾 Saved dates to localStorage:', { startDate, endDate });
+		}
+	}, [startDate, endDate]);
 	const [clients, setClients] = useState<DropdownOption[]>([]);
 	const [selectedClientId, setSelectedClientId] = useState<string>('');
 	const [pageNumber, setPageNumber] = useState(1);
@@ -31,6 +76,29 @@ const InventoryListing: React.FC = () => {
 
 	const allColumns = useMemo(
 		() => [
+			{
+				key: 'actions',
+				title: 'Actions',
+				width: '100px',
+				sortable: false,
+				render: (_: unknown, row: InventoryValueRow) => {
+					// Extract date from created_at (format: "YYYY-MM-DD HH:mm:ss")
+					const rowDate = row.created_at.split(' ')[0];
+					return (
+						<button
+							className='p-1.5 rounded hover:bg-gray-100'
+							title='Edit'
+							onClick={() =>
+								navigate(`/kam/clients/${row.clientId}/${rowDate}`, {
+									state: { clientName: row.clientName },
+								})
+							}
+						>
+							<Pencil className='h-4 w-4 text-green-600' />
+						</button>
+					);
+				},
+			},
 			{
 				key: 'serial',
 				title: '#',
@@ -66,7 +134,7 @@ const InventoryListing: React.FC = () => {
 				render: (_: unknown, row: InventoryValueRow) => row.created_at.split(' ')[0],
 			},
 		],
-		[pageNumber, itemsPerPage]
+		[pageNumber, itemsPerPage, navigate]
 	);
 
 	const [visibleColumns, setVisibleColumns] = useState<string[]>([]);

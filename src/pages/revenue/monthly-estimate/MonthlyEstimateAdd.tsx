@@ -348,9 +348,10 @@ export const MonthlyEstimateAdd: React.FC = () => {
 					isLoading={isLoadingCostingTypes || isLoadingProjectedCosting}
 				/>
 			)}
-			{onSiteManPowerClients && onSiteManPowerClients.length > 0 && (
+			{/* Show table if we have clients, or if we're loading, or if facility is selected (to show loading/empty state) */}
+			{(onSiteManPowerClients || isLoadingOnSiteClients || facilityId) && (
 				<OnSiteManPowerTable
-					clients={onSiteManPowerClients}
+					clients={onSiteManPowerClients || []}
 					estimates={onSiteManPowerEstimates}
 					onEstimateChange={handleOnSiteManPowerEstimateChange}
 					manPowerResults={manPowerResults}

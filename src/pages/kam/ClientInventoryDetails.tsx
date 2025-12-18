@@ -16,18 +16,19 @@ interface EditedData {
 }
 
 const ClientInventoryDetails: React.FC = () => {
-	const { clientId } = useParams<{ clientId: string }>();
+	const { clientId, date } = useParams<{ clientId: string; date: string }>();
 	const location = useLocation();
 	const dispatch = useDispatch();
 	const navigate = useNavigate();
 	const { user } = useSelector((state: RootState) => state.auth);
 
 	const clientName = (location.state as { clientName: string })?.clientName || `Client ${clientId}`;
-	const selectedDateFromState = (location.state as { selectedDate?: string })?.selectedDate;
 
+	// Get date from URL parameter - this is the source of truth
+	// If no date in URL, fallback to today
+	const selectedDate = date || new Date().toISOString().split('T')[0];
 	const { data, loading } = useSelector((state: RootState) => state.kam.clientInventory);
 
-	const selectedDate = selectedDateFromState || new Date().toISOString().split('T')[0];
 	const [editedData, setEditedData] = useState<EditedData>({});
 	const [snackbar, setSnackbar] = useState<{
 		open: boolean;
@@ -35,20 +36,66 @@ const ClientInventoryDetails: React.FC = () => {
 		type: 'success' | 'error';
 	}>({ open: false, message: '', type: 'success' });
 
-	const STORAGE_KEY = `kam_client_inventory_draft_${clientId}`;
+	// Include date in storage key to prevent cross-date contamination
+	const STORAGE_KEY = `kam_client_inventory_draft_${clientId}_${selectedDate}`;
 
-	// Load from local storage on mount
+	// Load from local storage on mount - only for the current date
+	// Also clear old drafts when date changes
 	useEffect(() => {
+		// Clear all drafts for this client that are NOT for the current date
+		if (clientId) {
+			const keysToRemove: string[] = [];
+			for (let i = 0; i < localStorage.length; i++) {
+				const key = localStorage.key(i);
+				if (
+					key &&
+					key.startsWith(`kam_client_inventory_draft_${clientId}_`) &&
+					key !== STORAGE_KEY
+				) {
+					keysToRemove.push(key);
+				}
+			}
+			keysToRemove.forEach(key => {
+				console.log('🗑️ Removing old draft:', key);
+				localStorage.removeItem(key);
+			});
+		}
+
 		const savedDraft = localStorage.getItem(STORAGE_KEY);
 		if (savedDraft) {
 			try {
 				const parsedData = JSON.parse(savedDraft);
 				setEditedData(parsedData);
+				console.log('📦 Loaded draft for date:', selectedDate, parsedData);
 			} catch (error) {
 				console.error('Error loading draft:', error);
+				setEditedData({});
 			}
+		} else {
+			// Clear edited data when date changes or no draft exists
+			setEditedData({});
 		}
-	}, [clientId]);
+
+		// Cleanup: Clear localStorage when navigating away from this page
+		return () => {
+			if (clientId && selectedDate) {
+				console.log('🧹 Clearing localStorage draft on navigation away:', STORAGE_KEY);
+				localStorage.removeItem(STORAGE_KEY);
+				// Also clear all drafts for this client to ensure clean state
+				const keysToRemove: string[] = [];
+				for (let i = 0; i < localStorage.length; i++) {
+					const key = localStorage.key(i);
+					if (key && key.startsWith(`kam_client_inventory_draft_${clientId}_`)) {
+						keysToRemove.push(key);
+					}
+				}
+				keysToRemove.forEach(key => {
+					console.log('🗑️ Clearing draft on unmount:', key);
+					localStorage.removeItem(key);
+				});
+			}
+		};
+	}, [clientId, selectedDate, STORAGE_KEY]);
 
 	const fetchData = useCallback(async () => {
 		if (!clientId) return;
@@ -81,7 +128,7 @@ const ClientInventoryDetails: React.FC = () => {
 		},
 		{
 			key: 'openingStock',
-			title: 'Opening',
+			title: 'Opening@Client',
 			render: (_: unknown, row: ClientInventoryRow) => (
 				<input
 					type='number'
@@ -95,7 +142,7 @@ const ClientInventoryDetails: React.FC = () => {
 		},
 		{
 			key: 'dispatch',
-			title: 'Dispatch',
+			title: 'DispatchToClient',
 			render: (_: unknown, row: ClientInventoryRow) => (
 				<input
 					type='number'
@@ -107,7 +154,7 @@ const ClientInventoryDetails: React.FC = () => {
 		},
 		{
 			key: 'returned',
-			title: 'Returned',
+			title: 'ReturnedToFacility',
 			render: (_: unknown, row: ClientInventoryRow) => (
 				<input
 					type='number'
@@ -119,7 +166,7 @@ const ClientInventoryDetails: React.FC = () => {
 		},
 		{
 			key: 'closing',
-			title: 'Closing',
+			title: 'Closing@Client',
 			render: (_: unknown, row: ClientInventoryRow) => (
 				<input
 					type='number'
@@ -132,8 +179,14 @@ const ClientInventoryDetails: React.FC = () => {
 	];
 
 	useEffect(() => {
+		console.log('🔄 Fetching data for date:', selectedDate);
 		fetchData();
-	}, [fetchData]);
+	}, [fetchData, selectedDate]);
+
+	// Clear Redux data when date changes to prevent stale data
+	useEffect(() => {
+		dispatch(setClientInventory([]));
+	}, [selectedDate, dispatch]);
 
 	const handleInputChange = (
 		id: number,
@@ -160,11 +213,7 @@ const ClientInventoryDetails: React.FC = () => {
 			returned: field === 'returned' ? value : returned,
 		};
 
-		// Calculate closing stock
-		// Formula: Closing = Opening (client-side) - Dispatch + Returned
-		// Opening is client-side stock at start of day
-		// Dispatch reduces client stock (sent to facility)
-		// Returned increases client stock (received from facility)
+		// Calculate closing stock: opening + returned - dispatch
 		const closing = Math.max(
 			0,
 			updatedValues.openingStock + updatedValues.dispatch - updatedValues.returned
@@ -180,6 +229,7 @@ const ClientInventoryDetails: React.FC = () => {
 
 		setEditedData(newEditedData);
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(newEditedData));
+		console.log('💾 Saved draft for date:', selectedDate, newEditedData);
 	};
 
 	const handleSubmit = async () => {
@@ -213,15 +263,15 @@ const ClientInventoryDetails: React.FC = () => {
 			const returned = safeNumber(edited?.returned ?? item.returned);
 			const closing = safeNumber(edited?.closing ?? item.closing);
 
-			// Format for API: use snake_case
+			// Format for API: use snake_case - matching the required structure
 			return {
-				id: item.id,
-				client_id: item.clientId,
-				container_type_id: item.containerTypeId,
-				opening_stock: openingStock,
-				dispatch: dispatch,
-				returned: returned,
-				closing: closing,
+				id: item.id, // Required - record ID
+				client_id: item.clientId, // Required
+				container_type_id: item.containerTypeId, // Required
+				opening_stock: openingStock, // Required
+				dispatch: dispatch, // Required
+				returned: returned, // Required
+				closing: closing, // Required
 			};
 		});
 
@@ -230,23 +280,52 @@ const ClientInventoryDetails: React.FC = () => {
 		console.log('📝 Sample item:', payload[0]);
 
 		try {
-			await KamApiService.updateEverydayClientInventory(payload);
+			console.log('📅 Submitting for date:', selectedDate);
+			console.log('📊 Payload with date context:', { date: selectedDate, payload });
+			const response = await KamApiService.updateEverydayClientInventory(payload);
+			console.log('✅ Update API response:', response);
+
+			// Clear draft for this specific date and client from localStorage
 			localStorage.removeItem(STORAGE_KEY);
+			console.log('✅ Cleared localStorage draft for client:', clientId, 'date:', selectedDate);
+
+			// Also clear any other drafts for this client (cleanup)
+			if (clientId) {
+				const keysToRemove: string[] = [];
+				for (let i = 0; i < localStorage.length; i++) {
+					const key = localStorage.key(i);
+					if (key && key.startsWith(`kam_client_inventory_draft_${clientId}_`)) {
+						keysToRemove.push(key);
+					}
+				}
+				keysToRemove.forEach(key => {
+					localStorage.removeItem(key);
+					console.log('🗑️ Cleared additional draft:', key);
+				});
+			}
+
+			// Clear edited data state
+			setEditedData({});
+			console.log('✅ Cleared edited data state');
+
 			setSnackbar({
 				open: true,
 				message: 'Inventory updated successfully',
 				type: 'success',
 			});
 			setTimeout(() => {
-				navigate('/kam/clients');
+				// Navigate back to inventory listing page
+				navigate('/kam/inventory');
 			}, 1500);
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error('❌ Error updating inventory:', error);
-			console.error('❌ Error details:', error.response?.data || error.message);
+			const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+			const errorDetails = (error as { response?: { data?: unknown } })?.response?.data;
+			console.error('❌ Error details:', errorDetails || errorMessage);
 			console.error('❌ Full error object:', error);
 			setSnackbar({
 				open: true,
-				message: `Failed to update inventory: ${error.message || 'Unknown error'}`,
+				message: `Failed to update inventory: ${errorMessage}`,
 				type: 'error',
 			});
 		}
@@ -261,6 +340,20 @@ const ClientInventoryDetails: React.FC = () => {
 				itemType='container types'
 				icon='📦'
 			/>
+
+			{/* Date Display */}
+			<div className='bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center justify-between'>
+				<div className='flex items-center gap-2'>
+					<span className='text-sm font-medium text-blue-900'>Selected Date:</span>
+					<span className='text-sm text-blue-700'>{selectedDate}</span>
+				</div>
+				<button
+					onClick={() => navigate('/kam/clients')}
+					className='text-sm text-blue-600 hover:text-blue-800 underline'
+				>
+					← Back to Client List
+				</button>
+			</div>
 
 			{loading ? (
 				<div className='text-center py-8'>Loading...</div>

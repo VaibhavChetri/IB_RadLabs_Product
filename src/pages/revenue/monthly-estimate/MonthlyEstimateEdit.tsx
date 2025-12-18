@@ -10,6 +10,7 @@ import {
 	clearEditRevenueData,
 } from '../../../store/slices/revenueSlice';
 import { useRevenueListingData } from '../../../features/revenue/hooks/useRevenueListingData';
+import { useOnSiteManPowerClients } from '../../../features/revenue/hooks/useOnSiteManPowerClients';
 import { EditableBudgetTable } from '../../../features/revenue/components/EditableBudgetTable';
 import { EditableOnSiteManPowerTable } from '../../../features/revenue/components/EditableOnSiteManPowerTable';
 import {
@@ -89,9 +90,10 @@ export const MonthlyEstimateEdit: React.FC = () => {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	// Use Redux state instead of local state
-	const [budgetWeekValues, setBudgetWeekValuesLocal] = useState<
-		Record<number, { week1: string; week2: string; week3: string; week4: string }>
-	>(persistedBudgetWeekValues);
+	const [budgetWeekValues, setBudgetWeekValuesLocal] =
+		useState<Record<number, { week1: string; week2: string; week3: string; week4: string }>>(
+			persistedBudgetWeekValues
+		);
 	const [manPowerWeekValues, setManPowerWeekValuesLocal] = useState<
 		Record<number, { week1: string; week2: string; week3: string; week4: string }>
 	>(persistedManPowerWeekValues);
@@ -123,6 +125,14 @@ export const MonthlyEstimateEdit: React.FC = () => {
 		undefined, // No cost category filter for edit
 		shouldFetch
 	);
+
+	// Fetch on-site manpower clients list
+	const facilityIdNum = facilityId ? parseInt(facilityId, 10) : null;
+	const {
+		data: onSiteManPowerClients,
+		isLoading: isLoadingOnSiteClients,
+		error: onSiteClientsError,
+	} = useOnSiteManPowerClients(facilityIdNum, !!facilityIdNum);
 
 	// Debug: Log query state
 	React.useEffect(() => {
@@ -233,6 +243,16 @@ export const MonthlyEstimateEdit: React.FC = () => {
 		}
 	}, [error]);
 
+	useEffect(() => {
+		if (onSiteClientsError) {
+			setSnackbar({
+				open: true,
+				message: 'Failed to load on-site manpower clients. Please try again.',
+				type: 'error',
+			});
+		}
+	}, [onSiteClientsError]);
+
 	// Handlers for budget week changes
 	const handleBudgetWeekChange = (
 		recordId: number,
@@ -279,15 +299,43 @@ export const MonthlyEstimateEdit: React.FC = () => {
 	}, [records, budgetWeekValues]);
 
 	// Prepare on-site manpower details with updated week values for display
+	// Merge clients list with existing details to show all clients, even if they don't have data yet
 	const manPowerDetailsWithUpdatedValues = useMemo(() => {
-		return onSiteManPowerDetails.map((item: ExtendedOnSiteManPowerItem) => ({
-			...item,
-			week1: manPowerWeekValues[item.client_id]?.week1 || item.week1 || '0',
-			week2: manPowerWeekValues[item.client_id]?.week2 || item.week2 || '0',
-			week3: manPowerWeekValues[item.client_id]?.week3 || item.week3 || '0',
-			week4: manPowerWeekValues[item.client_id]?.week4 || item.week4 || '0',
-		}));
-	}, [onSiteManPowerDetails, manPowerWeekValues]);
+		// Start with clients from the API (if available)
+		const clientsMap = new Map<number, ExtendedOnSiteManPowerItem>();
+
+		// First, add all clients from the clients list
+		if (onSiteManPowerClients && onSiteManPowerClients.length > 0) {
+			onSiteManPowerClients.forEach(client => {
+				clientsMap.set(client.client_id, {
+					id: 0, // Will be set when saved
+					client_id: client.client_id,
+					client_name: client.client_name,
+					costing_type_id: 0, // Default, will be set when saved
+					est: '0.00',
+					week1: '0',
+					week2: '0',
+					week3: '0',
+					week4: '0',
+				} as ExtendedOnSiteManPowerItem);
+			});
+		}
+
+		// Then, merge in existing details from API (overwrites defaults with actual data)
+		onSiteManPowerDetails.forEach((item: ExtendedOnSiteManPowerItem) => {
+			const weekValues = manPowerWeekValues[item.client_id] || {};
+			clientsMap.set(item.client_id, {
+				...item,
+				week1: weekValues.week1 || item.week1 || '0',
+				week2: weekValues.week2 || item.week2 || '0',
+				week3: weekValues.week3 || item.week3 || '0',
+				week4: weekValues.week4 || item.week4 || '0',
+			});
+		});
+
+		// Convert map to array
+		return Array.from(clientsMap.values());
+	}, [onSiteManPowerDetails, manPowerWeekValues, onSiteManPowerClients]);
 
 	const handleSubmit = async () => {
 		if (!month || !year || !facilityId || !cityId) {
@@ -321,43 +369,45 @@ export const MonthlyEstimateEdit: React.FC = () => {
 			});
 
 			// Transform manPowerWeekValues into onSiteManPowerDetails array
-			const onSiteManPowerDetailsPayload = onSiteManPowerDetails.map((item: ExtendedOnSiteManPowerItem) => {
-				const weekValues = manPowerWeekValues[item.client_id] || {
-					week1: item.week1 || '0',
-					week2: item.week2 || '0',
-					week3: item.week3 || '0',
-					week4: item.week4 || '0',
-				};
+			const onSiteManPowerDetailsPayload = onSiteManPowerDetails.map(
+				(item: ExtendedOnSiteManPowerItem) => {
+					const weekValues = manPowerWeekValues[item.client_id] || {
+						week1: item.week1 || '0',
+						week2: item.week2 || '0',
+						week3: item.week3 || '0',
+						week4: item.week4 || '0',
+					};
 
-				// Get date_year from month/year
-				const monthNum = parseInt(month, 10);
-				const yearNum = parseInt(year, 10);
-				const date = new Date(Date.UTC(yearNum, monthNum - 1, 1));
-				const date_year = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-01`;
+					// Get date_year from month/year
+					const monthNum = parseInt(month, 10);
+					const yearNum = parseInt(year, 10);
+					const date = new Date(Date.UTC(yearNum, monthNum - 1, 1));
+					const date_year = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-01`;
 
-				// Convert week values to numbers or null (API expects numbers or null, not strings)
-				// Empty string or "0" becomes null, otherwise convert to number
-				const parseWeekValue = (value: string): number | null => {
-					if (!value || value.trim() === '' || value === '0') {
-						return null;
-					}
-					const num = parseFloat(value);
-					return isNaN(num) ? null : num;
-				};
+					// Convert week values to numbers or null (API expects numbers or null, not strings)
+					// Empty string or "0" becomes null, otherwise convert to number
+					const parseWeekValue = (value: string): number | null => {
+						if (!value || value.trim() === '' || value === '0') {
+							return null;
+						}
+						const num = parseFloat(value);
+						return isNaN(num) ? null : num;
+					};
 
-				return {
-					id: item.id,
-					client_id: item.client_id,
-					costing_type_id: item.costing_type_id,
-					est: item.est || '0.00',
-					week1: parseWeekValue(weekValues.week1),
-					week2: parseWeekValue(weekValues.week2),
-					week3: parseWeekValue(weekValues.week3),
-					week4: parseWeekValue(weekValues.week4),
-					date_year,
-					client_name: item.client_name,
-				};
-			});
+					return {
+						id: item.id,
+						client_id: item.client_id,
+						costing_type_id: item.costing_type_id,
+						est: item.est || '0.00',
+						week1: parseWeekValue(weekValues.week1),
+						week2: parseWeekValue(weekValues.week2),
+						week3: parseWeekValue(weekValues.week3),
+						week4: parseWeekValue(weekValues.week4),
+						date_year,
+						client_name: item.client_name,
+					};
+				}
+			);
 
 			const payload: UpdateRevenueRequest = {
 				weeklyValue,
@@ -422,7 +472,8 @@ export const MonthlyEstimateEdit: React.FC = () => {
 					Missing required parameters. Please navigate from the listing page.
 					<br />
 					<div className='mt-2 text-xs text-gray-400'>
-						Month: {month || 'missing'}, Year: {year || 'missing'}, Facility: {facilityId || 'missing'}, City: {cityId || 'missing'}
+						Month: {month || 'missing'}, Year: {year || 'missing'}, Facility:{' '}
+						{facilityId || 'missing'}, City: {cityId || 'missing'}
 					</div>
 				</div>
 			</div>
@@ -432,7 +483,10 @@ export const MonthlyEstimateEdit: React.FC = () => {
 	const monthName = getMonthName(month);
 	const pageTitle = (
 		<span>
-			Edit Monthly Estimate - <strong>{monthName} {year}</strong>
+			Edit Monthly Estimate -{' '}
+			<strong>
+				{monthName} {year}
+			</strong>
 		</span>
 	);
 
@@ -450,11 +504,12 @@ export const MonthlyEstimateEdit: React.FC = () => {
 			)}
 
 			{/* On-Site Manpower Table */}
-			{manPowerDetailsWithUpdatedValues.length > 0 && (
+			{/* Show table if we have clients, or if we're loading, or if facility is selected */}
+			{(manPowerDetailsWithUpdatedValues.length > 0 || isLoadingOnSiteClients || facilityIdNum) && (
 				<EditableOnSiteManPowerTable
 					manPowerDetails={manPowerDetailsWithUpdatedValues as ExtendedOnSiteManPowerItem[]}
 					onWeekChange={handleManPowerWeekChange}
-					isLoading={isLoading}
+					isLoading={isLoading || isLoadingOnSiteClients}
 				/>
 			)}
 
@@ -479,4 +534,3 @@ export const MonthlyEstimateEdit: React.FC = () => {
 		</div>
 	);
 };
-

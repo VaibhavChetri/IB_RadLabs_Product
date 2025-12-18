@@ -27,11 +27,16 @@ export interface SentInventoryResponse {
 export interface SentInventoryRow extends Record<string, unknown> {
 	id: string;
 	serial: number;
+	clientId?: number;
 	clientName: string;
 	dispatchDateTime: string;
+	facilityId?: number;
 	skus: Array<{
 		sku: string;
 		count: number;
+		containerTypeId?: number;
+		id?: number; // Record ID for update
+		rawItem?: any; // Full API item for edit page
 	}>;
 }
 

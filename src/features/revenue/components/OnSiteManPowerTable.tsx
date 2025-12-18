@@ -36,6 +36,10 @@ export const OnSiteManPowerTable: React.FC<OnSiteManPowerTableProps> = ({
 }) => {
 	// Transform clients into table rows
 	const tableData: OnSiteManPowerRow[] = React.useMemo(() => {
+		if (!clients || clients.length === 0) {
+			return [];
+		}
+		
 		const rows = clients.map(client => {
 			// Check if we have estimate from API (manPowerResults) or from state
 			let estimateValue = estimates[client.client_id] || '0';
@@ -61,12 +65,14 @@ export const OnSiteManPowerTable: React.FC<OnSiteManPowerTableProps> = ({
 			return sum + value;
 		}, 0);
 
-		// Add total row
-		rows.push({
-			id: -1, // Special ID for total row
-			clientName: 'Total',
-			estimate: total.toString(),
-		});
+		// Add total row only if there are client rows
+		if (rows.length > 0) {
+			rows.push({
+				id: -1, // Special ID for total row
+				clientName: 'Total',
+				estimate: total.toString(),
+			});
+		}
 
 		return rows;
 	}, [clients, estimates, manPowerResults]);

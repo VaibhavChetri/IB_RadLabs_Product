@@ -42,9 +42,13 @@ It explains everything in simple English.
 - **Local Storage**: Your draft is saved as you type
 - **API**: Data is sent to the server when you click Save
 
+## Technical Documentation
+
+- **[Client Listing and Details Flow](./04-Client-Listing-and-Details-Flow.md)** - Complete explanation of how the client listing and details pages work together, including state management, date handling, and data flow.
+
 ## Files in Code
 
-- Pages: `src/pages/ClientListing.tsx`, `ClientInventoryDetails.tsx`, `InventoryListing.tsx`
+- Pages: `src/pages/kam/ClientListing.tsx`, `ClientInventoryDetails.tsx`, `InventoryListing.tsx`
 - API: `src/services/kamApi.ts`
 - Redux: `src/store/slices/kamSlice.ts`
 - Menu Config: `src/config/menuConfig.ts`

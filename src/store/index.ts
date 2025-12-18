@@ -61,6 +61,13 @@ const revenuePersistConfig = {
 	],
 };
 
+// Configure redux-persist for KAM
+const kamPersistConfig = {
+	key: 'kam',
+	storage,
+	whitelist: ['selectedDate'], // Only persist selectedDate
+};
+
 // Combine all reducers
 const rootReducer = combineReducers({
 	theme: themeSlice.reducer,
@@ -70,7 +77,7 @@ const rootReducer = combineReducers({
 	client: clientReducer,
 	transitPlan: transitPlanReducer,
 	inventory: inventoryReducer,
-	kam: kamReducer,
+	kam: persistReducer(kamPersistConfig, kamReducer),
 	skuMapping: persistReducer(skuMappingPersistConfig, skuMappingReducer),
 	skuListing: persistReducer(skuListingPersistConfig, skuListingReducer),
 	revenue: persistReducer(revenuePersistConfig, revenueReducer),

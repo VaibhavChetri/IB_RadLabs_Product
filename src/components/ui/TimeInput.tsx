@@ -18,11 +18,10 @@ export const TimeInput: React.FC<TimeInputProps> = ({
 	const [minute, setMinute] = useState('');
 	const [period, setPeriod] = useState<'AM' | 'PM'>('AM');
 	const [isInitialized, setIsInitialized] = useState(false);
-	const lastEmittedValue = React.useRef<string>('');
 
-	// Parse initial value ONLY once - don't re-run if value changes from our own onChange
+	// Parse initial value ONLY once
 	useEffect(() => {
-		if (value && !isInitialized && value !== lastEmittedValue.current) {
+		if (value && !isInitialized) {
 			if (value.includes('AM') || value.includes('PM')) {
 				const [time, periodPart] = value.split(' ');
 				if (time) {
@@ -30,7 +29,6 @@ export const TimeInput: React.FC<TimeInputProps> = ({
 					setHour(h || '');
 					setMinute(m || '');
 					setPeriod(periodPart === 'PM' ? 'PM' : 'AM');
-					lastEmittedValue.current = value;
 				}
 			} else {
 				const [h, m] = value.split(':');
@@ -43,43 +41,22 @@ export const TimeInput: React.FC<TimeInputProps> = ({
 					setPeriod('AM');
 					setHour(hourNum === 0 ? '12' : String(hourNum).padStart(2, '0'));
 				}
-				lastEmittedValue.current = value;
 			}
 			setIsInitialized(true);
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
-	// Emit when we have valid hour and minute values (even if not 2 digits yet)
+	// Emit only when BOTH fields are 2 digits with valid values
 	useEffect(() => {
-		const hourNum = hour ? parseInt(hour, 10) : null;
-		const minuteNum = minute ? parseInt(minute, 10) : null;
+		if (hour && hour.length === 2 && minute && minute.length === 2) {
+			const hourNum = parseInt(hour, 10);
+			const minuteNum = parseInt(minute, 10);
 
-		// Emit if we have valid hour (1-12) and valid minute (0-59)
-		// Don't require 2 digits - emit as soon as values are valid
-		let newValue = '';
-		if (
-			hourNum !== null &&
-			hourNum >= 1 &&
-			hourNum <= 12 &&
-			minuteNum !== null &&
-			minuteNum >= 0 &&
-			minuteNum <= 59
-		) {
-			// Format with padding for display, but accept single digits
-			const formattedHour = hourNum.toString().padStart(2, '0');
-			const formattedMinute = minuteNum.toString().padStart(2, '0');
-			newValue = `${formattedHour}:${formattedMinute} ${period}`;
-		} else if (hour === '' && minute === '') {
-			newValue = '';
+			// Only emit if values are in valid range
+			if (hourNum >= 1 && hourNum <= 12 && minuteNum >= 0 && minuteNum <= 59) {
+				onChange(`${hour}:${minute} ${period}`);
+			}
 		}
-
-		// Only call onChange if the value has actually changed to prevent infinite loops
-		if (newValue !== lastEmittedValue.current) {
-			lastEmittedValue.current = newValue;
-			onChange(newValue);
-		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [hour, minute, period]);
 
 	const handleHourChange = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -2,6 +2,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { ClientPlanRow, ClientInventoryRow, InventoryValueRow } from '../../services/kamApi';
 
 interface KamState {
+	selectedDate: string; // Selected date for client listing and inventory details
 	clientListing: {
 		data: ClientPlanRow[];
 		stats: { pending: number; total: number; display: string };
@@ -21,6 +22,7 @@ interface KamState {
 }
 
 const initialState: KamState = {
+	selectedDate: new Date().toISOString().split('T')[0], // Default to today
 	clientListing: {
 		data: [],
 		stats: { pending: 0, total: 0, display: '0/0' },
@@ -40,6 +42,9 @@ const kamSlice = createSlice({
 	name: 'kam',
 	initialState,
 	reducers: {
+		setSelectedDate: (state, action: PayloadAction<string>) => {
+			state.selectedDate = action.payload;
+		},
 		setClientListing: (state, action: PayloadAction<KamState['clientListing']>) => {
 			state.clientListing = action.payload;
 		},
@@ -62,6 +67,7 @@ const kamSlice = createSlice({
 });
 
 export const {
+	setSelectedDate,
 	setClientListing,
 	setClientInventory,
 	setInventoryListing,

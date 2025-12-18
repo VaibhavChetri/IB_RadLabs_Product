@@ -1,24 +1,44 @@
 import React, { useEffect, useState } from 'react';
-import {
-	Pagination,
-	SearchButton,
-	FloatingInput,
-	PageHeader,
-	Button,
-} from '../../../components/ui';
+import { useNavigate } from 'react-router-dom';
+import { Pencil } from 'lucide-react';
+import { Pagination, SearchButton, FloatingInput, PageHeader } from '../../../components/ui';
 import { FacilityDropdown } from '../../../components/FacilityDropdown';
 import {
 	InventoryApiService,
 	SentInventoryResponse,
 	SentInventoryRow,
 } from '../../../services/inventoryApi';
-import { exportToExcel } from '../../../utils/excelExport';
-import { Download } from 'lucide-react';
 
 const SentInventoryListing: React.FC = () => {
+	const navigate = useNavigate();
+	// Local storage key for filters
+	const STORAGE_KEY = 'sent-inventory-filters';
+	
 	// State management
-	const [startDate, setStartDate] = useState<string>('');
-	const [endDate, setEndDate] = useState<string>('');
+	const [startDate, setStartDate] = useState<string>(() => {
+		const saved = localStorage.getItem(STORAGE_KEY);
+		if (saved) {
+			try {
+				const parsed = JSON.parse(saved);
+				return parsed.startDate || '';
+			} catch {
+				return '';
+			}
+		}
+		return '';
+	});
+	const [endDate, setEndDate] = useState<string>(() => {
+		const saved = localStorage.getItem(STORAGE_KEY);
+		if (saved) {
+			try {
+				const parsed = JSON.parse(saved);
+				return parsed.endDate || '';
+			} catch {
+				return '';
+			}
+		}
+		return '';
+	});
 	const [selectedFacility, setSelectedFacility] = useState<string>('');
 	const [rows, setRows] = useState<SentInventoryRow[]>([]);
 	const [loading, setLoading] = useState(false);
@@ -26,79 +46,6 @@ const SentInventoryListing: React.FC = () => {
 	const [itemsPerPage, setItemsPerPage] = useState(10);
 	const [totalItems, setTotalItems] = useState(0);
 	const [openAccordion, setOpenAccordion] = useState<string | null>(null);
-	const [exporting, setExporting] = useState(false);
-
-	// Fetch all data for export (without pagination)
-	const fetchAllDataForExport = async (): Promise<SentInventoryRow[]> => {
-		if (!selectedFacility) return [];
-
-		try {
-			const start = startDate || '2025-01-01';
-			const end = endDate || '2025-12-31';
-
-			const response = await InventoryApiService.getSentCount({
-				location_id: parseInt(selectedFacility),
-				start_date: start,
-				end_date: end,
-				pageNumber: 1,
-				pageSize: 10000, // Get all data for export
-			});
-
-			if (response.status === 'success') {
-				return transformDataForTable(response);
-			}
-			return [];
-		} catch (error) {
-			console.error('❌ Error fetching data for export:', error);
-			return [];
-		}
-	};
-
-	// Handle Excel export
-	const handleExportToExcel = async () => {
-		if (!selectedFacility || !startDate || !endDate) {
-			alert('Please select facility and date range before exporting');
-			return;
-		}
-
-		setExporting(true);
-		try {
-			const allData = await fetchAllDataForExport();
-
-			// Flatten the data for Excel - each SKU becomes a row
-			const excelData = allData.flatMap((row, index) => {
-				if (row.skus.length === 0) {
-					// If no SKUs, still create one row
-					return [
-						{
-							'Sl. No': index + 1,
-							Client: row.clientName,
-							'Dispatch Date & Time': new Date(row.dispatchDateTime).toLocaleString(),
-							SKU: 'N/A',
-							Count: 0,
-						},
-					];
-				}
-
-				return row.skus.map(sku => ({
-					'Sl. No': index + 1,
-					Client: row.clientName,
-					'Dispatch Date & Time': new Date(row.dispatchDateTime).toLocaleString(),
-					SKU: sku.sku,
-					Count: sku.count,
-				}));
-			});
-
-			// Generate filename with date range
-			const filename = `Sent_Inventory_${startDate}_to_${endDate}`;
-			exportToExcel(excelData, filename, 'Sent Inventory');
-		} catch (error) {
-			console.error('❌ Error exporting to Excel:', error);
-			alert('Failed to export data. Please try again.');
-		} finally {
-			setExporting(false);
-		}
-	};
 
 	// Fetch data from API
 	const fetchData = async (_useFilters = true) => {
@@ -156,24 +103,35 @@ const SentInventoryListing: React.FC = () => {
 	const transformDataForTable = (data: SentInventoryResponse): SentInventoryRow[] => {
 		if (!data || !data.result) return [];
 
-		// Type assertion: API returns array of objects, not numbers
+		// Type assertion: API returns array of objects with full data
 		interface SentInventoryItem {
+			id: number;
 			clientId: number;
+			facilityId: number;
 			clientName: string;
-			dispatch_date_time: string;
-			sku?: string;
-			containerTypeId?: string;
+			containerTypeId: number;
+			sku: string;
 			count: number;
+			dispatch_date_time: string;
+			adhoc?: number;
+			[key: string]: any; // Allow other fields
 		}
 
-		const items = data.result as unknown as SentInventoryItem[];
-
+				const items = data.result as unknown as SentInventoryItem[];
+		
 		// Group by client and dispatch date/time
 		interface GroupedItem {
 			clientId: number;
+			facilityId: number;
 			clientName: string;
 			dispatchDateTime: string;
-			skus: Array<{ sku: string; count: number }>;
+			skus: Array<{ 
+				sku: string; 
+				count: number;
+				containerTypeId: number;
+				id: number; // Include record ID for update
+				rawItem: SentInventoryItem; // Store full item for edit page
+			}>;
 		}
 
 		const groupedData = items.reduce((acc: Record<string, GroupedItem>, item) => {
@@ -181,14 +139,18 @@ const SentInventoryListing: React.FC = () => {
 			if (!acc[key]) {
 				acc[key] = {
 					clientId: item.clientId,
+					facilityId: item.facilityId,
 					clientName: item.clientName,
 					dispatchDateTime: item.dispatch_date_time,
 					skus: [],
 				};
 			}
 			acc[key].skus.push({
-				sku: item.sku || item.containerTypeId || 'N/A',
+				sku: item.sku || 'N/A',
 				count: item.count || 0,
+				containerTypeId: item.containerTypeId,
+				id: item.id, // Include record ID
+				rawItem: item, // Store full item
 			});
 			return acc;
 		}, {});
@@ -197,19 +159,30 @@ const SentInventoryListing: React.FC = () => {
 		return Object.values(groupedData).map((group, index: number) => ({
 			id: `${group.clientId}-${group.dispatchDateTime}`,
 			serial: index + 1,
+			clientId: group.clientId, // Include clientId for navigation
 			clientName: group.clientName,
 			dispatchDateTime: group.dispatchDateTime,
+			facilityId: group.facilityId,
 			skus: group.skus,
 		}));
 	};
 
-	// Set default date range (last 30 days)
+	// Save filters to localStorage when they change
 	useEffect(() => {
-		const today = new Date();
-		const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+		if (startDate || endDate) {
+			localStorage.setItem(STORAGE_KEY, JSON.stringify({ startDate, endDate }));
+		}
+	}, [startDate, endDate]);
 
-		setStartDate(formatDateForInput(thirtyDaysAgo));
-		setEndDate(formatDateForInput(today));
+	// Set default date range (last 30 days) only if not saved in localStorage
+	useEffect(() => {
+		if (!startDate && !endDate) {
+			const today = new Date();
+			const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+			setStartDate(formatDateForInput(thirtyDaysAgo));
+			setEndDate(formatDateForInput(today));
+		}
 	}, []);
 
 	// Initial load after dates are set
@@ -278,16 +251,6 @@ const SentInventoryListing: React.FC = () => {
 					}}
 					disabled={loading || !startDate || !endDate || !selectedFacility}
 				/>
-				<Button
-					onClick={handleExportToExcel}
-					disabled={
-						loading || exporting || !startDate || !endDate || !selectedFacility || rows.length === 0
-					}
-					className='px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center'
-					title={exporting ? 'Exporting...' : 'Download Excel'}
-				>
-					<Download className='w-5 h-5' />
-				</Button>
 			</div>
 
 			{rows.length > 0 && (
@@ -295,8 +258,9 @@ const SentInventoryListing: React.FC = () => {
 					{/* Table Header */}
 					<div className='px-6 py-3 border-b border-gray-200'>
 						<div className='grid grid-cols-12 gap-4 text-sm font-semibold text-gray-700'>
+							<div className='col-span-1'>Actions</div>
 							<div className='col-span-1'>Sl. No</div>
-							<div className='col-span-5'>Client</div>
+							<div className='col-span-4'>Client</div>
 							<div className='col-span-6'>Dispatch Date & Time</div>
 						</div>
 					</div>
@@ -316,9 +280,29 @@ const SentInventoryListing: React.FC = () => {
 								>
 									<div className='grid grid-cols-12 gap-4 items-center'>
 										<div className='col-span-1'>
+											<button
+												className='p-1.5 rounded hover:bg-gray-100'
+												title='Edit'
+												onClick={e => {
+													e.stopPropagation();
+													// Pass full row data including containerTypeId
+													navigate(`/transit-plan/sent/inventory/edit/${row.clientId}/${row.facilityId}`, {
+														state: {
+															row,
+															dispatchDateTime: row.dispatchDateTime,
+															clientName: row.clientName,
+															skus: row.skus, // This now includes containerTypeId
+														},
+													});
+												}}
+											>
+												<Pencil className='h-4 w-4 text-green-600' />
+											</button>
+										</div>
+										<div className='col-span-1'>
 											<span className='text-sm font-medium text-gray-900'>{row.serial}</span>
 										</div>
-										<div className='col-span-5'>
+										<div className='col-span-4'>
 											<h4 className='text-sm font-medium text-gray-900'>{row.clientName}</h4>
 										</div>
 										<div className='col-span-6 flex items-center justify-between'>

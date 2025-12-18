@@ -146,24 +146,8 @@ const MasterPlanListing: React.FC = () => {
 							className='p-1.5 rounded hover:bg-gray-100'
 							title='Edit'
 							onClick={() => {
-								// Convert sun/mon/tue/wed/thu/fri/sat to days array
-								// 0=Sunday, 1=Monday, 2=Tuesday, 3=Wednesday, 4=Thursday, 5=Friday, 6=Saturday
-								const days: number[] = [];
-								if (row.sun === 1) days.push(0); // Sunday
-								if (row.mon === 1) days.push(1); // Monday
-								if (row.tue === 1) days.push(2); // Tuesday
-								if (row.wed === 1) days.push(3); // Wednesday
-								if (row.thu === 1) days.push(4); // Thursday
-								if (row.fri === 1) days.push(5); // Friday
-								if (row.sat === 1) days.push(6); // Saturday
-
-								// Store row data with converted days array in Redux for editing
-								dispatch(
-									setEditMasterPlanData({
-										...row,
-										days: days.length > 0 ? days : [0, 1, 2, 3, 4, 5, 6], // Default to all days if none selected
-									})
-								);
+								// Store raw row data in Redux for editing
+								dispatch(setEditMasterPlanData(row));
 								navigate('/transit-plan/master-plan/edit');
 							}}
 						>

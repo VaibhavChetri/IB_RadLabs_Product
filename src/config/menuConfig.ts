@@ -394,6 +394,12 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 					},
 				],
 			},
+			{
+				id: 'facility-resources',
+				name: 'Facility Resources',
+				icon: Building2,
+				href: '/ops-admin/facility-resources',
+			},
 		],
 	},
 	{

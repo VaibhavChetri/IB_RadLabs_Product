@@ -102,6 +102,30 @@ export interface GetFacilityResourcesResponse {
 	data: FacilityResource[];
 }
 
+export interface AddFacilityResourceRequest {
+	name: string;
+}
+
+export interface AddFacilityResourceResponse {
+	status: string;
+	status_code: number;
+	message: string;
+	data?: FacilityResource;
+}
+
+export interface UpdateFacilityResourceRequest {
+	id: number;
+	name: string;
+	status: number; // 1 for Active, 0 for Inactive
+}
+
+export interface UpdateFacilityResourceResponse {
+	status: string;
+	status_code: number;
+	message: string;
+	data?: FacilityResource;
+}
+
 // Ops Status interfaces
 export interface OpsStatus {
 	id: number;
@@ -192,16 +216,27 @@ export class ShiftApiService {
 
 	/**
 	 * Get facility resources
+	 * @param city_id - Optional city ID to filter resources by city
+	 * @param page - Page number for pagination
+	 * @param limit - Number of items per page
 	 */
 	static async getFacilityResources(
 		page: number = 1,
-		limit: number = 10
+		limit: number = 10,
+		city_id?: number
 	): Promise<GetFacilityResourcesResponse> {
+		const params: Record<string, string | number> = {
+			page,
+			limit,
+		};
+		
+		// Add city_id if provided to filter resources by city
+		if (city_id !== undefined) {
+			params.city_id = city_id;
+		}
+		
 		return apiService.get('/shift/getFacilityResources', {
-			params: {
-				page,
-				limit,
-			},
+			params,
 		}) as unknown as Promise<GetFacilityResourcesResponse>;
 	}
 
@@ -233,5 +268,29 @@ export class ShiftApiService {
 			'/shift/checkInShiftOpsStatus',
 			request
 		) as unknown as Promise<CheckInShiftOpsStatusResponse>;
+	}
+
+	/**
+	 * Add facility resource
+	 */
+	static async addFacilityResource(
+		request: AddFacilityResourceRequest
+	): Promise<AddFacilityResourceResponse> {
+		return apiService.post(
+			'/shift/addFacilityResource',
+			request
+		) as unknown as Promise<AddFacilityResourceResponse>;
+	}
+
+	/**
+	 * Update facility resource
+	 */
+	static async updateFacilityResource(
+		request: UpdateFacilityResourceRequest
+	): Promise<UpdateFacilityResourceResponse> {
+		return apiService.put(
+			'/shift/updateFacilityResource',
+			request
+		) as unknown as Promise<UpdateFacilityResourceResponse>;
 	}
 }

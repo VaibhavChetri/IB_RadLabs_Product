@@ -1,0 +1,16 @@
+{
+  "parent": {
+    "id": 13
+  },
+  "children": [
+    {
+      "name": "Facility Resources",
+      "slug": "facility-resources",
+      "parent_id": null,
+      "sort_order": 6,
+      "level": 1,
+      "status": 1
+    }
+  ]
+}
+

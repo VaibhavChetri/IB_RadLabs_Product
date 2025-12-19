@@ -185,4 +185,31 @@ export class MenuManagementApiService {
 	): Promise<ApiResponse<void>> {
 		return apiService.post('/menu-permissions/bulk-update', { permissions });
 	}
+
+	/**
+	 * Create menu hierarchy (parent + children + grandchildren)
+	 */
+	static async createMenuHierarchy(data: {
+		parent: { id?: number; name?: string; slug?: string; parent_id?: number | null; sort_order?: number; level?: number; badge?: string | null; status?: number };
+		children: Array<{
+			name: string;
+			slug: string;
+			parent_id?: number | null;
+			sort_order: number;
+			level: number;
+			badge?: string | null;
+			status?: number;
+			grandchildren?: Array<{
+				name: string;
+				slug: string;
+				parent_id?: number | null;
+				sort_order: number;
+				level: number;
+				badge?: string | null;
+				status?: number;
+			}>;
+		}>;
+	}): Promise<ApiResponse<any>> {
+		return apiService.post('/menus/hierarchy', data);
+	}
 }

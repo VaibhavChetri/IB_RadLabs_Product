@@ -23,6 +23,17 @@ export const getStatusLabel = (status: number): string => {
 	return status === VEHICLE_STATUS.ACTIVE ? 'Active' : 'Inactive';
 };
 
+/**
+ * Status filter options for dropdown
+ */
+export const STATUS_OPTIONS = [
+	{ value: '', label: 'All' },
+	{ value: '1', label: 'Active' },
+	{ value: '0', label: 'Inactive' },
+];
+
+
+
 
 
 

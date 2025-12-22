@@ -163,32 +163,40 @@ export const FacilityResourceListing: React.FC = () => {
 			{
 				key: 'name',
 				title: 'Resource Name',
-				render: (_: unknown, record: FacilityResource) => (
-					<span className='font-medium'>{record.name}</span>
-				),
+				render: (_: unknown, record: Record<string, unknown>) => {
+					const resource = record as unknown as FacilityResource;
+					return <span className='font-medium'>{resource.name}</span>;
+				},
 			},
 			{
 				key: 'status',
 				title: 'Status',
-				render: (_: unknown, record: FacilityResource) => (
-					<StatusToggle
-						isActive={record.status === 'Active'}
-						onToggle={() => handleStatusToggle(record)}
-						disabled={loading}
-					/>
-				),
+				render: (_: unknown, record: Record<string, unknown>) => {
+					const resource = record as unknown as FacilityResource;
+					return (
+						<StatusToggle
+							isActive={resource.status === 'Active'}
+							onToggle={() => handleStatusToggle(resource)}
+							disabled={loading}
+						/>
+					);
+				},
 			},
 			{
 				key: 'created_by_name',
 				title: 'Created By',
-				render: (_: unknown, record: FacilityResource) => record.created_by_name || '-',
+				render: (_: unknown, record: Record<string, unknown>) => {
+					const resource = record as unknown as FacilityResource;
+					return resource.created_by_name || '-';
+				},
 			},
 			{
 				key: 'created_at',
 				title: 'Created At',
-				render: (_: unknown, record: FacilityResource) => {
-					if (!record.created_at) return '-';
-					return new Date(record.created_at).toLocaleDateString('en-US', {
+				render: (_: unknown, record: Record<string, unknown>) => {
+					const resource = record as unknown as FacilityResource;
+					if (!resource.created_at) return '-';
+					return new Date(resource.created_at).toLocaleDateString('en-US', {
 						year: 'numeric',
 						month: 'short',
 						day: 'numeric',
@@ -198,15 +206,18 @@ export const FacilityResourceListing: React.FC = () => {
 			{
 				key: 'actions',
 				title: 'Actions',
-				render: (_: unknown, record: FacilityResource) => (
-					<button
-						onClick={() => handleEdit(record)}
-						className='p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors'
-						title='Edit'
-					>
-						<Edit2 className='w-4 h-4' />
-					</button>
-				),
+				render: (_: unknown, record: Record<string, unknown>) => {
+					const resource = record as unknown as FacilityResource;
+					return (
+						<button
+							onClick={() => handleEdit(resource)}
+							className='p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors'
+							title='Edit'
+						>
+							<Edit2 className='w-4 h-4' />
+						</button>
+					);
+				},
 				width: '80px',
 			},
 		],

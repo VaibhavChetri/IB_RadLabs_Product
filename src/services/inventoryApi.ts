@@ -21,12 +21,18 @@ export interface SentInventoryResponse {
 		date: string;
 		day: string;
 	}>;
+	pagination?: {
+		page: number;
+		limit: number;
+		totalItems: number;
+		totalPages: number;
+	};
 }
 
 // Table Row Interface
 export interface SentInventoryRow extends Record<string, unknown> {
 	id: string;
-	serial: number;
+	serial?: number; // Optional - calculated in render based on pagination
 	clientId?: number;
 	clientName: string;
 	dispatchDateTime: string;
@@ -36,7 +42,7 @@ export interface SentInventoryRow extends Record<string, unknown> {
 		count: number;
 		containerTypeId?: number;
 		id?: number; // Record ID for update
-		rawItem?: any; // Full API item for edit page
+		rawItem?: unknown; // Full API item for edit page
 	}>;
 }
 
@@ -155,10 +161,7 @@ export class InventoryApiService {
 	/**
 	 * Get clients by city
 	 */
-	static async getClientByCity(
-		location_id: number,
-		all?: boolean
-	): Promise<ClientByCityResponse> {
+	static async getClientByCity(location_id: number, all?: boolean): Promise<ClientByCityResponse> {
 		const url = `/inventory/getClientByCity?location_id=${location_id}${all ? '&all=1' : ''}`;
 		return this.api.get(url) as Promise<ClientByCityResponse>;
 	}

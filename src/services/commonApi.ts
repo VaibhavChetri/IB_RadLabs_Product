@@ -56,6 +56,13 @@ export class CommonApiService {
 	}
 
 	/**
+	 * Get clients (locations with type=3) for dropdowns
+	 */
+	static async getClients(): Promise<ApiResponse<any[]>> {
+		return api.get('/locations/getLocations?location_type=3&limit=1000');
+	}
+
+	/**
 	 * Get all clients for dropdowns (no city filter)
 	 */
 	static async getClientsByCity(): Promise<ApiResponse<ClientByCityOption[]>> {

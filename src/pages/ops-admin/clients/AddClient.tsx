@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../../../components/ui/Button';
 import { Card } from '../../../components/ui/Card';
-import { FloatingInput, FloatingDropdown, MultiSelectDropdown, Snackbar } from '../../../components/ui';
+import {
+	FloatingInput,
+	FloatingDropdown,
+	MultiSelectDropdown,
+	Snackbar,
+} from '../../../components/ui';
 import { ArrowLeft, DollarSign, Target, Building } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -16,9 +21,8 @@ import {
 	useBillingTypes,
 	useBillingSubTypes,
 } from '../../../hooks/useLocationData';
-import { useApi } from '../../../hooks/useApi';
-import { apiService } from '../../../services/api';
 import TokenManager from '../../../utils/tokenManager';
+import { FacilityDropdown } from '../../../components/FacilityDropdown';
 
 interface ClientFormData {
 	// Basic Information
@@ -75,21 +79,6 @@ export const AddClient: React.FC = () => {
 	}, [locationTypes, locationTypesLoading]);
 	const { impactTypes, loading: impactTypesLoading } = useImpactTypes();
 	const { billingTypes, loading: billingTypesLoading } = useBillingTypes();
-
-	// Facility API
-	const facilitiesApi = useApi('facilities', async () => {
-		const params = new URLSearchParams();
-		params.append('location_type', '2');
-		if (user?.city_id) {
-			params.append('city_id', user.city_id.toString());
-		}
-		console.log('🏢 Fetching facilities with params:', params.toString());
-		const response = await apiService.get(`/locations/getLocations?${params.toString()}`);
-		console.log('🏢 Facilities API response:', response);
-		return response;
-	});
-
-	const [facilities, setFacilities] = useState<unknown[]>([]);
 
 	// Generate random values for testing
 	const generateRandomValues = () => {
@@ -155,19 +144,6 @@ export const AddClient: React.FC = () => {
 	const { billingSubTypes, loading: billingSubTypesLoading } = useBillingSubTypes(
 		formData.billingType || undefined
 	);
-
-	// Trigger facilities API when onSiteManpower is checked
-	useEffect(() => {
-		if (formData.onSiteManpower && user?.city_id) {
-			console.log('🏢 useEffect: Fetching facilities for city_id:', user.city_id);
-			facilitiesApi.execute({}).then(response => {
-				if (response.data) {
-					setFacilities(response.data);
-					console.log('🏢 Facilities stored:', response.data);
-				}
-			});
-		}
-	}, [formData.onSiteManpower, user?.city_id]);
 
 	const [errors, setErrors] = useState<Partial<Record<keyof ClientFormData, string>>>({});
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -260,15 +236,9 @@ export const AddClient: React.FC = () => {
 			setErrors(prev => ({ ...prev, [field]: undefined }));
 		}
 
-		// Trigger facilities API when onSiteManpower is checked
-		if (field === 'onSiteManpower' && value === true) {
-			console.log('🏢 On-site Manpower checked, fetching facilities...');
-			facilitiesApi.execute({}).then(response => {
-				if (response.data) {
-					setFacilities(response.data);
-					console.log('🏢 Facilities stored from handleInputChange:', response.data);
-				}
-			});
+		// Clear facility when city changes (since facilities are city-specific)
+		if (field === 'city') {
+			setFormData(prev => ({ ...prev, facility: '' }));
 		}
 	};
 
@@ -289,6 +259,7 @@ export const AddClient: React.FC = () => {
 		if (!formData.country) newErrors.country = 'Country is required';
 		if (!formData.state) newErrors.state = 'State is required';
 		if (!formData.city) newErrors.city = 'City is required';
+		if (!formData.facility || formData.facility === '') newErrors.facility = 'Facility is required';
 		if (!formData.landmark.trim()) newErrors.landmark = 'Landmark is required';
 		if (!formData.latitude.trim()) newErrors.latitude = 'Latitude is required';
 		if (!formData.longitude.trim()) newErrors.longitude = 'Longitude is required';
@@ -314,31 +285,31 @@ export const AddClient: React.FC = () => {
 		console.log('✅ AddClient: Form validation passed');
 		setIsSubmitting(true);
 		try {
-		// Prepare API payload matching the expected format
-		const payload: any = {
-			location: formData.name,
-			address_1: formData.address1,
-			address_2: formData.address2,
-			landmark: formData.landmark,
-			zipcode: formData.zipcode,
-			latitude: formData.latitude,
-			longitude: formData.longitude,
-			city_id: parseInt(formData.city),
-			state_id: parseInt(formData.state),
-			country_id: parseInt(formData.country),
-			location_type: parseInt(formData.locationType),
-			billing_type_id: parseInt(formData.billingType),
-			billing_sub_type_id: formData.billingSubType
-				? parseInt(formData.billingSubType)
-				: undefined,
-			impact_type_ids: formData.impactTypes.map(id => parseInt(id)),
-			onSiteManPower: formData.onSiteManpower ? 1 : 0,
-			facility_id: formData.facility ? parseInt(formData.facility) : undefined,
-		};
+			// Prepare API payload matching the expected format
+			const payload: any = {
+				location: formData.name,
+				address_1: formData.address1,
+				address_2: formData.address2,
+				landmark: formData.landmark,
+				zipcode: formData.zipcode,
+				latitude: formData.latitude,
+				longitude: formData.longitude,
+				city_id: parseInt(formData.city),
+				state_id: parseInt(formData.state),
+				country_id: parseInt(formData.country),
+				location_type: parseInt(formData.locationType),
+				billing_type_id: parseInt(formData.billingType),
+				billing_sub_type_id: formData.billingSubType
+					? parseInt(formData.billingSubType)
+					: undefined,
+				impact_type_ids: formData.impactTypes.map(id => parseInt(id)),
+				onSiteManPower: formData.onSiteManpower ? 1 : 0,
+				facility_id: parseInt(formData.facility!), // Always required now (validated before submission)
+			};
 
-		// Add optional fields based on billing type
-		if (formData.billingType === '3' && formData.fixedPrice) {
-			payload.fixed_price = formData.fixedPrice;
+			// Add optional fields based on billing type
+			if (formData.billingType === '3' && formData.fixedPrice) {
+				payload.fixed_price = formData.fixedPrice;
 				// For new clients, we don't have a fixed_pricing_id yet, so we'll let the backend handle it
 			}
 
@@ -460,6 +431,17 @@ export const AddClient: React.FC = () => {
 								disabled={user?.userTypeId ? user.userTypeId > 4 : false}
 							/>
 
+							{/* Facility Dropdown - mandatory, filtered by selected city */}
+							<FacilityDropdown
+								label='Facility'
+								value={formData.facility || ''}
+								onChange={(value: string) => handleInputChange('facility', value)}
+								cityId={formData.city ? parseInt(formData.city) : undefined}
+								autoSelectFirst={false}
+								className='w-full'
+								placeholder='Select Facility'
+							/>
+
 							<FloatingDropdown
 								label='Select State'
 								options={states}
@@ -518,27 +500,6 @@ export const AddClient: React.FC = () => {
 								<span className='text-sm font-medium text-foreground'>On-site Manpower</span>
 							</label>
 						</div>
-
-						{/* Facility Dropdown (when onSiteManpower is true) */}
-						{formData.onSiteManpower && (
-							<div className='mt-4'>
-								{/* Debug log for facility dropdown */}
-								<FloatingDropdown
-									label='Facility'
-									options={facilities.map((facility: unknown) => ({
-										// eslint-disable-next-line @typescript-eslint/no-explicit-any
-										value: (facility as any).id.toString(),
-										// eslint-disable-next-line @typescript-eslint/no-explicit-any
-										label: (facility as any).location || `Facility ${(facility as any).id}`,
-									}))}
-									value={formData.facility || ''}
-									onChange={(value: string) => handleInputChange('facility', value)}
-									loading={facilitiesApi.loading}
-									placeholder='Select Facility'
-									required
-								/>
-							</div>
-						)}
 					</Card>
 
 					{/* Billing Type Section */}
@@ -606,8 +567,8 @@ export const AddClient: React.FC = () => {
 								placeholder=''
 								loading={impactTypesLoading}
 								required
-							error={!!errors.impactTypes}
-							errorMessage={errors.impactTypes}
+								error={!!errors.impactTypes}
+								errorMessage={errors.impactTypes}
 								searchable
 								maxDisplayItems={2}
 							/>

@@ -4,9 +4,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import { Button, FloatingInput } from '../../../components/ui';
+import { Button, FloatingInput, FloatingDropdown } from '../../../components/ui';
 import { useAddVehicle, useUpdateVehicle } from '../hooks/useVehicleMutations';
+import { CommonApiService } from '../../../services/commonApi';
 import type { Vehicle } from '../../../services/vehicleApi';
+import type { CityOption } from '../../../services/commonApi';
 
 interface VehicleModalProps {
 	open: boolean;
@@ -25,12 +27,39 @@ export const VehicleModal: React.FC<VehicleModalProps> = ({
 	const [driverName, setDriverName] = useState('');
 	const [driverPhone, setDriverPhone] = useState('');
 	const [vehicleNumber, setVehicleNumber] = useState('');
+	const [cityId, setCityId] = useState<string>('');
+	const [cities, setCities] = useState<Array<{ value: string; label: string }>>([]);
+	const [citiesLoading, setCitiesLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
 	// Use React Query mutations
 	const addMutation = useAddVehicle();
 	const updateMutation = useUpdateVehicle();
 	const isSubmitting = addMutation.isPending || updateMutation.isPending;
+
+	// Load cities when modal opens (only for edit mode)
+	useEffect(() => {
+		const loadCities = async () => {
+			if (open && editingItem) {
+				setCitiesLoading(true);
+				try {
+					const response = await CommonApiService.getCities();
+					if (response.status_code === 200 && response.data) {
+						const cityOptions = response.data.map((city: CityOption) => ({
+							value: city.id.toString(),
+							label: city.name,
+						}));
+						setCities(cityOptions);
+					}
+				} catch (error) {
+					console.error('Failed to load cities:', error);
+				} finally {
+					setCitiesLoading(false);
+				}
+			}
+		};
+		loadCities();
+	}, [open, editingItem]);
 
 	useEffect(() => {
 		if (open) {
@@ -39,11 +68,13 @@ export const VehicleModal: React.FC<VehicleModalProps> = ({
 				setDriverName(editingItem.driver_name || '');
 				setDriverPhone(editingItem.driver_phone || '');
 				setVehicleNumber(editingItem.vehicle_number || '');
+				setCityId(editingItem.city_id?.toString() || '');
 			} else {
 				setName('');
 				setDriverName('');
 				setDriverPhone('');
 				setVehicleNumber('');
+				setCityId('');
 			}
 			setError(null);
 		}
@@ -68,10 +99,7 @@ export const VehicleModal: React.FC<VehicleModalProps> = ({
 			setError('Driver phone must be 10-12 digits');
 			return false;
 		}
-		if (!vehicleNumber.trim()) {
-			setError('Vehicle number is required');
-			return false;
-		}
+		// vehicle_number is optional per API docs
 		return true;
 	};
 
@@ -86,22 +114,30 @@ export const VehicleModal: React.FC<VehicleModalProps> = ({
 		try {
 			if (editingItem) {
 				// Update existing vehicle
-				await updateMutation.mutateAsync({
+				const payload: any = {
 					id: editingItem.id,
 					name: name.trim(),
 					driver_name: driverName.trim(),
 					driver_phone: driverPhone.trim(),
-					vehicle_number: vehicleNumber.trim(),
-				});
+				};
+				// vehicle_number is optional - send null if empty, otherwise send the value
+				payload.vehicle_number = vehicleNumber.trim() || null;
+				// city_id is optional for update - only send if provided
+				if (cityId) {
+					payload.city_id = parseInt(cityId, 10);
+				}
+				await updateMutation.mutateAsync(payload);
 				onSuccess();
 			} else {
 				// Add new vehicle
-				await addMutation.mutateAsync({
+				const payload: any = {
 					name: name.trim(),
 					driver_name: driverName.trim(),
 					driver_phone: driverPhone.trim(),
-					vehicle_number: vehicleNumber.trim(),
-				});
+				};
+				// vehicle_number is optional - send null if empty, otherwise send the value
+				payload.vehicle_number = vehicleNumber.trim() || null;
+				await addMutation.mutateAsync(payload);
 				onSuccess();
 			}
 		} catch (err: unknown) {
@@ -167,10 +203,20 @@ export const VehicleModal: React.FC<VehicleModalProps> = ({
 						label='Vehicle Number'
 						value={vehicleNumber}
 						onChange={setVehicleNumber}
-						required
-						error={!!(error && !vehicleNumber.trim())}
-						errorMessage={error && !vehicleNumber.trim() ? error : undefined}
+						placeholder='Optional'
 					/>
+
+					{/* City dropdown - only show in edit mode */}
+					{editingItem && (
+						<FloatingDropdown
+							label='City'
+							options={cities}
+							value={cityId}
+							onChange={setCityId}
+							loading={citiesLoading}
+							placeholder='Select City'
+						/>
+					)}
 
 					{error && error.includes('required') === false && error.includes('digits') === false && (
 						<div className='text-red-600 text-sm'>{error}</div>

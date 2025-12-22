@@ -2,19 +2,56 @@
  * Table column definitions for Vehicle listing
  */
 
-import { Edit, Trash2 } from 'lucide-react';
+import { Edit } from 'lucide-react';
 import type { TableColumn } from '../../../components/ui/DataDisplay';
 import type { Vehicle } from '../../../services/vehicleApi';
-import { isActiveStatus, getStatusLabel } from './constants';
+import { isActiveStatus } from './constants';
+
+// Status Toggle Component
+const StatusToggle: React.FC<{
+	isActive: boolean;
+	onToggle: () => void;
+	disabled?: boolean;
+}> = ({ isActive, onToggle, disabled = false }) => {
+	return (
+		<div className='flex items-center justify-center'>
+			<button
+				onClick={onToggle}
+				disabled={disabled}
+				className={`
+					relative inline-flex h-4 w-8 items-center justify-center rounded-full transition-all duration-200 ease-in-out focus:outline-none
+					${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+					${isActive ? 'bg-green-500' : 'bg-gray-300 hover:bg-gray-400'}
+				`}
+			>
+				<span
+					className={`
+						absolute h-3 w-3 transform rounded-full bg-white transition-all duration-200 ease-in-out
+						${isActive ? 'translate-x-2' : '-translate-x-2'}
+					`}
+				/>
+			</button>
+			<span className={`ml-2 text-xs font-medium ${isActive ? 'text-green-600' : 'text-gray-500'}`}>
+				{isActive ? 'Active' : 'Inactive'}
+			</span>
+		</div>
+	);
+};
 
 interface ColumnProps {
 	onEdit: (item: Vehicle) => void;
-	onDelete: (item: Vehicle) => void;
+	onToggleStatus: (item: Vehicle) => void;
+	pageNumber?: number;
+	itemsPerPage?: number;
+	isToggling?: boolean;
 }
 
 export const getVehicleColumns = ({
 	onEdit,
-	onDelete,
+	onToggleStatus,
+	pageNumber = 1,
+	itemsPerPage = 10,
+	isToggling = false,
 }: ColumnProps): TableColumn<Record<string, unknown>>[] => [
 	{
 		key: 'actions',
@@ -31,13 +68,6 @@ export const getVehicleColumns = ({
 					>
 						<Edit className='w-4 h-4' />
 					</button>
-					<button
-						onClick={() => onDelete(row as unknown as Vehicle)}
-						className='p-2 text-red-600 hover:bg-red-50 rounded transition-colors'
-						title='Delete'
-					>
-						<Trash2 className='w-4 h-4' />
-					</button>
 				</div>
 			);
 		},
@@ -47,9 +77,10 @@ export const getVehicleColumns = ({
 		title: '#',
 		sortable: false,
 		align: 'center',
-		render: (_value: unknown, _row: Record<string, unknown>, index: number) => (
-			<div className='font-semibold text-gray-600 text-center'>{index + 1}</div>
-		),
+		render: (_value: unknown, _row: Record<string, unknown>, index: number) => {
+			const serialNumber = (pageNumber - 1) * itemsPerPage + index + 1;
+			return <div className='font-semibold text-gray-600 text-center'>{serialNumber}</div>;
+		},
 	},
 	{
 		key: 'name',
@@ -88,6 +119,17 @@ export const getVehicleColumns = ({
 		),
 	},
 	{
+		key: 'city_name',
+		title: 'City',
+		sortable: true,
+		align: 'center',
+		render: (value: unknown, row: Record<string, unknown>) => (
+			<div className='text-gray-700 text-center'>
+				{String(value || row.city_id || 'N/A')}
+			</div>
+		),
+	},
+	{
 		key: 'status',
 		title: 'Status',
 		sortable: true,
@@ -96,13 +138,11 @@ export const getVehicleColumns = ({
 			const status = Number(row.status || 0);
 			const isActive = isActiveStatus(status);
 			return (
-				<span
-					className={`px-2 py-1 rounded text-xs font-medium ${
-						isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-					}`}
-				>
-					{getStatusLabel(status)}
-				</span>
+				<StatusToggle
+					isActive={isActive}
+					onToggle={() => onToggleStatus(row as unknown as Vehicle)}
+					disabled={isToggling}
+				/>
 			);
 		},
 	},
@@ -126,6 +166,8 @@ export const getVehicleColumns = ({
 		},
 	},
 ];
+
+
 
 
 

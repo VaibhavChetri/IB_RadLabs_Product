@@ -22,8 +22,8 @@ export const Pagination: React.FC<PaginationProps> = ({
 	showItemsPerPage = true,
 	className = '',
 }) => {
-	const startItem = (currentPage - 1) * itemsPerPage + 1;
-	const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+	const startItem = totalItems > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
+	const endItem = totalItems > 0 ? Math.min(currentPage * itemsPerPage, totalItems) : 0;
 
 	const itemsPerPageOptions = [5, 10, 25, 50, totalItems];
 
@@ -109,9 +109,11 @@ export const Pagination: React.FC<PaginationProps> = ({
 
 			{/* Page info */}
 			<div className='text-sm font-medium text-gray-700'>
-				{itemsPerPage === totalItems
-					? `All ${totalItems} items`
-					: `${startItem}-${endItem} of ${totalItems}`}
+				{totalItems === 0
+					? '0-0 of 0'
+					: itemsPerPage === totalItems
+						? `All ${totalItems} items`
+						: `${startItem}-${endItem} of ${totalItems}`}
 			</div>
 
 			{/* Navigation - only show when there are multiple pages */}

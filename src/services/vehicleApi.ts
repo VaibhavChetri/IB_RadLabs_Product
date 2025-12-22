@@ -16,6 +16,7 @@ export interface Vehicle {
 	driver_number?: string;
 	vehicle_number: string | null;
 	city_id?: number;
+	city_name?: string;
 	status: number;
 	created_at: string;
 }
@@ -37,7 +38,7 @@ export interface AddVehicleRequest {
 	driver_name: string;
 	driver_number?: string;
 	driver_phone: string;
-	vehicle_number: string;
+	vehicle_number: string | null;
 }
 
 export interface UpdateVehicleRequest {
@@ -45,7 +46,9 @@ export interface UpdateVehicleRequest {
 	name: string;
 	driver_name: string;
 	driver_phone: string;
-	vehicle_number: string;
+	vehicle_number: string | null;
+	city_id?: number;
+	status?: number;
 }
 
 export interface DeleteVehicleRequest {
@@ -64,13 +67,37 @@ export interface VehicleResponse {
 
 export class VehicleApiService {
 	/**
-	 * Get all vehicles with optional sorting
+	 * Get all vehicles with optional sorting, filtering, and pagination
 	 */
 	static async getVehicles(params?: {
+		name?: string;
+		driver_name?: string;
+		driver_phone?: string;
+		status?: number;
+		page?: number;
+		limit?: number;
 		sortOrder?: 'ASC' | 'DESC';
 		sortBy?: string;
 	}): Promise<ApiResponse<GetVehiclesResponse>> {
 		const queryParams = new URLSearchParams();
+		if (params?.name) {
+			queryParams.append('name', params.name);
+		}
+		if (params?.driver_name) {
+			queryParams.append('driver_name', params.driver_name);
+		}
+		if (params?.driver_phone) {
+			queryParams.append('driver_phone', params.driver_phone);
+		}
+		if (params?.status !== undefined) {
+			queryParams.append('status', params.status.toString());
+		}
+		if (params?.page) {
+			queryParams.append('page', params.page.toString());
+		}
+		if (params?.limit) {
+			queryParams.append('limit', params.limit.toString());
+		}
 		if (params?.sortOrder) {
 			queryParams.append('sortOrder', params.sortOrder);
 		}

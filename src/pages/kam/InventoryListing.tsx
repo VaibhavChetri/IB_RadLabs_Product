@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { Pencil } from 'lucide-react';
+import { Pencil, Download } from 'lucide-react';
 import { RootState } from '../../store';
 import {
 	FloatingInput,
@@ -10,10 +10,12 @@ import {
 	Table,
 	Pagination,
 	PageHeader,
+	Button,
 } from '../../components/ui';
 import { KamApiService, InventoryValueRow } from '../../services/kamApi';
 import { InventoryApiService } from '../../services/inventoryApi';
 import { setInventoryListing, setInventoryListingLoading } from '../../store/slices/kamSlice';
+import { exportToExcel } from '../../utils/excelExport';
 
 type DropdownOption = { label: string; value: string };
 
@@ -23,9 +25,8 @@ const InventoryListing: React.FC = () => {
 	const dispatch = useDispatch();
 	const navigate = useNavigate();
 	const { user } = useSelector((state: RootState) => state.auth);
-	const { data, pagination, loading } = useSelector(
-		(state: RootState) => state.kam.inventoryListing
-	);
+	// Redux state is kept for compatibility but we use local state for display
+	useSelector((state: RootState) => state.kam.inventoryListing);
 
 	// Helper function to get saved dates from localStorage
 	const getSavedDates = useCallback(() => {
@@ -69,10 +70,15 @@ const InventoryListing: React.FC = () => {
 			console.log('💾 Saved dates to localStorage:', { startDate, endDate });
 		}
 	}, [startDate, endDate]);
+
 	const [clients, setClients] = useState<DropdownOption[]>([]);
 	const [selectedClientId, setSelectedClientId] = useState<string>('');
 	const [pageNumber, setPageNumber] = useState(1);
 	const [itemsPerPage, setItemsPerPage] = useState(10);
+	const [isExporting, setIsExporting] = useState(false);
+	const [rows, setRows] = useState<InventoryValueRow[]>([]);
+	const [loading, setLoading] = useState(false);
+	const [totalItems, setTotalItems] = useState(0);
 
 	const allColumns = useMemo(
 		() => [
@@ -153,44 +159,170 @@ const InventoryListing: React.FC = () => {
 				const clients = res.result || [];
 				setClients([
 					{ label: 'All Clients', value: '' },
-					...clients.map((c: any) => ({ label: c.clientName, value: String(c.clientId) })),
+					...clients.map((c: { clientName: string; clientId: number }) => ({
+						label: c.clientName,
+						value: String(c.clientId),
+					})),
 				]);
 			});
 		}
 	}, [user?.city_id]);
 
-	const fetchData = useCallback(async () => {
-		dispatch(setInventoryListingLoading(true));
+	const fetchData = useCallback(
+		async (page?: number, limit?: number) => {
+			setLoading(true);
+			try {
+				const response = await KamApiService.getEverydayClientInventoryValues({
+					start_date: startDate,
+					end_date: endDate,
+					client_id: selectedClientId ? Number(selectedClientId) : undefined,
+					page: page ?? pageNumber,
+					limit: limit ?? itemsPerPage,
+				});
+
+				// API response structure:
+				// {
+				//   status_code: 200,
+				//   status: "Success",
+				//   data: InventoryValueRow[],  // Array directly
+				//   totals: { totalDispatch, totalReturned },
+				//   pagination: { page, limit, totalItems, totalPages }  // At root level
+				// }
+
+				// Extract data array - response.data is the array directly
+				const responseData: InventoryValueRow[] = Array.isArray(response.data) ? response.data : [];
+
+				// Extract pagination - it's at the root level, not nested in data
+				// Response structure: { status_code, status, data: [], totals: {}, pagination: {} }
+				const paginationData =
+					'pagination' in response
+						? (
+								response as {
+									pagination: {
+										totalItems?: number;
+										page?: number;
+										limit?: number;
+										totalPages?: number;
+									};
+								}
+							).pagination
+						: {};
+				const totalItemsValue = paginationData.totalItems || 0;
+
+				setRows(responseData);
+				setTotalItems(totalItemsValue);
+
+				// Also update Redux for compatibility
+				const totals =
+					'totals' in response
+						? (response as { totals: { totalDispatch?: string; totalReturned?: string } }).totals
+						: null;
+				dispatch(
+					setInventoryListing({
+						data: responseData,
+						totals: totals
+							? {
+									totalDispatch: totals.totalDispatch || '0',
+									totalReturned: totals.totalReturned || '0',
+								}
+							: { totalDispatch: '0', totalReturned: '0' },
+						pagination: {
+							page: paginationData.page || 1,
+							limit: paginationData.limit || itemsPerPage,
+							totalItems: paginationData.totalItems || 0,
+							totalPages: paginationData.totalPages || 0,
+						},
+						loading: false,
+					})
+				);
+			} catch (error) {
+				console.error('Error fetching inventory listing:', error);
+				setRows([]);
+				setTotalItems(0);
+			} finally {
+				setLoading(false);
+				dispatch(setInventoryListingLoading(false));
+			}
+		},
+		[dispatch, startDate, endDate, selectedClientId, pageNumber, itemsPerPage]
+	);
+
+	// Initial fetch on mount
+	useEffect(() => {
+		if (startDate && endDate) {
+			fetchData();
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
+
+	// Fetch data when pagination changes
+	useEffect(() => {
+		if (startDate && endDate) {
+			fetchData();
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [pageNumber, itemsPerPage]);
+
+	// Reset page to 1 and fetch when filters change
+	useEffect(() => {
+		if (startDate && endDate) {
+			setPageNumber(1);
+			fetchData(1, itemsPerPage);
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [startDate, endDate, selectedClientId]);
+
+	// Handle Excel export - fetch all data
+	const handleExportToExcel = useCallback(async () => {
+		setIsExporting(true);
 		try {
+			// Fetch all data without pagination using limit=0
 			const response = await KamApiService.getEverydayClientInventoryValues({
 				start_date: startDate,
 				end_date: endDate,
 				client_id: selectedClientId ? Number(selectedClientId) : undefined,
-				page: pageNumber,
-				limit: itemsPerPage,
+				page: 1,
+				limit: 0, // limit=0 returns all records
 			});
 
-			dispatch(
-				setInventoryListing({
-					data: response.data?.data || response.data || [],
-					totals: response.data?.totals || { totalDispatch: '0', totalReturned: '0' },
-					pagination: response.data?.pagination || {},
-					loading: false,
-				})
-			);
+			const allData = response.data?.data || response.data || [];
+
+			// Prepare columns for export (exclude actions column)
+			const exportColumns = allColumns
+				.filter(col => col.key !== 'actions')
+				.map(col => ({
+					key: col.key,
+					title: col.title,
+				}));
+
+			// Transform data for export
+			const exportData = allData.map((row: InventoryValueRow, index: number) => {
+				const exportRow: Record<string, unknown> = {
+					serial: index + 1,
+					clientName: row.clientName || '',
+					containerType: row.containerType || '',
+					openingStock: row.openingStock ?? '',
+					dispatch: row.dispatch ?? '',
+					returned: row.returned ?? '',
+					closing: row.closing ?? '',
+					has_entered: row.has_entered || '',
+					created_at: row.created_at ? row.created_at.split(' ')[0] : '',
+				};
+				return exportRow;
+			});
+
+			// Generate filename with date range
+			const filename = `inventory_listing_${startDate}_to_${endDate}`;
+
+			// Export to Excel
+			exportToExcel(exportData, exportColumns, filename);
 		} catch (error) {
-			console.error('Error fetching inventory listing:', error);
+			console.error('Error exporting to Excel:', error);
+			alert('Failed to export data. Please try again.');
 		} finally {
-			dispatch(setInventoryListingLoading(false));
+			setIsExporting(false);
 		}
-	}, [dispatch, startDate, endDate, selectedClientId, pageNumber, itemsPerPage]);
-
-	useEffect(() => {
-		fetchData();
-	}, [fetchData]);
-
-	// No need to filter client-side since API now handles it
-	const filteredData = data;
+	}, [startDate, endDate, selectedClientId, allColumns]);
 
 	// Column options for MultiSelectDropdown
 	const columnOptions = useMemo(
@@ -204,8 +336,7 @@ const InventoryListing: React.FC = () => {
 		[allColumns]
 	);
 
-	const totalItems = pagination?.totalItems || 0;
-	const totalPages = pagination?.totalPages || 0;
+	const totalPages = Math.ceil(totalItems / itemsPerPage);
 
 	return (
 		<div className='space-y-6'>
@@ -251,28 +382,38 @@ const InventoryListing: React.FC = () => {
 					searchable={true}
 					showSelectedCount={true}
 				/>
+				<Button
+					onClick={handleExportToExcel}
+					disabled={isExporting || loading}
+					variant='primary'
+					size='md'
+					loading={isExporting}
+					className='ml-auto p-2'
+					title={isExporting ? 'Downloading...' : 'Download'}
+				>
+					<Download className='h-4 w-4' />
+				</Button>
 			</div>
 
-			{loading ? (
-				<div className='text-center py-8'>Loading...</div>
-			) : (
+			<div className='overflow-x-auto'>
 				<Table<InventoryValueRow>
 					columns={allColumns.filter(col => visibleColumns.includes(col.key))}
-					data={filteredData}
+					data={rows}
+					loading={loading}
+					emptyText='No inventory entries found.'
 					className='bg-white'
 				/>
-			)}
+			</div>
 
-			{totalPages > 1 && (
-				<Pagination
-					currentPage={pageNumber}
-					totalPages={totalPages}
-					totalItems={totalItems}
-					itemsPerPage={itemsPerPage}
-					onPageChange={setPageNumber}
-					onItemsPerPageChange={setItemsPerPage}
-				/>
-			)}
+			<Pagination
+				currentPage={pageNumber}
+				totalPages={totalPages}
+				totalItems={totalItems}
+				itemsPerPage={itemsPerPage}
+				onPageChange={setPageNumber}
+				onItemsPerPageChange={setItemsPerPage}
+				className='mt-4'
+			/>
 		</div>
 	);
 };

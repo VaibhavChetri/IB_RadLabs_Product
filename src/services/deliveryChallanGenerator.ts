@@ -21,6 +21,9 @@ export interface DeliveryChallanData {
 	signatureName?: string;
 	vehicleNumber?: string;
 	clientType?: 'piramal' | 'concentric' | 'default';
+	adhoc?: number;
+	driverName?: string;
+	driverPhone?: string;
 }
 
 export interface DCApiResponse {
@@ -36,6 +39,10 @@ export interface DCApiResponse {
 		count: number;
 		facilityName: string;
 		dispatch_date_time: string;
+		adhoc?: number;
+		driver_name?: string;
+		driver_phone?: string;
+		vehicle_number?: string;
 	}>;
 }
 
@@ -143,13 +150,12 @@ export class DeliveryChallanGenerator {
 		const challanWidth = this.doc.getTextWidth(challanLabel);
 		this.doc.text(challanLabel, this.pageWidth - margin - challanWidth, nameY);
 
-		// --- Address below company name ---
+		// --- Address below company name (based on city_id) ---
 		this.doc.setFont('helvetica', 'normal');
 		this.doc.setFontSize(font);
-		const addressLines = [
-			'Gala No 2 AK Containe, Patkar Compound,',
-			'Tulshet Pada, Bhandup (West), Mumbai - 400078',
-		];
+
+		// Get address based on city_id
+		const addressLines = this.getAddressByCity(_data.cityId);
 
 		let y = nameY + font + 5;
 		addressLines.forEach(line => {
@@ -179,6 +185,21 @@ export class DeliveryChallanGenerator {
 
 		y += font + 5;
 		this.doc.text(`Time: ${data.time}`, col1X, y);
+
+		// --- Adhoc Transportation Details (if adhoc = 1) ---
+		if (data.adhoc === 1 && data.driverName && data.driverPhone && data.vehicleNumber) {
+			y += font + 8;
+			this.doc.setFont('helvetica', 'bold');
+			this.doc.text('Adhoc Transportation Details:', col1X, y);
+
+			y += font + 5;
+			this.doc.setFont('helvetica', 'normal');
+			this.doc.text(`Driver Name: ${data.driverName}`, col1X, y);
+			this.doc.text(`Vehicle Number: ${data.vehicleNumber}`, col2X, y);
+
+			y += font + 5;
+			this.doc.text(`Driver Phone: ${data.driverPhone}`, col1X, y);
+		}
 
 		// Add a light divider line
 		this.doc.setDrawColor(220);
@@ -258,6 +279,28 @@ export class DeliveryChallanGenerator {
 
 	// -----------------------------
 	// Helper Methods
+	/**
+	 * Get address lines based on city_id
+	 * @param cityId - City ID to determine which address to use
+	 * @returns Array of address lines
+	 */
+	private getAddressByCity(cityId: number): string[] {
+		// City ID 4 = Gurgaon
+		if (cityId === 4) {
+			return [
+				'Shri Sikanderpur Road, Opposite Cafe Gathering,',
+				'Kherki Daula Sector 84, Gurgaon - 122004',
+			];
+		}
+
+		// City ID 3 = Mumbai (default)
+		// Default to Mumbai address for city_id 3 or any other city
+		return [
+			'Gala No 2 AK Containe, Patkar Compound,',
+			'Tulshet Pada, Bhandup (West), Mumbai - 400078',
+		];
+	}
+
 	// -----------------------------
 	private getColumnWidths(): number[] {
 		switch (this.layoutType) {
@@ -269,7 +312,6 @@ export class DeliveryChallanGenerator {
 				return [25, 250, 40]; // Compact columns
 		}
 	}
-
 }
 
 // -----------------------------
@@ -287,24 +329,37 @@ export const convertApiResponseToDCData = (
 		signature_name?: string;
 		vehicle_number?: string;
 	}
-): DeliveryChallanData => ({
-	dcNumber: `IB-${rowData.facilityId}-${rowData.id}`,
-	date: rowData.transitDate || new Date().toISOString().split('T')[0],
-	time: rowData.transit_time || '15:00:00',
-	clientName: rowData.restaurantName || 'Unknown Client',
-	facilityId: rowData.facilityId,
-	cityId: rowData.city_id,
-	clientType: 'default', // TODO: Integrate backend flag for clientType
-	items: apiResponse.result
-		.filter(item => item.count > 0) // Remove items with zero quantity
-		.map((item, i) => ({
-			id: i + 1,
-			name: item.sku,
-			quantity: item.count,
-		})),
-	signatureName: rowData.signature_name,
-	vehicleNumber: rowData.vehicle_number,
-});
+): DeliveryChallanData => {
+	// Get adhoc details from first item (they should be same for all items in a dispatch)
+	const firstItem =
+		apiResponse.result && apiResponse.result.length > 0 ? apiResponse.result[0] : null;
+
+	return {
+		dcNumber: `IB-${rowData.facilityId}-${rowData.id}`,
+		date: rowData.transitDate || new Date().toISOString().split('T')[0],
+		time: rowData.transit_time || '15:00:00',
+		clientName: rowData.restaurantName || 'Unknown Client',
+		facilityId: rowData.facilityId,
+		cityId: rowData.city_id,
+		clientType: 'default', // TODO: Integrate backend flag for clientType
+		items: apiResponse.result
+			.filter(item => item.count > 0) // Remove items with zero quantity
+			.map((item, i) => ({
+				id: i + 1,
+				name: item.sku,
+				quantity: item.count,
+			})),
+		signatureName: rowData.signature_name,
+		// Use vehicle_number from API response if adhoc = 1, otherwise use rowData
+		vehicleNumber:
+			firstItem?.adhoc === 1
+				? firstItem?.vehicle_number
+				: rowData.vehicle_number || firstItem?.vehicle_number,
+		adhoc: firstItem?.adhoc,
+		driverName: firstItem?.driver_name,
+		driverPhone: firstItem?.driver_phone,
+	};
+};
 
 // -----------------------------
 // Public API

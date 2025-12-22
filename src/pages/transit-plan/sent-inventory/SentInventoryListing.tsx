@@ -1,19 +1,26 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Pencil } from 'lucide-react';
-import { Pagination, SearchButton, FloatingInput, PageHeader } from '../../../components/ui';
+import { Pencil, Download } from 'lucide-react';
+import {
+	Pagination,
+	SearchButton,
+	FloatingInput,
+	PageHeader,
+	Button,
+} from '../../../components/ui';
 import { FacilityDropdown } from '../../../components/FacilityDropdown';
 import {
 	InventoryApiService,
 	SentInventoryResponse,
 	SentInventoryRow,
 } from '../../../services/inventoryApi';
+import { exportToExcel } from '../../../utils/excelExport';
 
 const SentInventoryListing: React.FC = () => {
 	const navigate = useNavigate();
 	// Local storage key for filters
 	const STORAGE_KEY = 'sent-inventory-filters';
-	
+
 	// State management
 	const [startDate, setStartDate] = useState<string>(() => {
 		const saved = localStorage.getItem(STORAGE_KEY);
@@ -46,6 +53,7 @@ const SentInventoryListing: React.FC = () => {
 	const [itemsPerPage, setItemsPerPage] = useState(10);
 	const [totalItems, setTotalItems] = useState(0);
 	const [openAccordion, setOpenAccordion] = useState<string | null>(null);
+	const [isExporting, setIsExporting] = useState(false);
 
 	// Fetch data from API
 	const fetchData = async (_useFilters = true) => {
@@ -79,13 +87,20 @@ const SentInventoryListing: React.FC = () => {
 				// Transform data for table display
 				const transformedData = transformDataForTable(response);
 
-				// Apply client-side pagination since API returns all data
-				const startIndex = (pageNumber - 1) * itemsPerPage;
-				const endIndex = startIndex + itemsPerPage;
-				const paginatedData = transformedData.slice(startIndex, endIndex);
+				// API now returns pagination object: { page, limit, totalItems, totalPages }
+				const paginationData = response.pagination;
 
-				setRows(paginatedData);
-				setTotalItems(transformedData.length);
+				// Use pagination from API if available, otherwise fallback to totalCount
+				if (paginationData) {
+					setTotalItems(paginationData.totalItems);
+				} else {
+					// Fallback: use totalCount from API or transformed data length
+					const apiTotalCount = response.totalCount || transformedData.length;
+					setTotalItems(apiTotalCount);
+				}
+
+				// API now handles pagination server-side, so use transformed data directly
+				setRows(transformedData);
 			} else {
 				setRows([]);
 				setTotalItems(0);
@@ -114,19 +129,19 @@ const SentInventoryListing: React.FC = () => {
 			count: number;
 			dispatch_date_time: string;
 			adhoc?: number;
-			[key: string]: any; // Allow other fields
+			[key: string]: unknown; // Allow other fields
 		}
 
-				const items = data.result as unknown as SentInventoryItem[];
-		
+		const items = data.result as unknown as SentInventoryItem[];
+
 		// Group by client and dispatch date/time
 		interface GroupedItem {
 			clientId: number;
 			facilityId: number;
 			clientName: string;
 			dispatchDateTime: string;
-			skus: Array<{ 
-				sku: string; 
+			skus: Array<{
+				sku: string;
 				count: number;
 				containerTypeId: number;
 				id: number; // Include record ID for update
@@ -156,9 +171,9 @@ const SentInventoryListing: React.FC = () => {
 		}, {});
 
 		// Convert to table rows
-		return Object.values(groupedData).map((group, index: number) => ({
+		// Note: Serial numbers will be calculated in render based on current page
+		return Object.values(groupedData).map(group => ({
 			id: `${group.clientId}-${group.dispatchDateTime}`,
-			serial: index + 1,
 			clientId: group.clientId, // Include clientId for navigation
 			clientName: group.clientName,
 			dispatchDateTime: group.dispatchDateTime,
@@ -183,17 +198,19 @@ const SentInventoryListing: React.FC = () => {
 			setStartDate(formatDateForInput(thirtyDaysAgo));
 			setEndDate(formatDateForInput(today));
 		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
-	// Initial load after dates are set
+	// Reset page to 1 and fetch when filters change
 	useEffect(() => {
 		if (startDate && endDate && selectedFacility) {
+			setPageNumber(1);
 			fetchData(true);
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [startDate, endDate, selectedFacility]);
 
-	// Load data when pagination or sorting changes
+	// Load data when pagination changes
 	useEffect(() => {
 		if (startDate && endDate && selectedFacility) {
 			fetchData(true);
@@ -206,16 +223,80 @@ const SentInventoryListing: React.FC = () => {
 		return date.toISOString().split('T')[0];
 	}
 
-	// Handle page change
-	const handlePageChange = (page: number) => {
-		setPageNumber(page);
-	};
+	// Handle Excel export - fetch all raw data
+	const handleExportToExcel = useCallback(async () => {
+		if (!selectedFacility) return;
 
-	// Handle items per page change
-	const handleItemsPerPageChange = (items: number) => {
-		setItemsPerPage(items);
-		setPageNumber(1); // Reset to first page
-	};
+		setIsExporting(true);
+		try {
+			const start = startDate || '2025-01-01';
+			const end = endDate || '2025-12-31';
+
+			// Fetch all data using limit=0
+			const response = await InventoryApiService.getSentCount({
+				location_id: parseInt(selectedFacility),
+				start_date: start,
+				end_date: end,
+				pageNumber: 1,
+				pageSize: 0, // limit=0 returns all records
+			});
+
+			if (response.status === 'success' && response.result) {
+				// Use raw data from API response (response.result is array of raw items)
+				// Type assertion: API returns array of objects, not numbers (interface says number[] but it's actually objects)
+				const rawData = Array.isArray(response.result)
+					? (response.result as unknown as Array<Record<string, unknown>>)
+					: [];
+
+				// Prepare columns for export based on raw data structure
+				const exportColumns = [
+					{ key: 'serial', title: '#' },
+					{ key: 'clientName', title: 'Client' },
+					{ key: 'facilityName', title: 'Facility' },
+					{ key: 'sku', title: 'SKU' },
+					{ key: 'count', title: 'Count' },
+					{ key: 'dispatch_date_time', title: 'Dispatch Date & Time' },
+					{ key: 'created_at', title: 'Created At' },
+					{ key: 'adhoc', title: 'Adhoc' },
+					{ key: 'water', title: 'Water' },
+					{ key: 'chemical', title: 'Chemical' },
+					{ key: 'disposable', title: 'Disposable' },
+					{ key: 'co2', title: 'CO2' },
+					{ key: 'electricity', title: 'Electricity' },
+					{ key: 'weightInGms', title: 'Weight (gms)' },
+				];
+
+				// Transform raw data for export
+				const exportData = rawData.map((item, index: number) => ({
+					serial: index + 1,
+					clientName: item.clientName || '',
+					facilityName: item.facilityName || '',
+					sku: item.sku || '',
+					count: item.count || 0,
+					dispatch_date_time: item.dispatch_date_time || '',
+					created_at: item.created_at || '',
+					adhoc: item.adhoc || 0,
+					water: item.water || 0,
+					chemical: item.chemical || 0,
+					disposable: item.disposable || 0,
+					co2: item.co2 || 0,
+					electricity: item.electricity || 0,
+					weightInGms: item.weightInGms || 0,
+				}));
+
+				// Generate filename with date range
+				const filename = `sent_inventory_${start}_to_${end}`;
+
+				// Export to Excel
+				exportToExcel(exportData, exportColumns, filename);
+			}
+		} catch (error) {
+			console.error('Error exporting to Excel:', error);
+			alert('Failed to export data. Please try again.');
+		} finally {
+			setIsExporting(false);
+		}
+	}, [startDate, endDate, selectedFacility]);
 
 	const totalPages = Math.ceil(totalItems / itemsPerPage);
 
@@ -251,6 +332,17 @@ const SentInventoryListing: React.FC = () => {
 					}}
 					disabled={loading || !startDate || !endDate || !selectedFacility}
 				/>
+				<Button
+					onClick={handleExportToExcel}
+					disabled={isExporting || loading || !selectedFacility}
+					variant='primary'
+					size='md'
+					loading={isExporting}
+					className='ml-auto p-2'
+					title={isExporting ? 'Downloading...' : 'Download'}
+				>
+					<Download className='h-4 w-4' />
+				</Button>
 			</div>
 
 			{rows.length > 0 && (
@@ -267,7 +359,7 @@ const SentInventoryListing: React.FC = () => {
 
 					{/* Accordion Rows */}
 					<div>
-						{rows.map((row, _index) => (
+						{rows.map((row, index) => (
 							<div
 								key={row.id}
 								className={`group transition-colors border-b border-gray-200 ${openAccordion === row.id ? 'border-l-4 border-l-green-500' : 'hover:bg-gray-50'}`}
@@ -286,21 +378,26 @@ const SentInventoryListing: React.FC = () => {
 												onClick={e => {
 													e.stopPropagation();
 													// Pass full row data including containerTypeId
-													navigate(`/transit-plan/sent/inventory/edit/${row.clientId}/${row.facilityId}`, {
-														state: {
-															row,
-															dispatchDateTime: row.dispatchDateTime,
-															clientName: row.clientName,
-															skus: row.skus, // This now includes containerTypeId
-														},
-													});
+													navigate(
+														`/transit-plan/sent/inventory/edit/${row.clientId}/${row.facilityId}`,
+														{
+															state: {
+																row,
+																dispatchDateTime: row.dispatchDateTime,
+																clientName: row.clientName,
+																skus: row.skus, // This now includes containerTypeId
+															},
+														}
+													);
 												}}
 											>
 												<Pencil className='h-4 w-4 text-green-600' />
 											</button>
 										</div>
 										<div className='col-span-1'>
-											<span className='text-sm font-medium text-gray-900'>{row.serial}</span>
+											<span className='text-sm font-medium text-gray-900'>
+												{(pageNumber - 1) * itemsPerPage + index + 1}
+											</span>
 										</div>
 										<div className='col-span-4'>
 											<h4 className='text-sm font-medium text-gray-900'>{row.clientName}</h4>
@@ -371,21 +468,19 @@ const SentInventoryListing: React.FC = () => {
 							</div>
 						))}
 					</div>
-
-					{totalPages > 1 && (
-						<div className='p-4 border-t'>
-							<Pagination
-								currentPage={pageNumber}
-								totalPages={totalPages}
-								totalItems={totalItems}
-								itemsPerPage={itemsPerPage}
-								onPageChange={handlePageChange}
-								onItemsPerPageChange={handleItemsPerPageChange}
-							/>
-						</div>
-					)}
 				</div>
 			)}
+
+			{/* Pagination - always show, matching master plan listing */}
+			<Pagination
+				currentPage={pageNumber}
+				totalPages={totalPages}
+				totalItems={totalItems}
+				itemsPerPage={itemsPerPage}
+				onPageChange={setPageNumber}
+				onItemsPerPageChange={setItemsPerPage}
+				className='mt-4'
+			/>
 
 			{!loading && rows.length === 0 && startDate && endDate && selectedFacility && (
 				<div className='bg-gray-50 border border-gray-200 rounded-lg p-8 text-center'>

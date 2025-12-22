@@ -331,6 +331,9 @@ export const TransitPlanApi = {
 		client_location_id: number;
 		transit_id: string;
 		adhoc: number;
+		driver_name?: string;
+		driver_phone?: string;
+		vehicle_number?: string;
 	}): Promise<{
 		status: string;
 		status_code: number;
@@ -398,7 +401,10 @@ export const TransitPlanApi = {
 		message: string;
 		data?: unknown;
 	}> {
-		const response = (await api.put('/inventory/updateB2BInventory', payload)) as ApiResponse<unknown>;
+		const response = (await api.put(
+			'/inventory/updateB2BInventory',
+			payload
+		)) as ApiResponse<unknown>;
 		console.log('🔍 updateB2BInventory response:', response);
 		return {
 			status: response.status,
@@ -501,51 +507,95 @@ export const TransitPlanApi = {
 export interface EscalationType {
 	id: number;
 	name: string;
-	status: string;
+	status: number;
+	status_name: string;
+	created_by?: number;
+	updated_by?: number;
+	created_at: string;
+	updated_at: string;
 }
 
 export interface GetEscalationTypesResponse {
-	status: string;
 	status_code: number;
+	status: string;
 	data: EscalationType[];
+	pagination?: {
+		page: number;
+		limit: number;
+		totalItems: number;
+		totalPages: number;
+	};
 }
 
 export interface CreateEscalationTypeRequest {
 	name: string;
+	status?: number;
 }
 
 export interface CreateEscalationTypeResponse {
-	status: string;
 	status_code: number;
-	data: {
-		id: number;
-		name: string;
-	};
+	status: string;
+	message: string;
 }
 
 export interface UpdateEscalationTypeRequest {
-	name: string;
+	id: number;
+	name?: string;
 	status?: number;
 }
 
 export interface UpdateEscalationTypeResponse {
-	status: string;
 	status_code: number;
-	data: {
-		id: string;
-		name: string;
-	};
+	status: string;
+	message: string;
+}
+
+export interface DeleteEscalationTypeRequest {
+	id: number;
+}
+
+export interface DeleteEscalationTypeResponse {
+	status_code: number;
+	status: string;
+	message: string;
 }
 
 // Escalation Type API Service
 export class EscalationTypeService {
 	/**
-	 * Get all escalation types (complaint types)
+	 * Get all escalation types with optional pagination and status filter
 	 */
-	static async getEscalationTypes(): Promise<GetEscalationTypesResponse> {
-		return api.get(
-			'/transit-plan/getComplaintTypes'
-		) as unknown as Promise<GetEscalationTypesResponse>;
+	static async getEscalationTypes(params?: {
+		page?: number;
+		limit?: number;
+		status?: number;
+	}): Promise<GetEscalationTypesResponse> {
+		const queryParams = new URLSearchParams();
+		if (params?.page) {
+			queryParams.append('page', params.page.toString());
+		}
+		if (params?.limit) {
+			queryParams.append('limit', params.limit.toString());
+		}
+		if (params?.status !== undefined) {
+			queryParams.append('status', params.status.toString());
+		}
+
+		const url = `/ops/getEscalationType${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+		const response = (await api.get(url)) as any;
+
+		// API returns { status_code, status, data, pagination } directly
+		return {
+			status_code: response.status_code,
+			status: response.status,
+			data: response.data || [],
+			pagination: response.pagination || {
+				page: 1,
+				limit: 100,
+				totalItems: 0,
+				totalPages: 0,
+			},
+		};
 	}
 
 	/**
@@ -555,7 +605,7 @@ export class EscalationTypeService {
 		data: CreateEscalationTypeRequest
 	): Promise<CreateEscalationTypeResponse> {
 		return api.post(
-			'/transit-plan/createComplaintType',
+			'/ops/addEscalationType',
 			data
 		) as unknown as Promise<CreateEscalationTypeResponse>;
 	}
@@ -564,13 +614,189 @@ export class EscalationTypeService {
 	 * Update an existing escalation type
 	 */
 	static async updateEscalationType(
-		id: number,
 		data: UpdateEscalationTypeRequest
 	): Promise<UpdateEscalationTypeResponse> {
 		return api.put(
-			`/transit-plan/updateComplaintType/${id}`,
+			'/ops/updateEscalationType',
 			data
 		) as unknown as Promise<UpdateEscalationTypeResponse>;
+	}
+
+	/**
+	 * Delete an escalation type (soft delete)
+	 */
+	static async deleteEscalationType(
+		data: DeleteEscalationTypeRequest
+	): Promise<DeleteEscalationTypeResponse> {
+		return api.delete('/ops/deleteEscalationType', {
+			data,
+		}) as unknown as Promise<DeleteEscalationTypeResponse>;
+	}
+}
+
+// Client Escalation Interfaces
+export interface ClientEscalation {
+	id: number;
+	escalation_date: string;
+	client_id: number;
+	client_name: string;
+	containerTypeId?: number;
+	containerType?: string;
+	escalation_type_id: number;
+	escalation_type: string;
+	resolution: string | null;
+	resolution_status: string;
+	resolutionStatusId: number;
+	details: string;
+	raised_by: string;
+	client_designation: string;
+	facility_id: number;
+	facility: string;
+	created_by_name?: string;
+	updated_by_name?: string;
+	created_date?: string;
+	updated_date?: string;
+	sku?: number;
+}
+
+export interface GetClientEscalationsResponse {
+	status_code: number;
+	status: string;
+	data: ClientEscalation[];
+	totalEscalationWeekWise?: Record<string, any>;
+	totalEscalationClientWiseByWeek?: Record<string, any>;
+	totalEscalations?: number;
+	statusCount?: Record<string, any>;
+	pagination?: {
+		page: number;
+		limit: number;
+		totalItems: number;
+		totalPages: number;
+	};
+}
+
+export interface AddClientEscalationRequest {
+	facility_id: number;
+	sku: number;
+	escalation_date: string;
+	client_id: number;
+	details: string;
+	raised_by: string;
+	client_designation: string;
+	escalation_type_id: number;
+}
+
+export interface AddClientEscalationResponse {
+	status_code: number;
+	status: string;
+	message: string;
+}
+
+export interface UpdateClientEscalationRequest {
+	id: number;
+	escalation_date?: string;
+	client_id?: number;
+	sku?: number;
+	escalation_type_id?: number;
+	details?: string;
+	raised_by?: string;
+	client_designation?: string;
+	resolution?: string;
+	resolution_status_id?: number;
+	facility_id?: number;
+}
+
+export interface UpdateClientEscalationResponse {
+	status_code: number;
+	status: string;
+	message: string;
+}
+
+// Client Escalation API Service
+export class ClientEscalationService {
+	/**
+	 * Get client escalations with filters
+	 */
+	static async getClientEscalations(params?: {
+		startDate?: string;
+		endDate?: string;
+		facility_id?: number;
+		page?: number;
+		limit?: number;
+	}): Promise<GetClientEscalationsResponse> {
+		const queryParams = new URLSearchParams();
+		if (params?.startDate) {
+			queryParams.append('startDate', params.startDate);
+		}
+		if (params?.endDate) {
+			queryParams.append('endDate', params.endDate);
+		}
+		if (params?.facility_id) {
+			queryParams.append('facility_id', params.facility_id.toString());
+		}
+		if (params?.page) {
+			queryParams.append('page', params.page.toString());
+		}
+		if (params?.limit) {
+			queryParams.append('limit', params.limit.toString());
+		}
+
+		const url = `/ops/getEscalation${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+		const response = (await api.get(url)) as unknown as {
+			status_code: number;
+			status: string;
+			data?: ClientEscalation[];
+			totalEscalationWeekWise?: Record<string, unknown>;
+			totalEscalationClientWiseByWeek?: Record<string, unknown>;
+			totalEscalations?: number;
+			statusCount?: Record<string, unknown>;
+			pagination?: {
+				page: number;
+				limit: number;
+				totalItems: number;
+				totalPages: number;
+			};
+		};
+
+		return {
+			status_code: response.status_code,
+			status: response.status,
+			data: response.data || [],
+			totalEscalationWeekWise: response.totalEscalationWeekWise,
+			totalEscalationClientWiseByWeek: response.totalEscalationClientWiseByWeek,
+			totalEscalations: response.totalEscalations,
+			statusCount: response.statusCount,
+			pagination: response.pagination || {
+				page: 1,
+				limit: 10,
+				totalItems: 0,
+				totalPages: 0,
+			},
+		};
+	}
+
+	/**
+	 * Create a new client escalation
+	 */
+	static async addClientEscalation(
+		data: AddClientEscalationRequest
+	): Promise<AddClientEscalationResponse> {
+		return api.post(
+			'/ops/addClientEscalation',
+			data
+		) as unknown as Promise<AddClientEscalationResponse>;
+	}
+
+	/**
+	 * Update an existing client escalation
+	 */
+	static async updateClientEscalation(
+		data: UpdateClientEscalationRequest
+	): Promise<UpdateClientEscalationResponse> {
+		return api.put(
+			'/ops/editClientEscalation',
+			data
+		) as unknown as Promise<UpdateClientEscalationResponse>;
 	}
 }
 

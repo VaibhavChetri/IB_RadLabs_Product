@@ -9,6 +9,8 @@ interface LocalStorageData {
 	uploadedImageUrl: string;
 	fileBase64?: string;
 	photographName?: string;
+	driverName?: string;
+	driverPhone?: string;
 	timestamp: number;
 }
 

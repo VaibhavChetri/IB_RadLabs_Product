@@ -74,9 +74,9 @@ export const useExpenditureData = (
 			return response;
 		},
 		enabled: enabled && !!facilityId && !!month && !!year,
-		staleTime: 5 * 60 * 1000,
+		staleTime: 0, // Always consider stale to ensure fresh data when facility changes
 		gcTime: 10 * 60 * 1000,
-		refetchOnMount: false, // Don't refetch when component mounts if data exists
+		refetchOnMount: true, // Refetch when component mounts or queryKey changes
 		refetchOnWindowFocus: false, // Already set globally, but explicit here
 	});
 };
@@ -113,9 +113,9 @@ export const useUnitEconomicsData = (
 			return response;
 		},
 		enabled: enabled && !!cityId && !!facilityId && !!month && !!year,
-		staleTime: 5 * 60 * 1000,
+		staleTime: 0, // Always consider stale to ensure fresh data when facility changes
 		gcTime: 10 * 60 * 1000,
-		refetchOnMount: false,
+		refetchOnMount: true, // Refetch when component mounts or queryKey changes
 		refetchOnWindowFocus: false,
 	});
 };
@@ -151,9 +151,9 @@ export const useEBITDAData = (
 			return response;
 		},
 		enabled: enabled && !!cityId && !!facilityId && !!month && !!year,
-		staleTime: 5 * 60 * 1000,
+		staleTime: 0, // Always consider stale to ensure fresh data when facility changes
 		gcTime: 10 * 60 * 1000,
-		refetchOnMount: false,
+		refetchOnMount: true, // Refetch when component mounts or queryKey changes
 		refetchOnWindowFocus: false,
 	});
 };
@@ -189,9 +189,9 @@ export const useClientWisePLData = (
 			return response;
 		},
 		enabled: enabled && !!cityId && !!facilityId && !!month && !!year,
-		staleTime: 5 * 60 * 1000,
+		staleTime: 0, // Always consider stale to ensure fresh data when facility changes
 		gcTime: 10 * 60 * 1000,
-		refetchOnMount: false,
+		refetchOnMount: true, // Refetch when component mounts or queryKey changes
 		refetchOnWindowFocus: false,
 	});
 };
@@ -226,9 +226,9 @@ export const useEscalationData = (
 			return response;
 		},
 		enabled: enabled && !!cityId && !!facilityId && !!month && !!year,
-		staleTime: 5 * 60 * 1000,
+		staleTime: 0, // Always consider stale to ensure fresh data when facility changes
 		gcTime: 10 * 60 * 1000,
-		refetchOnMount: false,
+		refetchOnMount: true, // Refetch when component mounts or queryKey changes
 		refetchOnWindowFocus: false,
 	});
 };

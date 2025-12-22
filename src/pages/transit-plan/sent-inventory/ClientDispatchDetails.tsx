@@ -31,6 +31,9 @@ const ClientDispatchDetails: React.FC = () => {
 	const [dispatchVehicleNumber, setDispatchVehicleNumber] = useState('');
 	const [signatureName, setSignatureName] = useState('');
 	const [containerCounts, setContainerCounts] = useState<Record<number, number>>({});
+	// Adhoc transportation fields
+	const [driverName, setDriverName] = useState('');
+	const [driverPhone, setDriverPhone] = useState('');
 
 	// Local storage key for this client
 	const storageKey = `client-details-${clientLocationId}-${facilityId}`;
@@ -65,6 +68,8 @@ const ClientDispatchDetails: React.FC = () => {
 			uploadedImageUrl,
 			fileBase64,
 			photographName: photograph?.name,
+			driverName,
+			driverPhone,
 		});
 	}, [
 		adhocTransportation,
@@ -75,6 +80,8 @@ const ClientDispatchDetails: React.FC = () => {
 		fileBase64,
 		photograph,
 		saveToLocalStorage,
+		driverName,
+		driverPhone,
 	]);
 
 	// Initialize data from navigation state and localStorage
@@ -97,6 +104,8 @@ const ClientDispatchDetails: React.FC = () => {
 				setDispatchVehicleNumber(savedData.dispatchVehicleNumber || '');
 				setSignatureName(savedData.signatureName || '');
 				setContainerCounts(savedData.containerCounts || {});
+				setDriverName(savedData.driverName || '');
+				setDriverPhone(savedData.driverPhone || '');
 
 				// Restore image data
 				restoreFromLocalStorage({
@@ -191,8 +200,31 @@ const ClientDispatchDetails: React.FC = () => {
 		try {
 			console.log('🚀 Starting dispatch submission...');
 
+			// Validate adhoc fields if adhoc is selected
+			if (adhocTransportation) {
+				if (!driverName || !driverPhone || !dispatchVehicleNumber) {
+					setSnackbar({
+						open: true,
+						message: 'Vehicle Number, Driver Name, and Driver Phone are required for Adhoc Transportation',
+						type: 'error',
+					});
+					setSubmitting(false);
+					return;
+				}
+			}
+
 			// Generate inventory payload
-			const inventoryPayload = {
+			const inventoryPayload: {
+				containers: Array<{ container_type_id: number; count: number }>;
+				facility_id: number;
+				transit_date: string;
+				client_location_id: number;
+				transit_id: string;
+				adhoc: number;
+				driver_name?: string;
+				driver_phone?: string;
+				vehicle_number?: string;
+			} = {
 				containers: Object.entries(containerCounts)
 					.filter(([_, count]) => count > 0)
 					.map(([id, count]) => ({
@@ -205,6 +237,13 @@ const ClientDispatchDetails: React.FC = () => {
 				transit_id: transitPlanRow.transit_id,
 				adhoc: adhocTransportation ? 1 : 0,
 			};
+
+			// Add adhoc fields if adhoc is selected
+			if (adhocTransportation) {
+				inventoryPayload.driver_name = driverName;
+				inventoryPayload.driver_phone = driverPhone;
+				inventoryPayload.vehicle_number = dispatchVehicleNumber;
+			}
 
 			console.log('📦 Calling sendB2BInventory API...', inventoryPayload);
 			const inventoryResponse = await TransitPlanApi.sendB2BInventory(inventoryPayload);
@@ -316,6 +355,10 @@ const ClientDispatchDetails: React.FC = () => {
 						uploadingImage={uploadingImage}
 						uploadedImageUrl={uploadedImageUrl}
 						onFileUpload={handleFileUpload}
+						driverName={driverName}
+						onDriverNameChange={setDriverName}
+						driverPhone={driverPhone}
+						onDriverPhoneChange={setDriverPhone}
 					/>
 				</div>
 

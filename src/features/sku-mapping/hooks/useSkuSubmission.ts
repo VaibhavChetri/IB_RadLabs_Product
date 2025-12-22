@@ -52,17 +52,39 @@ export const useSkuSubmission = () => {
 				...clamshellRows.map(r => ({ ...r, impactTypeId: 2 })),
 			];
 
+			// Convert status from "Enabled"/"Disabled" to 1/0
+			const getStatusValue = (status: string): number => {
+				return status === 'Enabled' ? 1 : 0;
+			};
+			
+			// Determine container-level status (use most common status or default to enabled)
+			let containerStatus = 1; // Default to enabled
+			if (allRows.length > 0) {
+				const statusCounts = allRows.reduce((acc, row) => {
+					const status = row.status || 'Enabled';
+					acc[status] = (acc[status] || 0) + 1;
+					return acc;
+				}, {} as Record<string, number>);
+				
+				const enabledCount = statusCounts['Enabled'] || 0;
+				const disabledCount = statusCounts['Disabled'] || 0;
+				containerStatus = enabledCount >= disabledCount 
+					? getStatusValue('Enabled') 
+					: getStatusValue('Disabled');
+			}
+
 			const updatePayload = isEditMode
 				? {
 						containers: [
 							{
 								client_id: selectedClientId,
-								status: 1,
+								status: containerStatus,
 								containerDetails: allRows.map(row => ({
 									container_type_id: row.containerTypeId,
 									price: parseFloat(row.price) || 0,
 									combineSku: row.selectSku ? 1 : 0,
 									impact_type_id: row.impactTypeId!,
+									status: getStatusValue(row.status || 'Enabled'), // Status per container detail
 									distanceFromWarehouse: parseFloat(row.distanceFromWarehouse || '0'),
 									platesWashedPerCycleByClient: parseFloat(row.platesWashedPerCycle || '0'),
 									srcingDistance: parseFloat(srcingDistance) || 0,

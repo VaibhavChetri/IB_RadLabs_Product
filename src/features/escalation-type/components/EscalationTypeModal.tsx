@@ -31,11 +31,9 @@ export const EscalationTypeModal: React.FC<EscalationTypeModalProps> = ({
 		if (open) {
 			if (editingItem) {
 				setName(editingItem.name || '');
-				setStatus(
-					editingItem.status === ESCALATION_TYPE_STATUS.ACTIVE || editingItem.status === 'Active'
-						? ESCALATION_TYPE_STATUS.ACTIVE
-						: ESCALATION_TYPE_STATUS.INACTIVE
-				);
+				// API returns status as number (1 = Active, 0 = Inactive)
+				const statusNum = typeof editingItem.status === 'number' ? editingItem.status : (editingItem.status === 'Active' || editingItem.status === '1' ? 1 : 0);
+				setStatus(statusNum === 1 ? ESCALATION_TYPE_STATUS.ACTIVE : ESCALATION_TYPE_STATUS.INACTIVE);
 			} else {
 				setName('');
 				setStatus(ESCALATION_TYPE_STATUS.ACTIVE);

@@ -12,6 +12,7 @@ import {
 
 interface AddEscalationTypeParams {
 	name: string;
+	status?: number;
 }
 
 interface UpdateEscalationTypeParams {
@@ -46,7 +47,10 @@ export const useAddEscalationType = () => {
 					const optimisticItem: EscalationType = {
 						id: Date.now(), // Temporary ID
 						name: newItem.name,
-						status: 'Active',
+						status: newItem.status || 1,
+						status_name: newItem.status === 0 ? 'Inactive' : 'Active',
+						created_at: new Date().toISOString(),
+						updated_at: new Date().toISOString(),
 					};
 
 					return {
@@ -78,7 +82,8 @@ export const useUpdateEscalationType = () => {
 
 	return useMutation({
 		mutationFn: async (data: UpdateEscalationTypeParams) => {
-			return await EscalationTypeService.updateEscalationType(data.id, {
+			return await EscalationTypeService.updateEscalationType({
+				id: data.id,
 				name: data.name,
 				status: data.status,
 			});
@@ -104,13 +109,10 @@ export const useUpdateEscalationType = () => {
 							item.id === updatedItem.id
 								? {
 										...item,
-										name: updatedItem.name,
-										status:
-											updatedItem.status === 1
-												? 'Active'
-												: updatedItem.status === 0
-													? 'Inactive'
-													: item.status,
+										name: updatedItem.name || item.name,
+										status: updatedItem.status !== undefined ? updatedItem.status : item.status,
+										status_name: updatedItem.status === 1 ? 'Active' : updatedItem.status === 0 ? 'Inactive' : item.status_name,
+										updated_at: new Date().toISOString(),
 									}
 								: item
 						),

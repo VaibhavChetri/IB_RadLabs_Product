@@ -171,15 +171,9 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 			},
 			{
 				id: 'client-escalation',
-				name: 'Client Escalation',
-				icon: FileText,
+				name: 'Escalation',
+				icon: AlertCircle,
 				children: [
-					{
-						id: 'client-escalation-add',
-						name: 'New Client Escalation',
-						icon: UserPlus,
-						href: '/operations-reporting/client-escalation/add',
-					},
 					{
 						id: 'client-escalation-listing',
 						name: 'Client Escalation Listing',
@@ -382,15 +376,41 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 				],
 			},
 			{
-				id: 'ops-admin-escalations',
+				id: 'ops-admin-QC',
+				name: 'QC',
+				icon: AlertCircle,
+				children: [
+					{
+						id: 'QC-type',
+						name: 'QC Type Listing',
+						icon: FileText,
+						href: '/ops-admin/escalations/escalation-type',
+					},
+				],
+			},
+			{
+				id: 'ops-admin-client-escalations',
 				name: 'Escalations',
 				icon: AlertCircle,
 				children: [
 					{
-						id: 'escalation-type',
+						id: 'client-escalation-type',
 						name: 'Escalation Type',
 						icon: FileText,
-						href: '/ops-admin/escalations/escalation-type',
+						href: '/ops-admin/client-escalations/escalation-type',
+					},
+				],
+			},
+			{
+				id: 'container-types',
+				name: 'Container Types',
+				icon: Package,
+				children: [
+					{
+						id: 'container-listing',
+						name: 'Container Listing',
+						icon: FileText,
+						href: '/ops-admin/containers/listing',
 					},
 				],
 			},
@@ -399,6 +419,19 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 				name: 'Facility Resources',
 				icon: Building2,
 				href: '/ops-admin/facility-resources',
+			},
+			{
+				id: 'vehicles',
+				name: 'Vehicles',
+				icon: Truck,
+				children: [
+					{
+						id: 'vehicle-listing',
+						name: 'Vehicle Listing',
+						icon: FileText,
+						href: '/ops-admin/vehicles/listing',
+					},
+				],
 			},
 		],
 	},

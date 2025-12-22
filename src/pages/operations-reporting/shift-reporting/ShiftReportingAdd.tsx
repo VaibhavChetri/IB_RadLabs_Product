@@ -1,6 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PageHeader, Snackbar, FloatingInput, FloatingDropdown, Dropdown, Button } from '../../../components/ui';
+import { useSelector } from 'react-redux';
+import {
+	PageHeader,
+	Snackbar,
+	FloatingInput,
+	FloatingDropdown,
+	Dropdown,
+	Button,
+} from '../../../components/ui';
 import {
 	ShiftApiService,
 	Hora,
@@ -9,6 +17,7 @@ import {
 	EscalationManager,
 	CheckInShiftOpsStatusRequest,
 } from '../../../services/shiftApi';
+import { RootState } from '../../../store';
 
 interface ResourceRow {
 	resourceId: number;
@@ -19,6 +28,7 @@ interface ResourceRow {
 
 export const ShiftReportingAdd: React.FC = () => {
 	const navigate = useNavigate();
+	const { user } = useSelector((state: RootState) => state.auth);
 	// Set default date to today in YYYY-MM-DD format
 	const getTodayDate = () => {
 		const today = new Date();
@@ -35,7 +45,12 @@ export const ShiftReportingAdd: React.FC = () => {
 	const [escalationManagers, setEscalationManagers] = useState<EscalationManager[]>([]);
 	const [resourceRows, setResourceRows] = useState<ResourceRow[]>([]);
 	const [loading, setLoading] = useState(false);
-	const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; type: 'success' | 'error' }>({
+	const [apiError, setApiError] = useState<string | null>(null);
+	const [snackbar, setSnackbar] = useState<{
+		open: boolean;
+		message: string;
+		type: 'success' | 'error';
+	}>({
 		open: false,
 		message: '',
 		type: 'success',
@@ -64,9 +79,16 @@ export const ShiftReportingAdd: React.FC = () => {
 	// Load resources, ops status, and escalation managers on mount
 	useEffect(() => {
 		const loadInitialData = async () => {
+			// Don't load if user city_id is not available
+			if (!user?.city_id) {
+				setApiError('City information not available. Please contact administrator.');
+				return;
+			}
+
 			try {
+				setApiError(null);
 				const [resourcesRes, opsStatusRes, escalationRes] = await Promise.all([
-					ShiftApiService.getFacilityResources(1, 100),
+					ShiftApiService.getFacilityResources(1, 100, user.city_id),
 					ShiftApiService.getOpsStatusValues(),
 					ShiftApiService.getEscalationManagers(),
 				]);
@@ -80,17 +102,43 @@ export const ShiftReportingAdd: React.FC = () => {
 						escalationManagerId: null,
 					}));
 					setResourceRows(initialRows);
+
+					// Log for debugging
+					console.log(
+						'📋 Loaded resources:',
+						initialRows.length,
+						'for user:',
+						user?.name,
+						'city_id:',
+						user?.city_id
+					);
+
+					if (initialRows.length === 0) {
+						setApiError(
+							`No resources available for ${user?.city_name || 'your city'}. Please contact administrator to set up resources.`
+						);
+					}
+				} else {
+					console.warn('⚠️ Resources response:', resourcesRes);
+					setApiError(
+						`Failed to load resources for ${user?.city_name || 'your city'}. Please try again or contact administrator.`
+					);
 				}
 
 				if (opsStatusRes.status === 'Success' && opsStatusRes.data) {
 					setOpsStatusOptions(opsStatusRes.data);
+				} else {
+					console.warn('⚠️ Ops status response:', opsStatusRes);
 				}
 
 				if (escalationRes.status === 'Success' && escalationRes.data) {
 					setEscalationManagers(escalationRes.data);
+				} else {
+					console.warn('⚠️ Escalation managers response:', escalationRes);
 				}
 			} catch (error) {
-				console.error('Failed to load initial data:', error);
+				console.error('❌ Failed to load initial data:', error);
+				setApiError('Failed to load data. Please refresh the page or contact administrator.');
 				setSnackbar({
 					open: true,
 					message: 'Failed to load resources',
@@ -99,7 +147,7 @@ export const ShiftReportingAdd: React.FC = () => {
 			}
 		};
 		loadInitialData();
-	}, []);
+	}, [user?.city_id, user?.name, user?.city_name]);
 
 	// Check shift status when hora (time) is selected
 	useEffect(() => {
@@ -110,22 +158,35 @@ export const ShiftReportingAdd: React.FC = () => {
 			}
 
 			setLoading(true);
+			setApiError(null);
 			try {
-				console.log('Calling getShiftStatusByDate with:', { shift_date: shiftDate, hora_id: selectedHoraId });
+				console.log('🔍 Calling getShiftStatusByDate with:', {
+					shift_date: shiftDate,
+					hora_id: selectedHoraId,
+					user: user?.name,
+				});
 				const response = await ShiftApiService.getShiftStatusByDate(shiftDate, selectedHoraId);
-				console.log('Shift status response:', response);
+				console.log('📊 Shift status response:', response);
+
 				if (response.status === 'Success' && response.shifts) {
 					if (response.shifts.length > 0) {
 						setShiftStatus(response.shifts[0]);
+						console.log('✅ Shift status found:', response.shifts[0]);
 					} else {
 						setShiftStatus(null);
+						console.log('ℹ️ No shift status found - new shift');
 					}
+				} else {
+					console.warn('⚠️ Unexpected response format:', response);
+					setShiftStatus(null);
 				}
 			} catch (error) {
-				console.error('Failed to check shift status:', error);
+				console.error('❌ Failed to check shift status:', error);
+				setShiftStatus(null); // Set to null so table can still show
+				setApiError('Failed to check shift status. You can still proceed with data entry.');
 				setSnackbar({
 					open: true,
-					message: 'Failed to check shift status',
+					message: 'Failed to check shift status. You can still proceed.',
 					type: 'error',
 				});
 			} finally {
@@ -134,7 +195,7 @@ export const ShiftReportingAdd: React.FC = () => {
 		};
 
 		checkShiftStatus();
-	}, [selectedHoraId, shiftDate]);
+	}, [selectedHoraId, shiftDate, user?.name]);
 
 	// Handle time dropdown change - explicitly call API
 	const handleTimeChange = (value: string) => {
@@ -189,37 +250,36 @@ export const ShiftReportingAdd: React.FC = () => {
 	// Handle escalation manager change
 	const handleEscalationChange = (resourceId: number, escalationManagerId: number | null) => {
 		setResourceRows(prevRows =>
-			prevRows.map(row =>
-				row.resourceId === resourceId ? { ...row, escalationManagerId } : row
-			)
+			prevRows.map(row => (row.resourceId === resourceId ? { ...row, escalationManagerId } : row))
 		);
 	};
 
-	// Determine if table should be shown - only when time is selected
+	// Determine if table should be shown - only when time is selected and shift is not fully completed
 	const shouldShowTable = useMemo(() => {
 		// Don't show table if time is not selected
 		if (!selectedHoraId) return false;
-		
-		// If shift status is null (empty shifts array) - show table
-		if (!shiftStatus) return true;
-		
-		// If check-out is null (check-in done, check-out pending) - show table
-		if (shiftStatus.check_out === null) return true;
-		
-		// Both check-in and check-out done - don't show table
-		return false;
-	}, [shiftStatus, selectedHoraId]);
+
+		// If both check-in and check-out are done, don't show the editable table
+		if (shiftStatus && shiftStatus.check_out !== null && shiftStatus.status === 'Completed') {
+			return false;
+		}
+
+		// Show table if:
+		// 1. Check-in is not done (shiftStatus is null)
+		// 2. Check-in is done but check-out is pending (check_out is null)
+		return true;
+	}, [selectedHoraId, shiftStatus]);
 
 	// Get table header text based on what's not done
 	const getTableHeader = useMemo(() => {
 		if (!selectedHoraId) return 'Resource Status';
-		
+
 		// If shift status is null, check-in is not done
 		if (!shiftStatus) return 'Check-in';
-		
+
 		// If check-out is null, check-out is not done
 		if (shiftStatus.check_out === null) return 'Check-out';
-		
+
 		return 'Resource Status';
 	}, [shiftStatus, selectedHoraId]);
 
@@ -300,14 +360,14 @@ export const ShiftReportingAdd: React.FC = () => {
 		setLoading(true);
 		try {
 			const response = await ShiftApiService.checkInShiftOpsStatus(requestPayload);
-			
+
 			if (response.status === 'Success') {
 				setSnackbar({
 					open: true,
 					message: response.message || 'Shift and resources inserted successfully',
 					type: 'success',
 				});
-				
+
 				// Redirect to listing page after a short delay
 				setTimeout(() => {
 					navigate('/operations-reporting/shift-reporting/listing');
@@ -362,6 +422,13 @@ export const ShiftReportingAdd: React.FC = () => {
 					</div>
 				</div>
 
+				{/* Error Message */}
+				{apiError && (
+					<div className='mt-4 p-4 rounded-lg bg-yellow-50 border border-yellow-200 text-yellow-800'>
+						<p className='font-medium'>{apiError}</p>
+					</div>
+				)}
+
 				{/* Status Message */}
 				{statusMessage && (
 					<div
@@ -390,89 +457,102 @@ export const ShiftReportingAdd: React.FC = () => {
 					<div className='mt-6'>
 						{/* Separate heading */}
 						<h3 className='text-lg font-semibold text-gray-900 mb-4'>{getTableHeader}</h3>
-						
-						<div className='bg-white border border-gray-200 rounded-lg overflow-hidden'>
-							<div className='overflow-x-auto'>
-								<table className='w-full'>
-								<thead className='bg-gray-50 border-b border-gray-200'>
-									<tr>
-										<th className='px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider'>
-											Resource
-										</th>
-										<th className='px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider'>
-											Ops Status
-										</th>
-										<th className='px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider'>
-											Escalated To
-										</th>
-									</tr>
-								</thead>
-								<tbody className='bg-white divide-y divide-gray-200'>
-									{resourceRows.map(row => {
-										const opsStatus = opsStatusOptions.find(s => s.id === row.opsStatusId);
-										const shouldShowEscalation =
-											opsStatus?.name === 'Non-Functional' || opsStatus?.name === 'Shortage';
-										
-										// Color code based on status type: Shortage/Non-Functional = red, Functional/Available = green
-										const getStatusBgColor = () => {
-											if (!opsStatus) return '';
-											const statusName = opsStatus.name.toLowerCase();
-											if (statusName === 'shortage' || statusName === 'non-functional') {
-												return 'bg-red-50';
-											}
-											if (statusName === 'functional' || statusName === 'available') {
-												return 'bg-green-50';
-											}
-											return '';
-										};
 
-										return (
-											<tr key={row.resourceId} className='hover:bg-gray-50'>
-												<td className='px-6 py-4 whitespace-nowrap text-sm text-gray-900'>
-													{row.resourceName}
-												</td>
-												<td className={`px-6 py-4 whitespace-nowrap ${getStatusBgColor()}`}>
-													<div className='w-48'>
-														<Dropdown
-															options={opsStatusDropdownOptions}
-															value={row.opsStatusId ? String(row.opsStatusId) : ''}
-															onChange={value =>
-																handleOpsStatusChange(row.resourceId, value ? Number(value) : null)
-															}
-															placeholder='Select status'
-															searchable={false}
-														/>
-													</div>
-												</td>
-												<td className='px-6 py-4 whitespace-nowrap'>
-													{shouldShowEscalation ? (
-														<div className='w-48'>
-															<Dropdown
-																options={escalationDropdownOptions}
-																value={
-																	row.escalationManagerId ? String(row.escalationManagerId) : ''
-																}
-																onChange={value =>
-																	handleEscalationChange(
-																		row.resourceId,
-																		value ? Number(value) : null
-																	)
-																}
-																placeholder='Select manager'
-																searchable={false}
-															/>
-														</div>
-													) : (
-														<span className='text-sm text-gray-400'>-</span>
-													)}
-												</td>
-											</tr>
-										);
-									})}
-								</tbody>
-							</table>
+						{resourceRows.length === 0 ? (
+							<div className='bg-white border border-gray-200 rounded-lg p-8 text-center'>
+								<p className='text-gray-500'>
+									No resources available. Please contact your administrator to set up resources for
+									your account.
+								</p>
+								{user?.name && <p className='text-sm text-gray-400 mt-2'>User: {user.name}</p>}
 							</div>
-						</div>
+						) : (
+							<div className='bg-white border border-gray-200 rounded-lg overflow-hidden'>
+								<div className='overflow-x-auto'>
+									<table className='w-full'>
+										<thead className='bg-gray-50 border-b border-gray-200'>
+											<tr>
+												<th className='px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider'>
+													Resource
+												</th>
+												<th className='px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider'>
+													Ops Status
+												</th>
+												<th className='px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider'>
+													Escalated To
+												</th>
+											</tr>
+										</thead>
+										<tbody className='bg-white divide-y divide-gray-200'>
+											{resourceRows.map(row => {
+												const opsStatus = opsStatusOptions.find(s => s.id === row.opsStatusId);
+												const shouldShowEscalation =
+													opsStatus?.name === 'Non-Functional' || opsStatus?.name === 'Shortage';
+
+												// Color code based on status type: Shortage/Non-Functional = red, Functional/Available = green
+												const getStatusBgColor = () => {
+													if (!opsStatus) return '';
+													const statusName = opsStatus.name.toLowerCase();
+													if (statusName === 'shortage' || statusName === 'non-functional') {
+														return 'bg-red-50';
+													}
+													if (statusName === 'functional' || statusName === 'available') {
+														return 'bg-green-50';
+													}
+													return '';
+												};
+
+												return (
+													<tr key={row.resourceId} className='hover:bg-gray-50'>
+														<td className='px-6 py-4 whitespace-nowrap text-sm text-gray-900'>
+															{row.resourceName}
+														</td>
+														<td className={`px-6 py-4 whitespace-nowrap ${getStatusBgColor()}`}>
+															<div className='w-48'>
+																<Dropdown
+																	options={opsStatusDropdownOptions}
+																	value={row.opsStatusId ? String(row.opsStatusId) : ''}
+																	onChange={value =>
+																		handleOpsStatusChange(
+																			row.resourceId,
+																			value ? Number(value) : null
+																		)
+																	}
+																	placeholder='Select status'
+																	searchable={false}
+																/>
+															</div>
+														</td>
+														<td className='px-6 py-4 whitespace-nowrap'>
+															{shouldShowEscalation ? (
+																<div className='w-48'>
+																	<Dropdown
+																		options={escalationDropdownOptions}
+																		value={
+																			row.escalationManagerId ? String(row.escalationManagerId) : ''
+																		}
+																		onChange={value =>
+																			handleEscalationChange(
+																				row.resourceId,
+																				value ? Number(value) : null
+																			)
+																		}
+																		placeholder='Select manager'
+																		searchable={false}
+																	/>
+																</div>
+															) : (
+																<span className='text-sm text-gray-400'>-</span>
+															)}
+														</td>
+													</tr>
+												);
+											})}
+										</tbody>
+									</table>
+								</div>
+							</div>
+						)}
 					</div>
 				)}
 

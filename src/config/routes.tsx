@@ -19,6 +19,10 @@ import { ReviewCategoryType } from '../pages/ops-admin/revenue/ReviewCategoryTyp
 import { EscalationType } from '../pages/ops-admin/escalations/EscalationType';
 // Ops Admin - Facility Resources
 import FacilityResourceListing from '../pages/ops-admin/facility-resources/FacilityResourceListing';
+// Ops Admin - Vehicles
+import { VehicleListing } from '../pages/ops-admin/vehicles/VehicleListing';
+// Ops Admin - Containers
+import ContainerListing from '../pages/ops-admin/containers/ContainerListing';
 // Transit Plan - Master Plan
 import CreateMasterPlan from '../pages/transit-plan/master-plan/CreateMasterPlan';
 import EditMasterPlan from '../pages/transit-plan/master-plan/EditMasterPlan';
@@ -98,7 +102,10 @@ export const routes: RouteConfig[] = [
 	{ path: '/ops-admin/revenue/review-cost-type', component: ReviewCostType },
 	{ path: '/ops-admin/revenue/review-category-type', component: ReviewCategoryType },
 	{ path: '/ops-admin/escalations/escalation-type', component: EscalationType },
+	{ path: '/ops-admin/client-escalations/escalation-type', component: EscalationType },
 	{ path: '/ops-admin/facility-resources', component: FacilityResourceListing },
+	{ path: '/ops-admin/vehicles/listing', component: VehicleListing },
+	{ path: '/ops-admin/containers/listing', component: ContainerListing },
 	{ path: '/p-and-l/summary', component: PLSummary },
 	{ path: '/p-and-l/graphs', component: PLGraphs },
 	{ path: '/revenue/monthly-estimate/add', component: MonthlyEstimateAdd },

@@ -60,6 +60,7 @@ export interface ContainerPayload {
 	waterConsumedPerCycle: number;
 	combineSku: number;
 	impact_type_id: number;
+	status?: number; // Status per container detail: 1 for Enabled, 0 for Disabled
 }
 
 // Client Payload for Add/Update

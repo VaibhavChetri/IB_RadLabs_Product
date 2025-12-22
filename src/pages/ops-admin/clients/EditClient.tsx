@@ -12,8 +12,6 @@ import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../../store';
 import { restoreSelectedLocation } from '../../../store/slices/clientSlice';
-import { useApi } from '../../../hooks/useApi';
-import { apiService } from '../../../services/api';
 import {
 	useCountries,
 	useStates,
@@ -24,6 +22,7 @@ import {
 	useBillingSubTypes,
 } from '../../../hooks/useLocationData';
 import { ClientApiService, UpdateClientRequest } from '../../../services/clientApi';
+import { FacilityDropdown } from '../../../components/FacilityDropdown';
 
 interface ClientFormData {
 	// Basic Information
@@ -95,17 +94,6 @@ export const EditClient: React.FC = () => {
 
 	const { impactTypes, loading: impactTypesLoading } = useImpactTypes();
 	const { billingTypes, loading: billingTypesLoading } = useBillingTypes();
-
-	// Facility API
-	const facilitiesApi = useApi('facilities', async () => {
-		const params = new URLSearchParams();
-		params.append('location_type', '2');
-		if (user?.city_id) {
-			params.append('city_id', user.city_id.toString());
-		}
-		const response = await apiService.get(`/locations/getLocations?${params.toString()}`);
-		return response;
-	});
 
 	// Derive initial form data from Redux state (selectedLocation)
 	// This ensures form data is always in sync with Redux state
@@ -218,8 +206,6 @@ export const EditClient: React.FC = () => {
 		}
 	}, [selectedLocation?.impactTypes, impactTypes.length, impactTypesLoading]);
 
-	const [facilities, setFacilities] = useState<unknown[]>([]); // Local state for facilities
-
 	// Snackbar state
 	const [snackbar, setSnackbar] = useState({
 		open: false,
@@ -227,40 +213,16 @@ export const EditClient: React.FC = () => {
 		type: 'success' as 'success' | 'error' | 'info',
 	});
 
-	// Load facilities when onSiteManpower is true (from Redux state or form change)
+	// Set facility from Redux state when available (only if it exists)
 	useEffect(() => {
-		if (formData.onSiteManpower && user?.city_id) {
-			facilitiesApi.execute({}).then(response => {
-				// Handle both response.data and response.result (API inconsistency)
-				// The API might return data directly as array or wrapped in result/data
-				let facilitiesData: any[] = [];
-				if ((response as any).result) {
-					facilitiesData = Array.isArray((response as any).result) ? (response as any).result : [];
-				} else if (response.data) {
-					facilitiesData = Array.isArray(response.data) ? response.data : [];
-				}
-
-				if (facilitiesData.length > 0) {
-					setFacilities(facilitiesData);
-
-					// Ensure facility value from Redux state is set after facilities load
-					if (selectedLocation?.facilityId) {
-						const facilityIdStr = selectedLocation.facilityId.toString();
-						const facilityExists = facilitiesData.some(
-							(f: any) => f.id?.toString() === facilityIdStr
-						);
-
-						if (facilityExists && formData.facility !== facilityIdStr) {
-							setFormData(prev => ({
-								...prev,
-								facility: facilityIdStr,
-							}));
-						}
-					}
-				}
-			});
+		if (selectedLocation?.facilityId && !formData.facility) {
+			setFormData(prev => ({
+				...prev,
+				facility: selectedLocation.facilityId?.toString() || '',
+			}));
 		}
-	}, [formData.onSiteManpower, user?.city_id, selectedLocation?.facilityId, formData.facility]);
+		// If no facility_id exists, don't set anything (leave empty)
+	}, [selectedLocation?.facilityId, formData.facility]);
 
 	// Set user's city and state as default for non-super admins
 	useEffect(() => {
@@ -285,13 +247,9 @@ export const EditClient: React.FC = () => {
 	const handleInputChange = (field: keyof ClientFormData, value: string | boolean) => {
 		setFormData(prev => ({ ...prev, [field]: value }));
 
-		// Trigger facilities API when onSiteManpower is checked
-		if (field === 'onSiteManpower' && value === true) {
-			facilitiesApi.execute({}).then(response => {
-				if (response.data) {
-					setFacilities(response.data);
-				}
-			});
+		// Clear facility when city changes (since facilities are city-specific)
+		if (field === 'city') {
+			setFormData(prev => ({ ...prev, facility: '' }));
 		}
 	};
 
@@ -300,6 +258,16 @@ export const EditClient: React.FC = () => {
 		e.preventDefault();
 
 		if (!selectedLocation) {
+			return;
+		}
+
+		// Validate facility is selected (mandatory)
+		if (!formData.facility || formData.facility === '') {
+			setSnackbar({
+				open: true,
+				message: 'Please select a facility before updating the client.',
+				type: 'error',
+			});
 			return;
 		}
 
@@ -325,7 +293,7 @@ export const EditClient: React.FC = () => {
 					? parseInt(formData.billingSubType)
 					: undefined,
 				onSiteManPower: formData.onSiteManpower ? 1 : 0,
-				facility_id: formData.facility ? parseInt(formData.facility) : undefined,
+				facility_id: parseInt(formData.facility!), // Always required now (validated before submission)
 			};
 
 			// Add optional fields based on billing type
@@ -466,28 +434,6 @@ export const EditClient: React.FC = () => {
 									Has On-Site Manpower
 								</label>
 							</div>
-
-							{/* Facility Dropdown (when onSiteManpower is true) */}
-							{formData.onSiteManpower && (
-								<div className='mt-4'>
-									<FloatingDropdown
-										label='Facility'
-										options={
-											facilities.map((facility: unknown) => ({
-												// eslint-disable-next-line @typescript-eslint/no-explicit-any
-												value: (facility as any).id?.toString() || '',
-												// eslint-disable-next-line @typescript-eslint/no-explicit-any
-												label: (facility as any).location || `Facility ${(facility as any).id}`,
-											})) || []
-										}
-										value={formData.facility || ''}
-										onChange={(value: string) => handleInputChange('facility', value)}
-										loading={facilitiesApi.loading}
-										placeholder='Select Facility'
-										required
-									/>
-								</div>
-							)}
 						</div>
 					</Card>
 
@@ -540,6 +486,17 @@ export const EditClient: React.FC = () => {
 								placeholder='Select City'
 								required
 								disabled={user?.userTypeId ? user.userTypeId > 4 : false}
+							/>
+
+							{/* Facility Dropdown - filtered by selected city, mandatory */}
+							<FacilityDropdown
+								label='Facility'
+								value={formData.facility || ''}
+								onChange={(value: string) => handleInputChange('facility', value)}
+								cityId={formData.city ? parseInt(formData.city) : undefined}
+								autoSelectFirst={false}
+								className='w-full'
+								placeholder='Select Facility'
 							/>
 						</div>
 					</Card>

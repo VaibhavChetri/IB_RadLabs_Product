@@ -15,6 +15,10 @@ interface DispatchFormSectionProps {
 	uploadingImage: boolean;
 	uploadedImageUrl: string;
 	onFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+	driverName: string;
+	onDriverNameChange: (value: string) => void;
+	driverPhone: string;
+	onDriverPhoneChange: (value: string) => void;
 }
 
 const DispatchFormSection: React.FC<DispatchFormSectionProps> = ({
@@ -30,6 +34,10 @@ const DispatchFormSection: React.FC<DispatchFormSectionProps> = ({
 	uploadingImage,
 	uploadedImageUrl,
 	onFileUpload,
+	driverName,
+	onDriverNameChange,
+	driverPhone,
+	onDriverPhoneChange,
 }) => {
 	const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
 		console.error('❌ Image load error:', e);
@@ -64,16 +72,41 @@ const DispatchFormSection: React.FC<DispatchFormSectionProps> = ({
 						</label>
 					</div>
 
-					{/* Dispatch Vehicle Number */}
-					<div>
-						<FloatingInput
-							label='Dispatch Vehicle Number*'
-							type='text'
-							value={dispatchVehicleNumber}
-							onChange={onDispatchVehicleNumberChange}
-							placeholder='Enter vehicle number'
-						/>
-					</div>
+					{/* Adhoc Fields - shown only when adhoc is selected */}
+					{adhocTransportation && (
+						<>
+							<div>
+								<FloatingInput
+									label='Vehicle Number'
+									type='text'
+									value={dispatchVehicleNumber}
+									onChange={onDispatchVehicleNumberChange}
+									placeholder='Enter vehicle number'
+									required
+								/>
+							</div>
+							<div>
+								<FloatingInput
+									label='Driver Name'
+									type='text'
+									value={driverName}
+									onChange={onDriverNameChange}
+									placeholder='Enter driver name'
+									required
+								/>
+							</div>
+							<div>
+								<FloatingInput
+									label='Driver Phone'
+									type='text'
+									value={driverPhone}
+									onChange={onDriverPhoneChange}
+									placeholder='Enter driver phone number'
+									required
+								/>
+							</div>
+						</>
+					)}
 
 					{/* Signature Name */}
 					<div>

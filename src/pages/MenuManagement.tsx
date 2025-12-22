@@ -100,6 +100,26 @@ export const MenuManagement: React.FC = () => {
 			return menu.children && menu.children.length > 0;
 		};
 
+		// Helper function to find parent menu ID for a given menu ID
+		const findParentMenuId = (
+			menu: any,
+			targetId: number,
+			parentId: number | null = null
+		): number | null => {
+			if (menu.id === targetId) {
+				return parentId;
+			}
+			if (menu.children) {
+				for (const child of menu.children) {
+					const found = findParentMenuId(child, targetId, menu.id);
+					if (found !== null) {
+						return found;
+					}
+				}
+			}
+			return null;
+		};
+
 		// Helper function to recursively update all descendants
 		const cascadeToChildren = (menu: any, userTypeId: number, access: boolean): any => {
 			if (!menu.children || menu.children.length === 0) {
@@ -123,32 +143,71 @@ export const MenuManagement: React.FC = () => {
 			};
 		};
 
-		const updateMenuPermissions = (menu: any): any => {
-			if (menu.id === menuId) {
-				const updatedMenu = {
+		// Helper function to update a specific menu's permission
+		const updateMenuPermission = (
+			menu: any,
+			targetMenuId: number,
+			userTypeId: number,
+			access: boolean
+		): any => {
+			if (menu.id === targetMenuId) {
+				return {
 					...menu,
 					permissions: menu.permissions.map((p: any) =>
 						p.user_type_id === userTypeId ? { ...p, access } : p
 					),
 				};
-
-				// If this menu has children, cascade the permission change to all descendants
-				if (hasChildren(updatedMenu)) {
-					return cascadeToChildren(updatedMenu, userTypeId, access);
-				}
-
-				return updatedMenu;
 			}
 
-			// Continue searching in children
 			if (menu.children) {
 				return {
 					...menu,
-					children: menu.children.map((child: any) => updateMenuPermissions(child)),
+					children: menu.children.map((child: any) =>
+						updateMenuPermission(child, targetMenuId, userTypeId, access)
+					),
 				};
 			}
 
 			return menu;
+		};
+
+		// Helper function to find a menu by ID
+		const findMenuById = (menu: any, targetId: number): any => {
+			if (menu.id === targetId) {
+				return menu;
+			}
+			if (menu.children) {
+				for (const child of menu.children) {
+					const found = findMenuById(child, targetId);
+					if (found) {
+						return found;
+					}
+				}
+			}
+			return null;
+		};
+
+		const updateMenuPermissions = (menu: any): any => {
+			// First, find the parent menu ID if we're enabling a child
+			const parentMenuId = access ? findParentMenuId(menu, menuId) : null;
+
+			// Update the target menu's permission
+			let updatedMenu = updateMenuPermission(menu, menuId, userTypeId, access);
+
+			// If enabling a child, also enable the parent automatically
+			if (access && parentMenuId !== null) {
+				updatedMenu = updateMenuPermission(updatedMenu, parentMenuId, userTypeId, true);
+			}
+
+			// If disabling a parent, cascade down to all children
+			if (!access) {
+				const targetMenu = findMenuById(updatedMenu, menuId);
+				if (targetMenu && hasChildren(targetMenu)) {
+					updatedMenu = cascadeToChildren(updatedMenu, userTypeId, access);
+				}
+			}
+
+			return updatedMenu;
 		};
 
 		setPermissionData((prev: any) => ({

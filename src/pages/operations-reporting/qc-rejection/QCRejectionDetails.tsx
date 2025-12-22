@@ -84,9 +84,9 @@ export const QCRejectionDetails: React.FC = () => {
 				// Load rejection reasons
 				const reasonsResponse = await EscalationTypeService.getEscalationTypes();
 				if (reasonsResponse?.data) {
-					// Filter only active reasons
+					// Filter only active reasons (status = 1 means Active)
 					const activeReasons = reasonsResponse.data.filter(
-						reason => reason.status === 'Active'
+						reason => reason.status === 1
 					);
 					setRejectionReasons(activeReasons);
 				}

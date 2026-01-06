@@ -322,7 +322,7 @@ const ReceivedTransitPlanListing: React.FC = () => {
 										const dcData = convertApiResponseToDCData(apiResponse, {
 											id: row.id,
 											facilityId: row.facilityId || 115,
-											city_id: Number(row.city_id) || 3,
+											city_id: cityId, // Use user's city_id from token, not facility's city_id
 											restaurantName: row.restaurantName || 'Unknown Client',
 											transitDate: row.transitDate || new Date().toISOString().split('T')[0],
 											transit_time: row.transit_time || '15:00:00',

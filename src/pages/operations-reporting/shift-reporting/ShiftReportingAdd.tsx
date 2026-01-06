@@ -16,7 +16,10 @@ import {
 	OpsStatus,
 	EscalationManager,
 	CheckInShiftOpsStatusRequest,
+	CheckOutShiftOpsStatusRequest,
+	CheckOutContainerInfo,
 } from '../../../services/shiftApi';
+import { ContainerApiService, ContainerType } from '../../../services/containerApi';
 import { RootState } from '../../../store';
 
 interface ResourceRow {
@@ -55,6 +58,13 @@ export const ShiftReportingAdd: React.FC = () => {
 		message: '',
 		type: 'success',
 	});
+
+	// Checkout-specific state
+	const [manpowerCount, setManpowerCount] = useState<number>(0);
+	const [shiftHours, setShiftHours] = useState<number>(0);
+	const [otHours, setOtHours] = useState<number>(0);
+	const [containerTypes, setContainerTypes] = useState<ContainerType[]>([]);
+	const [containerCounts, setContainerCounts] = useState<Record<number, number>>({});
 
 	// Load Hora options on mount
 	useEffect(() => {
@@ -197,6 +207,38 @@ export const ShiftReportingAdd: React.FC = () => {
 		checkShiftStatus();
 	}, [selectedHoraId, shiftDate, user?.name]);
 
+	// Load container types when in checkout mode
+	useEffect(() => {
+		const loadContainers = async () => {
+			// Only load if we're in checkout mode (check-in done, checkout pending)
+			if (shiftStatus && shiftStatus.check_out === null) {
+				try {
+					const response = await ContainerApiService.getDistinctContainerNamesBasedOnCity();
+					if (response.status === 'Success' && response.data?.data) {
+						// Sort containers alphabetically by container_name
+						const sortedContainers = [...response.data.data].sort((a, b) => {
+							const nameA = a.container_name || a.container || a.sku || '';
+							const nameB = b.container_name || b.container || b.sku || '';
+							return nameA.localeCompare(nameB);
+						});
+
+						setContainerTypes(sortedContainers);
+						// Initialize container counts to 0
+						const initialCounts: Record<number, number> = {};
+						sortedContainers.forEach(container => {
+							const containerId = container.container_type_id || container.id || 0;
+							initialCounts[containerId] = 0;
+						});
+						setContainerCounts(initialCounts);
+					}
+				} catch (error) {
+					console.error('Failed to load container types:', error);
+				}
+			}
+		};
+		loadContainers();
+	}, [shiftStatus]);
+
 	// Handle time dropdown change - explicitly call API
 	const handleTimeChange = (value: string) => {
 		const horaId = value ? Number(value) : null;
@@ -317,67 +359,121 @@ export const ShiftReportingAdd: React.FC = () => {
 			return;
 		}
 
-		// Check if at least one resource has ops status selected
-		const hasOpsStatus = resourceRows.some(row => row.opsStatusId !== null);
-		if (!hasOpsStatus) {
-			setSnackbar({
-				open: true,
-				message: 'Please select ops status for at least one resource',
-				type: 'error',
-			});
-			return;
-		}
-
-		// Build resourcesInfo array
-		const resourcesInfo = resourceRows
-			.filter(row => row.opsStatusId !== null) // Only include resources with ops status
-			.map(row => {
-				const resourceInfo: CheckInShiftOpsStatusRequest['resourcesInfo'][0] = {
-					shift_resource_id: row.resourceId,
-					resource_status_id: row.opsStatusId!,
-				};
-
-				// Add escalation manager ID if selected and ops status requires it
-				if (row.escalationManagerId !== null) {
-					const opsStatus = opsStatusOptions.find(s => s.id === row.opsStatusId);
-					const shouldIncludeEscalation =
-						opsStatus?.name === 'Non-Functional' || opsStatus?.name === 'Shortage';
-					if (shouldIncludeEscalation) {
-						resourceInfo.shift_escalation_manager_id = row.escalationManagerId;
-					}
-				}
-
-				return resourceInfo;
-			});
-
-		// Prepare request payload
-		const requestPayload: CheckInShiftOpsStatusRequest = {
-			hora_id: selectedHoraId,
-			shift_date: shiftDate,
-			resourcesInfo,
-		};
+		// Determine if we're in checkout mode
+		const isCheckout = shiftStatus !== null && shiftStatus.check_out === null;
 
 		setLoading(true);
 		try {
-			const response = await ShiftApiService.checkInShiftOpsStatus(requestPayload);
+			if (isCheckout) {
+				// Checkout mode - call checkOutShiftOpsStatus
+				// Validate checkout fields
+				if (manpowerCount <= 0 || shiftHours <= 0) {
+					setSnackbar({
+						open: true,
+						message: 'Please enter valid manpower count and shift hours',
+						type: 'error',
+					});
+					setLoading(false);
+					return;
+				}
 
-			if (response.status === 'Success') {
-				setSnackbar({
-					open: true,
-					message: response.message || 'Shift and resources inserted successfully',
-					type: 'success',
-				});
+				// Build containers info from containerCounts
+				const containersInfo: CheckOutContainerInfo[] = Object.entries(containerCounts)
+					.map(([container_type_id, count]) => ({
+						container_type_id: Number(container_type_id),
+						count: count || 0,
+					}));
 
-				// Redirect to listing page after a short delay
-				setTimeout(() => {
-					navigate('/operations-reporting/shift-reporting/listing');
-				}, 1500);
+				const checkoutPayload: CheckOutShiftOpsStatusRequest = {
+					hora_id: selectedHoraId,
+					shift_date: shiftDate,
+					shift_id: shiftStatus.shift_id,
+					manpower_count: manpowerCount,
+					shift_hours: shiftHours,
+					ot_hours: otHours,
+					containersInfo,
+				};
+
+				const response = await ShiftApiService.checkOutShiftOpsStatus(checkoutPayload);
+
+				if (response.status === 'Success') {
+					setSnackbar({
+						open: true,
+						message: response.message || 'Shift checkout recorded successfully',
+						type: 'success',
+					});
+
+					setTimeout(() => {
+						navigate('/operations-reporting/shift-reporting/listing');
+					}, 1500);
+				} else {
+					setSnackbar({
+						open: true,
+						message: response.message || 'Failed to submit checkout data',
+						type: 'error',
+					});
+				}
 			} else {
-				setSnackbar({
-					open: true,
-					message: response.message || 'Failed to submit shift data',
-					type: 'error',
-				});
+				// Check-in mode - call checkInShiftOpsStatus
+				// Check if at least one resource has ops status selected
+				const hasOpsStatus = resourceRows.some(row => row.opsStatusId !== null);
+				if (!hasOpsStatus) {
+					setSnackbar({
+						open: true,
+						message: 'Please select ops status for at least one resource',
+						type: 'error',
+					});
+					setLoading(false);
+					return;
+				}
+
+				// Build resourcesInfo array
+				const resourcesInfo = resourceRows
+					.filter(row => row.opsStatusId !== null)
+					.map(row => {
+						const resourceInfo: CheckInShiftOpsStatusRequest['resourcesInfo'][0] = {
+							shift_resource_id: row.resourceId,
+							resource_status_id: row.opsStatusId!,
+						};
+
+						// Add escalation manager ID if selected and ops status requires it
+						if (row.escalationManagerId !== null) {
+							const opsStatus = opsStatusOptions.find(s => s.id === row.opsStatusId);
+							const shouldIncludeEscalation =
+								opsStatus?.name === 'Non-Functional' || opsStatus?.name === 'Shortage';
+							if (shouldIncludeEscalation) {
+								resourceInfo.shift_escalation_manager_id = row.escalationManagerId;
+							}
+						}
+
+						return resourceInfo;
+					});
+
+				const checkinPayload: CheckInShiftOpsStatusRequest = {
+					hora_id: selectedHoraId,
+					shift_date: shiftDate,
+					resourcesInfo,
+				};
+
+				const response = await ShiftApiService.checkInShiftOpsStatus(checkinPayload);
+
+				if (response.status === 'Success') {
+					setSnackbar({
+						open: true,
+						message: response.message || 'Shift and resources inserted successfully',
+						type: 'success',
+					});
+
+					setTimeout(() => {
+						navigate('/operations-reporting/shift-reporting/listing');
+					}, 1500);
+				} else {
+					setSnackbar({
+						open: true,
+						message: response.message || 'Failed to submit shift data',
+						type: 'error',
+					});
+				}
 			}
 		} catch (error) {
 			console.error('Failed to submit shift data:', error);
@@ -452,8 +548,75 @@ export const ShiftReportingAdd: React.FC = () => {
 					</div>
 				)}
 
+
+			{/* Checkout Form - shown when in checkout mode */}
+			{shiftStatus && shiftStatus.check_out === null && (
+				<div className='mt-6'>
+					<h3 className='text-lg font-semibold text-gray-900 mb-4'>Checkout Details</h3>
+					<div className='bg-white border border-gray-200 rounded-lg p-6'>
+						{/* Manpower and Hours Section */}
+						<div className='grid grid-cols-1 md:grid-cols-3 gap-4 mb-6'>
+							<div>
+								<FloatingInput
+									label='Manpower Count'
+									type='number'
+									value={String(manpowerCount)}
+									onChange={value => setManpowerCount(Number(value) || 0)}
+									required
+								/>
+							</div>
+							<div>
+								<FloatingInput
+									label='Shift Hours'
+									type='number'
+									value={String(shiftHours)}
+									onChange={value => setShiftHours(Number(value) || 0)}
+									required
+								/>
+							</div>
+							<div>
+								<FloatingInput
+									label='OT Hours'
+									type='number'
+									value={String(otHours)}
+									onChange={value => setOtHours(Number(value) || 0)}
+								/>
+							</div>
+						</div>
+
+						{/* Container Counts Section */}
+						{containerTypes.length > 0 && (
+							<div className='border-t border-gray-200 pt-6'>
+								<h4 className='text-md font-semibold text-gray-900 mb-4'>Container Counts</h4>
+								<div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+							{containerTypes.map(container => {
+								const containerId = container.container_type_id || container.id || 0;
+								const containerName = container.container_name || container.sku || container.container || `Container ${containerId}`;
+								return (
+									<div key={containerId}>
+										<FloatingInput
+											label={containerName}
+											type='number'
+											value={String(containerCounts[containerId] || 0)}
+											onChange={value =>
+												setContainerCounts(prev => ({
+													...prev,
+													[containerId]: Number(value) || 0,
+												}))
+											}
+										/>
+									</div>
+								);
+							})}
+								</div>
+							</div>
+						)}
+					</div>
+				</div>
+			)}
+
 				{/* Resources Table */}
-				{shouldShowTable && (
+				{shouldShowTable && !(shiftStatus && shiftStatus.check_out === null) && (
 					<div className='mt-6'>
 						{/* Separate heading */}
 						<h3 className='text-lg font-semibold text-gray-900 mb-4'>{getTableHeader}</h3>
@@ -557,7 +720,7 @@ export const ShiftReportingAdd: React.FC = () => {
 				)}
 
 				{/* Submit Button */}
-				{shouldShowTable && (
+				{(shouldShowTable || (shiftStatus && shiftStatus.check_out === null)) && (
 					<div className='mt-6 flex justify-end'>
 						<Button
 							onClick={handleSubmit}
@@ -566,7 +729,7 @@ export const ShiftReportingAdd: React.FC = () => {
 							loading={loading}
 							disabled={loading}
 						>
-							Submit
+							{shiftStatus && shiftStatus.check_out === null ? 'Submit Checkout' : 'Submit'}
 						</Button>
 					</div>
 				)}

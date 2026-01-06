@@ -9,14 +9,16 @@ import { ApiResponse } from './api';
 const api = ApiService.getInstance();
 
 export interface ContainerType {
-	id: number;
-	sku: string;
+	id?: number; // For compatibility with existing code
+	container_type_id?: number; // From getDistinctContainerNamesBasedOnCity
+	container_name?: string; // From getDistinctContainerNamesBasedOnCity
+	sku?: string;
 	container?: string;
-	weight: number;
-	weightInGms: number;
-	dishwasherCyclesPerDay: number;
-	dishwasherOptimumCapacity: number;
-	impact_accountable: number;
+	weight?: number;
+	weightInGms?: number;
+	dishwasherCyclesPerDay?: number;
+	dishwasherOptimumCapacity?: number;
+	impact_accountable?: number;
 	city_id?: number;
 	name?: string; // City name
 	containerCount?: number; // Only when facilityId is provided
@@ -118,5 +120,25 @@ export class ContainerApiService {
 		data: DeleteContainerTypeRequest
 	): Promise<ApiResponse<ContainerTypeResponse>> {
 		return api.post('/containers/delContainer', data);
+	}
+
+	/**
+	 * Get distinct container names based on city (city_id is taken from token)
+	 */
+	static async getDistinctContainerNamesBasedOnCity(): Promise<
+		ApiResponse<GetContainerTypesResponse>
+	> {
+		const response = await api.get('/shift/getDistinctContainerNamesBasedOnCity');
+
+		return {
+			status_code: response.status_code,
+			status: response.status,
+			message: response.message || '',
+			data: {
+				status_code: response.status_code,
+				status: response.status,
+				data: (response.data as ContainerType[]) || [],
+			},
+		};
 	}
 }

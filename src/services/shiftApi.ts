@@ -177,6 +177,28 @@ export interface CheckInShiftOpsStatusResponse {
 	message: string;
 }
 
+// Check-out Shift Ops Status interfaces
+export interface CheckOutContainerInfo {
+	container_type_id: number;
+	count: number;
+}
+
+export interface CheckOutShiftOpsStatusRequest {
+	hora_id: number;
+	shift_date: string;
+	shift_id: number;
+	manpower_count: number;
+	shift_hours: number;
+	ot_hours: number;
+	containersInfo: CheckOutContainerInfo[];
+}
+
+export interface CheckOutShiftOpsStatusResponse {
+	status: string;
+	status_code: number;
+	message: string;
+}
+
 export class ShiftApiService {
 	/**
 	 * Get full shift details for a specific city and date
@@ -268,6 +290,18 @@ export class ShiftApiService {
 			'/shift/checkInShiftOpsStatus',
 			request
 		) as unknown as Promise<CheckInShiftOpsStatusResponse>;
+	}
+
+	/**
+	 * Check-out Shift Ops Status
+	 */
+	static async checkOutShiftOpsStatus(
+		request: CheckOutShiftOpsStatusRequest
+	): Promise<CheckOutShiftOpsStatusResponse> {
+		return apiService.post(
+			'/shift/checkOutShiftOpsStatus',
+			request
+		) as unknown as Promise<CheckOutShiftOpsStatusResponse>;
 	}
 
 	/**

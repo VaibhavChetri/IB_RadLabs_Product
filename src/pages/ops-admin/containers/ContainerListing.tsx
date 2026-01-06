@@ -77,7 +77,7 @@ export const ContainerListing: React.FC = () => {
 		if (!deletingItem) return;
 
 		try {
-			await deleteMutation.mutateAsync({ id: deletingItem.id, status: 0 });
+			await deleteMutation.mutateAsync({ id: deletingItem.id!, status: 0 });
 			setSnackbar({
 				open: true,
 				message: 'Container type deleted successfully',

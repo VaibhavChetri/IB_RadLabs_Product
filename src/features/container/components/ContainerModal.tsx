@@ -122,7 +122,7 @@ export const ContainerModal: React.FC<ContainerModalProps> = ({
 			if (editingItem) {
 				// Update existing container
 				await updateMutation.mutateAsync({
-					id: editingItem.id,
+					id: editingItem.id!,
 					...payload,
 				});
 				onSuccess();

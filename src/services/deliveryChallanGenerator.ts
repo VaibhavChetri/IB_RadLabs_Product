@@ -293,6 +293,14 @@ export class DeliveryChallanGenerator {
 			];
 		}
 
+		// City ID 5 = Hyderabad
+		if (cityId === 5) {
+			return [
+				'Survey no 17/AA Vattinagulapally village',
+				'Gandipet Mandal Ranga Reddy 500075',
+			];
+		}
+
 		// City ID 3 = Mumbai (default)
 		// Default to Mumbai address for city_id 3 or any other city
 		return [

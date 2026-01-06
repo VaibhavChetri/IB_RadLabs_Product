@@ -3,9 +3,10 @@
  * Displays Variable Cost Details and Indirect Expense Details tables
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useEBITDAData } from '../hooks/usePLTabData';
 import { EBITDAResponse } from '../../../services/pAndLApi';
+import { MultiSelectDropdown } from '../../../components/ui';
 
 interface PLTabContentProps {
 	cityId?: number;
@@ -50,7 +51,8 @@ const getWeekBgColor = (week: 'w1' | 'w2' | 'w3' | 'w4' | 'cumulative' | 'estima
  */
 const VariableCostDetailsTable: React.FC<{
 	report: EBITDAResponse['report'][string];
-}> = ({ report }) => {
+	hiddenWeeks: string[];
+}> = ({ report, hiddenWeeks }) => {
 	const tableData = useMemo(() => {
 		const rows: Array<{
 			slNo: string | number;
@@ -67,14 +69,20 @@ const VariableCostDetailsTable: React.FC<{
 
 		// Safely access totalRevenue with null checks
 		if (report?.totalRevenue) {
+			const w1 = report.totalRevenue.week1 ?? 0;
+			const w2 = hiddenWeeks.includes('2') ? 0 : (report.totalRevenue.week2 ?? 0);
+			const w3 = hiddenWeeks.includes('3') ? 0 : (report.totalRevenue.week3 ?? 0);
+			const w4 = hiddenWeeks.includes('4') ? 0 : (report.totalRevenue.week4 ?? 0);
+			const cumulative = w1 + w2 + w3 + w4;
+			
 			rows.push({
 				slNo: '-',
 				costingType: 'Total Revenue',
-				w1: report.totalRevenue.week1 ?? 0,
-				w2: report.totalRevenue.week2 ?? 0,
-				w3: report.totalRevenue.week3 ?? 0,
-				w4: report.totalRevenue.week4 ?? 0,
-				cumulative: report.totalRevenue.total ?? 0,
+				w1,
+				w2,
+				w3,
+				w4,
+				cumulative,
 				estimated: report.totalRevenue.projected || '',
 				isTotalRevenue: true,
 			});
@@ -83,14 +91,20 @@ const VariableCostDetailsTable: React.FC<{
 		// Variable cost detail rows
 		if (report?.variableCostDetails && Array.isArray(report.variableCostDetails)) {
 			report.variableCostDetails.forEach((item, index) => {
+				const w1 = parseFloat(item.week1_actual_value || '0');
+				const w2 = hiddenWeeks.includes('2') ? 0 : parseFloat(item.week2_actual_value || '0');
+				const w3 = hiddenWeeks.includes('3') ? 0 : parseFloat(item.week3_actual_value || '0');
+				const w4 = hiddenWeeks.includes('4') ? 0 : parseFloat(item.week4_actual_value || '0');
+				const cumulative = w1 + w2 + w3 + w4;
+				
 				rows.push({
 					slNo: index + 1,
 					costingType: item.costingTypeName || '',
-					w1: parseFloat(item.week1_actual_value || '0'),
-					w2: parseFloat(item.week2_actual_value || '0'),
-					w3: parseFloat(item.week3_actual_value || '0'),
-					w4: parseFloat(item.week4_actual_value || '0'),
-					cumulative: parseFloat(item.total_actual_value || '0'),
+					w1,
+					w2,
+					w3,
+					w4,
+					cumulative,
 					estimated: item.projected_value || item.projectedValue || '',
 				});
 			});
@@ -102,14 +116,20 @@ const VariableCostDetailsTable: React.FC<{
 
 			// Summary rows
 			if (onSiteManpower) {
+				const w1 = parseFloat(onSiteManpower.week1_actual_value || '0');
+				const w2 = hiddenWeeks.includes('2') ? 0 : parseFloat(onSiteManpower.week2_actual_value || '0');
+				const w3 = hiddenWeeks.includes('3') ? 0 : parseFloat(onSiteManpower.week3_actual_value || '0');
+				const w4 = hiddenWeeks.includes('4') ? 0 : parseFloat(onSiteManpower.week4_actual_value || '0');
+				const cumulative = w1 + w2 + w3 + w4;
+				
 				rows.push({
 					slNo: report.variableCostDetails.length + 1,
 					costingType: 'On Site Manpower',
-					w1: parseFloat(onSiteManpower.week1_actual_value || '0'),
-					w2: parseFloat(onSiteManpower.week2_actual_value || '0'),
-					w3: parseFloat(onSiteManpower.week3_actual_value || '0'),
-					w4: parseFloat(onSiteManpower.week4_actual_value || '0'),
-					cumulative: parseFloat(onSiteManpower.total_actual_value || '0'),
+					w1,
+					w2,
+					w3,
+					w4,
+					cumulative,
 					estimated: onSiteManpower.projected_value || onSiteManpower.projectedValue || '',
 					isSummary: true,
 				});
@@ -118,14 +138,20 @@ const VariableCostDetailsTable: React.FC<{
 
 		// Total Variable Cost
 		if (report?.totalVariableCost) {
+			const w1 = report.totalVariableCost.week1 ?? 0;
+			const w2 = hiddenWeeks.includes('2') ? 0 : (report.totalVariableCost.week2 ?? 0);
+			const w3 = hiddenWeeks.includes('3') ? 0 : (report.totalVariableCost.week3 ?? 0);
+			const w4 = hiddenWeeks.includes('4') ? 0 : (report.totalVariableCost.week4 ?? 0);
+			const cumulative = w1 + w2 + w3 + w4;
+			
 			rows.push({
 				slNo: '-',
 				costingType: 'Total Variable Cost',
-				w1: report.totalVariableCost.week1 ?? 0,
-				w2: report.totalVariableCost.week2 ?? 0,
-				w3: report.totalVariableCost.week3 ?? 0,
-				w4: report.totalVariableCost.week4 ?? 0,
-				cumulative: report.totalVariableCost.total ?? 0,
+				w1,
+				w2,
+				w3,
+				w4,
+				cumulative,
 				estimated:
 					report.totalVariableCost.projected ||
 					report.totalVariableCost.totalProjectedValue ||
@@ -136,21 +162,27 @@ const VariableCostDetailsTable: React.FC<{
 
 		// Contribution
 		if (report?.totalContribution) {
+			const w1 = report.totalContribution.week1 ?? 0;
+			const w2 = hiddenWeeks.includes('2') ? 0 : (report.totalContribution.week2 ?? 0);
+			const w3 = hiddenWeeks.includes('3') ? 0 : (report.totalContribution.week3 ?? 0);
+			const w4 = hiddenWeeks.includes('4') ? 0 : (report.totalContribution.week4 ?? 0);
+			const cumulative = w1 + w2 + w3 + w4;
+			
 			rows.push({
 				slNo: '-',
 				costingType: 'Contribution',
-				w1: report.totalContribution.week1 ?? 0,
-				w2: report.totalContribution.week2 ?? 0,
-				w3: report.totalContribution.week3 ?? 0,
-				w4: report.totalContribution.week4 ?? 0,
-				cumulative: report.totalContribution.total ?? 0,
+				w1,
+				w2,
+				w3,
+				w4,
+				cumulative,
 				estimated: report.totalContribution.projected || '',
 				isSummary: true,
 			});
 		}
 
 		return rows;
-	}, [report]);
+	}, [report, hiddenWeeks]);
 
 	return (
 		<div className='mb-8'>
@@ -231,7 +263,8 @@ const VariableCostDetailsTable: React.FC<{
  */
 const IndirectExpenseDetailsTable: React.FC<{
 	report: EBITDAResponse['report'][string];
-}> = ({ report }) => {
+	hiddenWeeks: string[];
+}> = ({ report, hiddenWeeks }) => {
 	const tableData = useMemo(() => {
 		const rows: Array<{
 			slNo: string | number;
@@ -248,14 +281,20 @@ const IndirectExpenseDetailsTable: React.FC<{
 		// Indirect expense detail rows
 		if (report?.indirectExpenseDetails && Array.isArray(report.indirectExpenseDetails)) {
 			report.indirectExpenseDetails.forEach((item, index) => {
+				const w1 = parseFloat(item.week1_actual_value || '0');
+				const w2 = hiddenWeeks.includes('2') ? 0 : parseFloat(item.week2_actual_value || '0');
+				const w3 = hiddenWeeks.includes('3') ? 0 : parseFloat(item.week3_actual_value || '0');
+				const w4 = hiddenWeeks.includes('4') ? 0 : parseFloat(item.week4_actual_value || '0');
+				const cumulative = w1 + w2 + w3 + w4;
+				
 				rows.push({
 					slNo: index,
 					costingType: item.costingTypeName || '',
-					w1: parseFloat(item.week1_actual_value || '0'),
-					w2: parseFloat(item.week2_actual_value || '0'),
-					w3: parseFloat(item.week3_actual_value || '0'),
-					w4: parseFloat(item.week4_actual_value || '0'),
-					cumulative: parseFloat(item.total_actual_value || '0'),
+					w1,
+					w2,
+					w3,
+					w4,
+					cumulative,
 					estimated: item.projected_value || item.projectedValue || '',
 				});
 			});
@@ -263,14 +302,20 @@ const IndirectExpenseDetailsTable: React.FC<{
 
 		// Total Indirect Expense
 		if (report?.totalIndirectExpenseCost) {
+			const w1 = report.totalIndirectExpenseCost.week1 ?? 0;
+			const w2 = hiddenWeeks.includes('2') ? 0 : (report.totalIndirectExpenseCost.week2 ?? 0);
+			const w3 = hiddenWeeks.includes('3') ? 0 : (report.totalIndirectExpenseCost.week3 ?? 0);
+			const w4 = hiddenWeeks.includes('4') ? 0 : (report.totalIndirectExpenseCost.week4 ?? 0);
+			const cumulative = w1 + w2 + w3 + w4;
+			
 			rows.push({
 				slNo: '-',
 				costingType: 'Total Indirect Expense',
-				w1: report.totalIndirectExpenseCost.week1 ?? 0,
-				w2: report.totalIndirectExpenseCost.week2 ?? 0,
-				w3: report.totalIndirectExpenseCost.week3 ?? 0,
-				w4: report.totalIndirectExpenseCost.week4 ?? 0,
-				cumulative: report.totalIndirectExpenseCost.total ?? 0,
+				w1,
+				w2,
+				w3,
+				w4,
+				cumulative,
 				estimated:
 					report.totalIndirectExpenseCost.projected ||
 					report.totalIndirectExpenseCost.totalProjectedValue ||
@@ -281,21 +326,27 @@ const IndirectExpenseDetailsTable: React.FC<{
 
 		// EBITDA
 		if (report?.EBITDA) {
+			const w1 = report.EBITDA.week1 ?? 0;
+			const w2 = hiddenWeeks.includes('2') ? 0 : (report.EBITDA.week2 ?? 0);
+			const w3 = hiddenWeeks.includes('3') ? 0 : (report.EBITDA.week3 ?? 0);
+			const w4 = hiddenWeeks.includes('4') ? 0 : (report.EBITDA.week4 ?? 0);
+			const cumulative = w1 + w2 + w3 + w4;
+			
 			rows.push({
 				slNo: '-',
 				costingType: 'EBITDA',
-				w1: report.EBITDA.week1 ?? 0,
-				w2: report.EBITDA.week2 ?? 0,
-				w3: report.EBITDA.week3 ?? 0,
-				w4: report.EBITDA.week4 ?? 0,
-				cumulative: report.EBITDA.total ?? 0,
+				w1,
+				w2,
+				w3,
+				w4,
+				cumulative,
 				estimated: report.EBITDA.projected || '',
 				isSummary: true,
 			});
 		}
 
 		return rows;
-	}, [report]);
+	}, [report, hiddenWeeks]);
 
 	return (
 		<div>
@@ -383,6 +434,41 @@ export const EBITDATab: React.FC<PLTabContentProps> = ({
 	onError,
 }) => {
 	const { data, isLoading, error } = useEBITDAData(cityId, facilityId, month, year, enabled);
+	
+	// Hidden weeks state - load from localStorage
+	const [hiddenWeeks, setHiddenWeeks] = useState<string[]>(() => {
+		try {
+			const saved = localStorage.getItem('ebitda-hiddenWeeks');
+			if (saved) {
+				const parsed = JSON.parse(saved);
+				if (Array.isArray(parsed)) {
+					return parsed.filter((w: string) => ['2', '3', '4'].includes(w));
+				}
+			}
+		} catch (error) {
+			console.error('Failed to load hidden weeks from localStorage:', error);
+		}
+		return [];
+	});
+	
+	// Save hidden weeks to localStorage
+	React.useEffect(() => {
+		try {
+			localStorage.setItem('ebitda-hiddenWeeks', JSON.stringify(hiddenWeeks));
+		} catch (error) {
+			console.error('Failed to save hidden weeks to localStorage:', error);
+		}
+	}, [hiddenWeeks]);
+	
+	// Week options for hiding (only Week 2, 3, 4 can be hidden)
+	const weekOptions = useMemo(
+		() => [
+			{ value: '2', label: 'Week 2' },
+			{ value: '3', label: 'Week 3' },
+			{ value: '4', label: 'Week 4' },
+		],
+		[]
+	);
 
 	// Get month name from month number
 	const getMonthName = (monthNum: string): string => {
@@ -579,9 +665,23 @@ export const EBITDATab: React.FC<PLTabContentProps> = ({
 
 	return (
 		<div className='p-6'>
-			<h2 className='text-xl font-semibold text-gray-900 mb-6'>Infinitybox Projected P&L</h2>
-			<VariableCostDetailsTable report={report} />
-			<IndirectExpenseDetailsTable report={report} />
+			<div className='flex justify-between items-center mb-6'>
+				<h2 className='text-xl font-semibold text-gray-900'>Infinitybox Projected P&L</h2>
+				<div className='w-56'>
+					<MultiSelectDropdown
+						label='Hide Weeks'
+						options={weekOptions}
+						value={hiddenWeeks}
+						onChange={setHiddenWeeks}
+						placeholder=''
+						className='w-full'
+						searchable={false}
+						showSelectedCount={true}
+					/>
+				</div>
+			</div>
+			<VariableCostDetailsTable report={report} hiddenWeeks={hiddenWeeks} />
+			<IndirectExpenseDetailsTable report={report} hiddenWeeks={hiddenWeeks} />
 		</div>
 	);
 };

@@ -18,6 +18,7 @@ import {
 	PAndLApiService,
 	UpdateRevenueRequest,
 } from '../../../services/pAndLApi';
+import { CommonApiService } from '../../../services/commonApi';
 import { Save } from 'lucide-react';
 
 /**
@@ -88,6 +89,38 @@ export const MonthlyEstimateEdit: React.FC = () => {
 	});
 
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [facilityName, setFacilityName] = useState<string>('');
+
+	// Fetch facility name from facility_id
+	useEffect(() => {
+		const fetchFacilityName = async () => {
+			if (!facilityId) {
+				setFacilityName('');
+				return;
+			}
+
+			try {
+				const response = await CommonApiService.getFacilities();
+				if ((response.status_code === 200 || (response as any).statusCode === 200) && response.data) {
+					const facilities = response.data as Array<{
+						id: number;
+						location: string;
+					}>;
+					const facility = facilities.find(f => f.id.toString() === facilityId);
+					if (facility) {
+						setFacilityName(facility.location);
+					} else {
+						setFacilityName('');
+					}
+				}
+			} catch (error) {
+				console.error('Failed to load facility name:', error);
+				setFacilityName('');
+			}
+		};
+
+		fetchFacilityName();
+	}, [facilityId]);
 
 	// Use Redux state instead of local state
 	const [budgetWeekValues, setBudgetWeekValuesLocal] =
@@ -492,7 +525,7 @@ export const MonthlyEstimateEdit: React.FC = () => {
 
 	return (
 		<div className='space-y-6'>
-			<PageHeader title={pageTitle} totalItems={0} itemType='' />
+			<PageHeader title={pageTitle} totalItems={0} itemType='' locationName={facilityName} />
 
 			{/* Budget Table */}
 			{recordsWithUpdatedValues.length > 0 && (

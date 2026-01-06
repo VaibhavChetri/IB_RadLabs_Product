@@ -11,7 +11,7 @@ import {
 	useEscalationData,
 } from '../hooks/usePLTabData';
 import { Table, TableColumn } from '../../../components/ui/DataDisplay';
-import { MultiSelectDropdown } from '../../../components/ui';
+import { MultiSelectDropdown, FloatingDropdown } from '../../../components/ui';
 
 interface PLTabContentProps {
 	cityId?: number;
@@ -655,9 +655,50 @@ export const ClientWisePLTab: React.FC<PLTabContentProps> = ({
 	enabled: _enabled,
 	onError,
 }) => {
-	// React Query will automatically deduplicate this call with the page-level hook
-	// Both use the same queryKey, so they share the same query instance
-	const { data, isLoading, error } = useClientWisePLData(cityId, facilityId, month, year, true);
+	// Week filter state - only for Client Wise P&L
+	// Initialize from localStorage using lazy initialization
+	const [selectedWeek, setSelectedWeek] = React.useState<string>(() => {
+		try {
+			const savedWeek = localStorage.getItem('clientWisePL-selectedWeek');
+			if (savedWeek && ['all', '1', '2', '3', '4'].includes(savedWeek)) {
+				return savedWeek;
+			}
+		} catch (error) {
+			console.error('Failed to load saved week from localStorage:', error);
+		}
+		return 'all';
+	});
+	
+	// Save week to localStorage whenever it changes
+	React.useEffect(() => {
+		try {
+			localStorage.setItem('clientWisePL-selectedWeek', selectedWeek);
+		} catch (error) {
+			console.error('Failed to save week to localStorage:', error);
+		}
+	}, [selectedWeek]);
+	
+	// Week options
+	const weekOptions = React.useMemo(
+		() => [
+			{ value: 'all', label: 'All' },
+			{ value: '1', label: 'Week 1' },
+			{ value: '2', label: 'Week 2' },
+			{ value: '3', label: 'Week 3' },
+			{ value: '4', label: 'Week 4' },
+		],
+		[]
+	);
+
+	// Use week state when calling the API
+	const { data, isLoading, error } = useClientWisePLData(
+		cityId,
+		facilityId,
+		month,
+		year,
+		selectedWeek,
+		true
+	);
 
 	// Handle API errors with Snackbar
 	React.useEffect(() => {
@@ -896,20 +937,32 @@ export const ClientWisePLTab: React.FC<PLTabContentProps> = ({
 		<div className='p-6'>
 			<h2 className='text-xl font-semibold text-gray-900 mb-4'>Client Wise P&L Listing</h2>
 			
-			{/* Column Filter */}
-			<div className='mb-4'>
-				<MultiSelectDropdown
-					label='Show Columns'
-					options={columnOptions}
-					value={visibleColumns.filter(col => col !== 'slNo')}
-					onChange={selectedValues => {
-						// Always keep SL column visible
-						setVisibleColumns(['slNo', ...selectedValues]);
-					}}
-					className='w-56'
-					searchable={true}
-					showSelectedCount={true}
-				/>
+			{/* Week Filter and Column Filter */}
+			<div className='mb-4 flex flex-wrap gap-4 items-end'>
+				<div className='w-56'>
+					<FloatingDropdown
+						label='Week'
+						options={weekOptions}
+						value={selectedWeek}
+						onChange={setSelectedWeek}
+						placeholder='Select week'
+						className='w-full'
+					/>
+				</div>
+				<div className='w-56'>
+					<MultiSelectDropdown
+						label='Show Columns'
+						options={columnOptions}
+						value={visibleColumns.filter(col => col !== 'slNo')}
+						onChange={selectedValues => {
+							// Always keep SL column visible
+							setVisibleColumns(['slNo', ...selectedValues]);
+						}}
+						className='w-full'
+						searchable={true}
+						showSelectedCount={true}
+					/>
+				</div>
 			</div>
 
 			<div className='bg-white rounded-lg border border-gray-200 overflow-hidden'>

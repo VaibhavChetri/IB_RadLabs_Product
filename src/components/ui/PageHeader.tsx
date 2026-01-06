@@ -24,7 +24,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
 			<div className='flex items-center gap-4'>
 				{locationName && (
 					<>
-						<span className='text-sm text-gray-600'>📍 {locationName}</span>
+						<span className='text-base font-bold text-gray-900'>📍 {locationName}</span>
 						{!(totalItems === 0 && (itemType === 'analysis' || itemType === 'dashboard')) && itemType && (
 							<span className='text-sm text-gray-500'>•</span>
 						)}

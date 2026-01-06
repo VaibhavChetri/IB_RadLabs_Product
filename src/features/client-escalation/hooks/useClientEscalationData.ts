@@ -30,6 +30,7 @@ export const useClientEscalationData = (
 				limit: params?.limit,
 			});
 		},
+		enabled: !!params?.startDate && !!params?.endDate, // Only fetch when dates are provided
 		staleTime: 0,
 		gcTime: 0,
 		refetchOnMount: true,
@@ -39,4 +40,5 @@ export const useClientEscalationData = (
 
 	return queryResult as UseQueryResult<GetClientEscalationsResponse, Error>;
 };
+
 

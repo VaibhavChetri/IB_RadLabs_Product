@@ -412,6 +412,11 @@ export class PAndLApiService {
 	 * GET /api/review/getEBITDA
 	 */
 	static async getEBITDA(params: GetEBITDAParams): Promise<EBITDAResponse> {
+		// Validate mandatory facility_id
+		if (!params.facility_id || isNaN(params.facility_id) || params.facility_id <= 0) {
+			throw new Error('facility_id is mandatory and must be a valid positive number');
+		}
+
 		const searchParams = new URLSearchParams();
 		searchParams.set('city_id', params.city_id.toString());
 		searchParams.set('facility_id', params.facility_id.toString());

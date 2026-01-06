@@ -9,7 +9,6 @@ import {
 	useExpenditureData,
 	useUnitEconomicsData,
 	useEBITDAData,
-	useClientWisePLData,
 	useEscalationData,
 } from '../../features/p-and-l/hooks/usePLTabData';
 
@@ -40,8 +39,9 @@ export const PLSummary: React.FC = () => {
 	// Determine if we should fetch - all filters must be set
 	const shouldFetch = !!(selectedMonth && selectedYear && selectedFacility);
 
-	// Call all 5 APIs at page level - regardless of active tab
+	// Call APIs at page level - regardless of active tab
 	// This ensures all APIs are called when filters change, not when tabs change
+	// Note: ClientWisePLData is called inside the ClientWisePLTab component with its own week filter
 	const expenditureQuery = useExpenditureData(
 		selectedFacility,
 		selectedMonth,
@@ -62,13 +62,6 @@ export const PLSummary: React.FC = () => {
 		selectedYear,
 		shouldFetch
 	);
-	const clientWisePLQuery = useClientWisePLData(
-		user?.city_id,
-		selectedFacility,
-		selectedMonth,
-		selectedYear,
-		shouldFetch
-	);
 	const escalationsQuery = useEscalationData(
 		user?.city_id,
 		selectedFacility,
@@ -78,12 +71,12 @@ export const PLSummary: React.FC = () => {
 	);
 
 	// Handle errors from any API
+	// Note: ClientWisePL errors are handled in the tab component via onError callback
 	useEffect(() => {
 		const errors = [
 			expenditureQuery.error,
 			unitEconomicsQuery.error,
 			ebitdaQuery.error,
-			clientWisePLQuery.error,
 			escalationsQuery.error,
 		].filter(Boolean);
 
@@ -101,7 +94,6 @@ export const PLSummary: React.FC = () => {
 		expenditureQuery.error,
 		unitEconomicsQuery.error,
 		ebitdaQuery.error,
-		clientWisePLQuery.error,
 		escalationsQuery.error,
 		shouldFetch,
 	]);

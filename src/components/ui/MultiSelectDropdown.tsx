@@ -198,70 +198,107 @@ export const MultiSelectDropdown = forwardRef<HTMLDivElement, MultiSelectDropdow
 							</div>
 						</div>
 					) : (
-						<button
-							type='button'
-							onClick={() => !disabled && setIsOpen(!isOpen)}
-							onKeyDown={handleKeyDown}
-							onFocus={() => setIsFocused(true)}
-							onBlur={() => setIsFocused(false)}
-							disabled={disabled || loading}
-							className={cn(
-								'relative w-full px-4 py-4 text-left bg-background border border-border rounded-md transition-all duration-200',
-								error && 'border-red-500 focus:border-red-500',
-								disabled
-									? 'opacity-50 cursor-not-allowed bg-background-secondary'
-									: 'cursor-pointer hover:border-primary/50',
-								shouldFloat && 'border-primary ring-1 ring-primary/20'
-							)}
-						>
-							<div className='flex  items-center justify-between'>
-								<div className=' flex   min-w-0'>
-									{selectedOptions.length > 0 ? (
-										showSelectedCount ? (
-											<span className='inline-flex px-1.5 pb-0.5 bg-green-100 text-green-800 text-xs font-medium rounded-full border border-green-200'>
-												{selectedOptions.length} selected
-											</span>
-										) : (
-											<div className='flex flex-wrap gap-1'>
-												{selectedOptions.slice(0, maxDisplayItems).map(option => (
-													<span
-														key={option.value}
-														className='inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary text-xs rounded-md'
-													>
-														{option.label}
-														<button
-															type='button'
-															onClick={e => {
-																e.stopPropagation();
-																handleRemoveOption(option.value);
-															}}
-															className='hover:text-primary/70'
+						<>
+							<button
+								type='button'
+								onClick={() => !disabled && setIsOpen(!isOpen)}
+								onKeyDown={handleKeyDown}
+								onFocus={() => setIsFocused(true)}
+								onBlur={() => setIsFocused(false)}
+								disabled={disabled || loading}
+								className={cn(
+									'relative w-full px-4 py-4 text-left bg-background border border-border rounded-md transition-all duration-200',
+									error && 'border-red-500 focus:border-red-500',
+									disabled
+										? 'opacity-50 cursor-not-allowed bg-background-secondary'
+										: 'cursor-pointer hover:border-primary/50',
+									shouldFloat && 'border-primary ring-1 ring-primary/20',
+									isOpen && 'rounded-b-none'
+								)}
+							>
+								<div className='flex  items-center justify-between'>
+									<div className=' flex   min-w-0'>
+										{selectedOptions.length > 0 ? (
+											showSelectedCount ? (
+												<span className='inline-flex px-1.5 pb-0.5 bg-green-100 text-green-800 text-xs font-medium rounded-full border border-green-200'>
+													{selectedOptions.length} selected
+												</span>
+											) : (
+												<div className='flex flex-wrap gap-1'>
+													{selectedOptions.slice(0, maxDisplayItems).map(option => (
+														<span
+															key={option.value}
+															className='inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary text-xs rounded-md'
 														>
-															<X className='h-3 w-3' />
-														</button>
-													</span>
-												))}
-												{selectedOptions.length > maxDisplayItems && (
-													<span className='text-xs text-foreground-muted'>
-														+{selectedOptions.length - maxDisplayItems} more
-													</span>
-												)}
-											</div>
-										)
-									) : (
-										<span className='text-foreground-muted'>
-											{loading ? 'Loading...' : placeholder}
-										</span>
-									)}
+															{option.label}
+															<button
+																type='button'
+																onClick={e => {
+																	e.stopPropagation();
+																	handleRemoveOption(option.value);
+																}}
+																className='hover:text-primary/70'
+															>
+																<X className='h-3 w-3' />
+															</button>
+														</span>
+													))}
+													{selectedOptions.length > maxDisplayItems && (
+														<span className='text-xs text-foreground-muted'>
+															+{selectedOptions.length - maxDisplayItems} more
+														</span>
+													)}
+												</div>
+											)
+										) : (
+											<span className='text-foreground-muted'>
+												{loading ? 'Loading...' : placeholder || ''}
+											</span>
+										)}
+									</div>
+									<ChevronDown
+										className={cn(
+											'h-4 w-4 text-foreground-muted transition-transform ml-2 flex-shrink-0',
+											isOpen && 'rotate-180'
+										)}
+									/>
 								</div>
-								<ChevronDown
-									className={cn(
-										'h-4 w-4 text-foreground-muted transition-transform ml-2 flex-shrink-0',
-										isOpen && 'rotate-180'
-									)}
-								/>
-							</div>
-						</button>
+							</button>
+							{/* Options dropdown for non-searchable mode */}
+							{isOpen && !searchable && (
+								<div className='absolute z-[9999] w-full bg-background border border-border border-t-0 rounded-b-md shadow-lg max-h-60 overflow-hidden'>
+									<div className='max-h-60 overflow-y-auto'>
+										{filteredOptions.length === 0 ? (
+											<div className='px-3 py-2 text-sm text-foreground-muted'>
+												No options available
+											</div>
+										) : (
+											filteredOptions.map(option => (
+												<button
+													key={option.value}
+													type='button'
+													onClick={() => handleOptionToggle(option.value)}
+													disabled={option.disabled}
+													className={cn(
+														'w-full px-3 py-2 text-left text-sm transition-colors flex items-center justify-between',
+														option.disabled
+															? 'opacity-50 cursor-not-allowed text-foreground-muted'
+															: 'cursor-pointer hover:bg-primary/5 text-foreground',
+														selectedOptions.some(selected => selected.value === option.value) &&
+															'bg-primary/10'
+													)}
+												>
+													<span className='truncate'>{option.label}</span>
+													{selectedOptions.some(selected => selected.value === option.value) && (
+														<Check className='h-4 w-4 text-primary flex-shrink-0' />
+													)}
+												</button>
+											))
+										)}
+									</div>
+								</div>
+							)}
+						</>
 					)}
 				</div>
 

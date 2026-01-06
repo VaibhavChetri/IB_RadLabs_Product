@@ -44,6 +44,68 @@ const getDateRangeFromMonthYear = (
 	};
 };
 
+// Helper to calculate date range based on month, year, and week
+// Week 1: 1-7, Week 2: 8-14, Week 3: 15-21, Week 4: 22-end of month
+// If week is "all" or empty, returns full month range
+const getDateRangeFromWeek = (
+	month: string,
+	year: string,
+	week: string
+): { start_date: string; end_date: string } => {
+	const monthNum = parseInt(month, 10);
+	const yearNum = parseInt(year, 10);
+
+	// If "all" or empty, return full month
+	if (!week || week === 'all' || week === '') {
+		return getDateRangeFromMonthYear(month, year);
+	}
+
+	// Get last day of the month
+	const lastDayOfMonth = new Date(Date.UTC(yearNum, monthNum, 0)).getUTCDate();
+
+	// Calculate start and end days based on week
+	let startDay: number;
+	let endDay: number;
+
+	switch (week) {
+		case '1':
+			startDay = 1;
+			endDay = 7;
+			break;
+		case '2':
+			startDay = 8;
+			endDay = 14;
+			break;
+		case '3':
+			startDay = 15;
+			endDay = 21;
+			break;
+		case '4':
+			startDay = 22;
+			endDay = lastDayOfMonth;
+			break;
+		default:
+			// Default to full month if invalid week
+			return getDateRangeFromMonthYear(month, year);
+	}
+
+	// Format as YYYY-MM-DD using UTC methods
+	const formatDate = (date: Date): string => {
+		const year = date.getUTCFullYear();
+		const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+		const day = String(date.getUTCDate()).padStart(2, '0');
+		return `${year}-${month}-${day}`;
+	};
+
+	const startDate = new Date(Date.UTC(yearNum, monthNum - 1, startDay));
+	const endDate = new Date(Date.UTC(yearNum, monthNum - 1, endDay));
+
+	return {
+		start_date: formatDate(startDate),
+		end_date: formatDate(endDate),
+	};
+};
+
 /**
  * Hook for Expenditure tab
  */
@@ -139,9 +201,14 @@ export const useEBITDAData = (
 				throw new Error('Missing required parameters');
 			}
 
+			const parsedFacilityId = parseInt(facilityId, 10);
+			if (isNaN(parsedFacilityId) || parsedFacilityId <= 0) {
+				throw new Error('Invalid facility_id: facility_id is mandatory and must be a valid number');
+			}
+
 			const params: GetEBITDAParams = {
 				city_id: cityId,
-				facility_id: parseInt(facilityId, 10),
+				facility_id: parsedFacilityId,
 				start_date: dateRange.start_date,
 				end_date: dateRange.end_date,
 				groupByClient: true,
@@ -150,7 +217,7 @@ export const useEBITDAData = (
 			const response = await PAndLApiService.getEBITDA(params);
 			return response;
 		},
-		enabled: enabled && !!cityId && !!facilityId && !!month && !!year,
+		enabled: enabled && !!cityId && !!facilityId && !!month && !!year && !isNaN(parseInt(facilityId, 10)),
 		staleTime: 0, // Always consider stale to ensure fresh data when facility changes
 		gcTime: 10 * 60 * 1000,
 		refetchOnMount: true, // Refetch when component mounts or queryKey changes
@@ -166,20 +233,26 @@ export const useClientWisePLData = (
 	facilityId: string,
 	month: string,
 	year: string,
+	week: string = 'all',
 	enabled: boolean = true
 ): UseQueryResult<ClientWisePLResponse, Error> => {
-	const dateRange = getDateRangeFromMonthYear(month, year);
+	const dateRange = getDateRangeFromWeek(month, year, week);
 
 	return useQuery({
-		queryKey: ['p-and-l', 'client-wise-pl', cityId, facilityId, month, year],
+		queryKey: ['p-and-l', 'client-wise-pl', cityId, facilityId, month, year, week],
 		queryFn: async (): Promise<ClientWisePLResponse> => {
 			if (!cityId || !facilityId || !month || !year) {
 				throw new Error('Missing required parameters');
 			}
 
+			const parsedFacilityId = parseInt(facilityId, 10);
+			if (isNaN(parsedFacilityId) || parsedFacilityId <= 0) {
+				throw new Error('Invalid facility_id: facility_id is mandatory and must be a valid number');
+			}
+
 			const params: GetClientWisePLParams = {
 				city_id: cityId,
-				facility_id: parseInt(facilityId, 10),
+				facility_id: parsedFacilityId,
 				start_date: dateRange.start_date,
 				end_date: dateRange.end_date,
 				groupByClient: true,
@@ -188,7 +261,7 @@ export const useClientWisePLData = (
 			const response = await PAndLApiService.getClientWisePL(params);
 			return response;
 		},
-		enabled: enabled && !!cityId && !!facilityId && !!month && !!year,
+		enabled: enabled && !!cityId && !!facilityId && !!month && !!year && !isNaN(parseInt(facilityId, 10)),
 		staleTime: 0, // Always consider stale to ensure fresh data when facility changes
 		gcTime: 10 * 60 * 1000,
 		refetchOnMount: true, // Refetch when component mounts or queryKey changes

@@ -13,9 +13,11 @@ interface UsePLFiltersReturn {
 	selectedMonth: string;
 	selectedYear: string;
 	selectedFacility: string;
+	selectedWeek: string;
 	// Options
 	monthOptions: DropdownOption[];
 	yearOptions: DropdownOption[];
+	weekOptions: DropdownOption[];
 	facilityOptions: DropdownOption[];
 	// Loading states
 	loadingFacilities: boolean;
@@ -23,6 +25,7 @@ interface UsePLFiltersReturn {
 	setSelectedMonth: (value: string) => void;
 	setSelectedYear: (value: string) => void;
 	setSelectedFacility: (value: string) => void;
+	setSelectedWeek: (value: string) => void;
 }
 
 export const usePLFilters = (): UsePLFiltersReturn => {
@@ -30,10 +33,18 @@ export const usePLFilters = (): UsePLFiltersReturn => {
 	const [selectedMonth, setSelectedMonth] = useState<string>(getCurrentMonth().toString());
 	const [selectedYear, setSelectedYear] = useState<string>(getCurrentYear().toString());
 	const [selectedFacility, setSelectedFacility] = useState<string>('');
+	const [selectedWeek, setSelectedWeek] = useState<string>('all');
 
 	// Options states - reuse MONTH_OPTIONS from dashboard constants
 	const monthOptions: DropdownOption[] = [...MONTH_OPTIONS];
 	const yearOptions = getYearOptions();
+	const weekOptions: DropdownOption[] = [
+		{ value: 'all', label: 'All' },
+		{ value: '1', label: 'Week 1' },
+		{ value: '2', label: 'Week 2' },
+		{ value: '3', label: 'Week 3' },
+		{ value: '4', label: 'Week 4' },
+	];
 	const [facilityOptions, setFacilityOptions] = useState<DropdownOption[]>([]);
 	const [loadingFacilities, setLoadingFacilities] = useState(false);
 
@@ -76,12 +87,15 @@ export const usePLFilters = (): UsePLFiltersReturn => {
 		selectedMonth,
 		selectedYear,
 		selectedFacility,
+		selectedWeek,
 		monthOptions,
 		yearOptions,
+		weekOptions,
 		facilityOptions,
 		loadingFacilities,
 		setSelectedMonth,
 		setSelectedYear,
 		setSelectedFacility,
+		setSelectedWeek,
 	};
 };

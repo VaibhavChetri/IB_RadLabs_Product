@@ -58,6 +58,8 @@ import { QCRejectionDetails } from '../pages/operations-reporting/qc-rejection/Q
 // Operations Reporting - Client Escalation
 import { ClientEscalationAdd } from '../pages/operations-reporting/client-escalation/ClientEscalationAdd';
 import { ClientEscalationListing } from '../pages/operations-reporting/client-escalation/ClientEscalationListing';
+// Sales - Leads
+import { Leads } from '../pages/sales/Leads';
 
 export interface RouteConfig {
 	path: string;
@@ -121,4 +123,6 @@ export const routes: RouteConfig[] = [
 	},
 	{ path: '/operations-reporting/client-escalation/add', component: ClientEscalationAdd },
 	{ path: '/operations-reporting/client-escalation/listing', component: ClientEscalationListing },
+	// Sales - Leads
+	{ path: '/sales/leads', component: Leads },
 ];

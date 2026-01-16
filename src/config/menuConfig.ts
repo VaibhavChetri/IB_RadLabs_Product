@@ -27,6 +27,8 @@ import {
 	Briefcase,
 	Activity,
 	ClipboardList,
+	TrendingUp,
+	UserPlus,
 	// ArrowLeft, // Deprecated - Received section commented out
 } from 'lucide-react';
 
@@ -440,6 +442,19 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 		name: 'Menu Management',
 		icon: Menu,
 		href: '/menu-management',
+	},
+	{
+		id: 'sales',
+		name: 'Sales',
+		icon: TrendingUp,
+		children: [
+			{
+				id: 'leads',
+				name: 'Leads',
+				icon: UserPlus,
+				href: '/sales/leads',
+			},
+		],
 	},
 	{
 		id: 'help',

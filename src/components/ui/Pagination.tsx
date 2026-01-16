@@ -25,7 +25,12 @@ export const Pagination: React.FC<PaginationProps> = ({
 	const startItem = totalItems > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
 	const endItem = totalItems > 0 ? Math.min(currentPage * itemsPerPage, totalItems) : 0;
 
-	const itemsPerPageOptions = [5, 10, 25, 50, totalItems];
+	// Generate items per page options
+	// Include common page sizes, and "All" only if totalItems is reasonable
+	const baseOptions = [5, 10, 20, 25, 50, 100];
+	const itemsPerPageOptions = totalItems > 100 
+		? baseOptions 
+		: [...baseOptions.filter(opt => opt <= totalItems), totalItems].filter((v, i, a) => a.indexOf(v) === i);
 
 	// Generate page numbers with ellipsis logic
 	const generatePageNumbers = () => {

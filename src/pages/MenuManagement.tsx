@@ -194,17 +194,22 @@ export const MenuManagement: React.FC = () => {
 			// Update the target menu's permission
 			let updatedMenu = updateMenuPermission(menu, menuId, userTypeId, access);
 
+			// Find the target menu to check if it has children
+			const targetMenu = findMenuById(updatedMenu, menuId);
+
+			// If enabling a parent, cascade down to all children and grandchildren
+			if (access && targetMenu && hasChildren(targetMenu)) {
+				updatedMenu = cascadeToChildren(updatedMenu, userTypeId, true);
+			}
+
 			// If enabling a child, also enable the parent automatically
 			if (access && parentMenuId !== null) {
 				updatedMenu = updateMenuPermission(updatedMenu, parentMenuId, userTypeId, true);
 			}
 
 			// If disabling a parent, cascade down to all children
-			if (!access) {
-				const targetMenu = findMenuById(updatedMenu, menuId);
-				if (targetMenu && hasChildren(targetMenu)) {
-					updatedMenu = cascadeToChildren(updatedMenu, userTypeId, access);
-				}
+			if (!access && targetMenu && hasChildren(targetMenu)) {
+				updatedMenu = cascadeToChildren(updatedMenu, userTypeId, false);
 			}
 
 			return updatedMenu;
@@ -366,11 +371,33 @@ export const MenuManagement: React.FC = () => {
 			// Call bulk update API
 			await MenuManagementApiService.bulkUpdateMenuPermissions(allMenuPermissions);
 
-			// Fetch fresh permissions from API
-			const permissionResponse = await MenuApiService.getUserMenuPermissions();
-			const freshPermissions = permissionResponse.data?.menu_permissions || {};
+			// Fetch fresh permissions from API (same pattern as App.tsx)
+			let freshPermissions = {};
+			try {
+				const permissionResponse = await MenuApiService.getUserMenuPermissions();
+				console.log('📡 Permission API response:', permissionResponse);
+				console.log('📡 Permission API data:', permissionResponse.data);
+				
+				// Access permissions the same way as App.tsx does
+				freshPermissions = permissionResponse.data?.menu_permissions || {};
+
+				console.log('📡 Fresh permissions extracted:', freshPermissions);
+				console.log('📡 Fresh permissions keys:', Object.keys(freshPermissions));
+
+				if (!freshPermissions || Object.keys(freshPermissions).length === 0) {
+					console.warn('⚠️ No permissions received from API, trying localStorage fallback');
+					const TokenManager = (await import('../utils/tokenManager')).default;
+					freshPermissions = TokenManager.getMenuPermissions() || {};
+				}
+			} catch (error) {
+				console.error('❌ Failed to fetch fresh permissions:', error);
+				// Fallback to localStorage
+				const TokenManager = (await import('../utils/tokenManager')).default;
+				freshPermissions = TokenManager.getMenuPermissions() || {};
+			}
 
 			// Update Redux state with fresh permissions
+			console.log('🔄 Updating Redux with permissions:', Object.keys(freshPermissions));
 			await refreshPermissions(freshPermissions);
 
 			// Update localStorage
@@ -382,6 +409,11 @@ export const MenuManagement: React.FC = () => {
 
 			// Show success message
 			console.log('✅ Permissions saved successfully!');
+			console.log('✅ Redux state updated, sidebar should refresh automatically');
+			console.log('💡 If sidebar doesn\'t update, check:');
+			console.log('   1. Menu IDs in menuConfig.ts match API slugs (e.g., "sales", "leads")');
+			console.log('   2. Browser console for Redux state updates');
+			console.log('   3. Try refreshing the page if needed');
 
 			setShowPermissionModal(false);
 			setSelectedMenu(null);

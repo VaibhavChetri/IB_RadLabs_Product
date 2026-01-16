@@ -285,24 +285,37 @@ export class DeliveryChallanGenerator {
 	 * @returns Array of address lines
 	 */
 	private getAddressByCity(cityId: number): string[] {
-		// City ID 4 = Gurgaon
+		// City ID 2 = Bangalore
+		if (cityId === 2) {
+			return [
+				'96/2 60 Feet Road AECS Layout Behind Nandini Hotel',
+				'Bengaluru, Bengaluru urban, Karnataka - 560068',
+			];
+		}
+
+		// City ID 3 = Mumbai (default)
+		if (cityId === 3) {
+			return [
+				'Gala No 2 AK Containe, Patkar Compound,',
+				'Tulshet Pada, Bhandup (West), Mumbai - 400078',
+			];
+		}
+
+		// City ID 4 = Gurugram
 		if (cityId === 4) {
 			return [
-				'Shri Sikanderpur Road, Opposite Cafe Gathering,',
-				'Kherki Daula Sector 84, Gurgaon - 122004',
+				'Shri Sikanderpur Road, Opposite Gate Gathering,',
+				'Khandsa,',
+				'Sector 84, Gurugram, 122004',
 			];
 		}
 
 		// City ID 5 = Hyderabad
 		if (cityId === 5) {
-			return [
-				'Survey no 17/AA Vattinagulapally village',
-				'Gandipet Mandal Ranga Reddy 500075',
-			];
+			return ['Survey no 17/AA Vattinagulapally village,', 'Gandipet Mandal, Ranga Reddy, 500075'];
 		}
 
-		// City ID 3 = Mumbai (default)
-		// Default to Mumbai address for city_id 3 or any other city
+		// Default to Mumbai address for any other city
 		return [
 			'Gala No 2 AK Containe, Patkar Compound,',
 			'Tulshet Pada, Bhandup (West), Mumbai - 400078',

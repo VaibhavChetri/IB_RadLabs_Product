@@ -252,7 +252,7 @@ export const MultiSelectDropdown = forwardRef<HTMLDivElement, MultiSelectDropdow
 											)
 										) : (
 											<span className='text-foreground-muted'>
-												{loading ? 'Loading...' : placeholder || ''}
+												{loading ? 'Loading...' : (shouldFloat ? placeholder : '') || ''}
 											</span>
 										)}
 									</div>

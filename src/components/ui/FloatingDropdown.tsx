@@ -36,6 +36,7 @@ export const FloatingDropdown = forwardRef<HTMLDivElement, FloatingDropdownProps
 			options,
 			value,
 			onChange,
+			placeholder,
 			disabled = false,
 			error = false,
 			errorMessage,
@@ -201,8 +202,11 @@ export const FloatingDropdown = forwardRef<HTMLDivElement, FloatingDropdownProps
 							)}
 						>
 							<div className='flex items-center justify-between'>
-								<span className='block truncate text-sm text-gray-900 font-medium'>
-									{loading ? 'Loading...' : selectedOption?.label || ''}
+								<span className={cn(
+									'block truncate text-sm font-medium',
+									selectedOption?.label ? 'text-gray-900' : 'text-gray-400'
+								)}>
+									{loading ? 'Loading...' : selectedOption?.label || (shouldFloat ? placeholder : '') || ''}
 								</span>
 								<ChevronDown
 									className={cn(

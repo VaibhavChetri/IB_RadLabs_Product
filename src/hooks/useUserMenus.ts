@@ -49,14 +49,7 @@ export const useUserMenus = (): UseUserMenusReturn => {
 			setAccessibleMenuIds(accessibleIds);
 			setLoading(false);
 			setError(null);
-
-			// Debug in development
-			if (import.meta.env.DEV) {
-				console.log('Loaded menu permissions from Redux:', permissions);
-				debugMenuPermissions(permissions);
-			}
 		} else if (isAuthenticated) {
-			console.warn('No menu permissions found in Redux state');
 			setError('No menu permissions found. Please log in again.');
 			setLoading(false);
 		}
@@ -80,9 +73,6 @@ export const useUserMenus = (): UseUserMenusReturn => {
 				if (newPermissions) {
 					// Update Redux state with new permissions
 					dispatch(updateUser({ menuPermissions: newPermissions }));
-					console.log('✅ Updated Redux state with new menu permissions');
-				} else {
-					console.log('🔄 No new permissions provided, Redux state will be used');
 				}
 			} catch (error) {
 				console.error('Failed to refresh menu permissions:', error);

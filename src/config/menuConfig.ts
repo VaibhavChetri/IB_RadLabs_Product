@@ -27,8 +27,9 @@ import {
 	Briefcase,
 	Activity,
 	ClipboardList,
-	TrendingUp,
-	UserPlus,
+	PhoneCall,
+	BarChart,
+	ShoppingCart,
 	// ArrowLeft, // Deprecated - Received section commented out
 } from 'lucide-react';
 
@@ -446,13 +447,44 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 	{
 		id: 'sales',
 		name: 'Sales',
-		icon: TrendingUp,
+		icon: ShoppingCart,
 		children: [
 			{
 				id: 'leads',
 				name: 'Leads',
 				icon: UserPlus,
 				href: '/sales/leads',
+			},
+			{
+				id: 'my-leads',
+				name: 'My Leads',
+				icon: ClipboardList,
+				href: '/leads/tracking',
+			},
+			{
+				id: 'callbacks',
+				name: "Today's Callbacks",
+				icon: PhoneCall,
+				href: '/leads/callbacks',
+			},
+			{
+				id: 'lead-reports',
+				name: 'Reports',
+				icon: BarChart,
+				href: '/leads/reports',
+			},
+		],
+	},
+	{
+		id: 'hr',
+		name: 'HR',
+		icon: Users,
+		children: [
+			{
+				id: 'job-posting',
+				name: 'Job Posting',
+				icon: Briefcase,
+				href: '/hr/job-posting',
 			},
 		],
 	},

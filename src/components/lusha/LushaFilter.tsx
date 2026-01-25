@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { X, Filter, Search, Users, Building2, MapPin, Briefcase, Sparkles } from 'lucide-react';
+import { X, Filter, Search, MapPin, Sparkles } from 'lucide-react';
 import { MultiSelectDropdown } from '../ui/MultiSelectDropdown';
 import { FloatingDropdown } from '../ui/FloatingDropdown';
 import { FloatingInput } from '../ui/FloatingInput';
@@ -17,7 +17,8 @@ export interface LushaFilters {
 	departments: string[];
 	seniority: string[];
 	jobTitle: string;
-	industries: string[];
+	mainIndustriesIds: number[];
+	subIndustriesIds: number[];
 	location: Location | null;
 	companyName: string;
 	technologies: string[];
@@ -40,13 +41,14 @@ export const LushaFilter: React.FC<LushaFilterProps> = ({
 	// Filter options from API
 	const [departments, setDepartments] = useState<string[]>([]);
 	const [seniorityOptions, setSeniorityOptions] = useState<Array<{ id: number; name: string }>>([]);
-	const [industryOptions, setIndustryOptions] = useState<Array<{ value: string; label: string }>>([]);
+	const [industryData, setIndustryData] = useState<Array<{ main_industry: string; main_industry_id: number; sub_industries: Array<{ id: number; value: string }> }>>([]);
 
 	// Filter state
 	const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
 	const [selectedSeniority, setSelectedSeniority] = useState<string>('');
 	const [jobTitle, setJobTitle] = useState<string>('');
-	const [selectedIndustries, setSelectedIndustries] = useState<string[]>([]);
+	const [selectedMainIndustries, setSelectedMainIndustries] = useState<string[]>([]);
+	const [selectedSubIndustries, setSelectedSubIndustries] = useState<string[]>([]);
 	const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
 	const [companyName, setCompanyName] = useState<string>('');
 	const [selectedTechnologies, setSelectedTechnologies] = useState<string[]>([]);
@@ -68,27 +70,10 @@ export const LushaFilter: React.FC<LushaFilterProps> = ({
 				const companyFiltersResponse = await LushaApiService.getCompanyFilters();
 				if (companyFiltersResponse.status_code === 200) {
 					const companyData = companyFiltersResponse.data;
-					// Flatten industries: main_industry and all sub_industries
-					const industries: Array<{ value: string; label: string }> = [];
+					// Store industry data with hierarchy
 					if (companyData.industries && Array.isArray(companyData.industries)) {
-						companyData.industries.forEach((industry: any) => {
-							// Add main industry
-							industries.push({
-								value: industry.main_industry,
-								label: industry.main_industry,
-							});
-							// Add sub industries
-							if (industry.sub_industries && Array.isArray(industry.sub_industries)) {
-								industry.sub_industries.forEach((sub: any) => {
-									industries.push({
-										value: sub.value || sub.id?.toString() || '',
-										label: sub.value || '',
-									});
-								});
-							}
-						});
+						setIndustryData(companyData.industries);
 					}
-					setIndustryOptions(industries);
 				}
 			} catch (error) {
 				console.error('Failed to load filter options:', error);
@@ -101,11 +86,17 @@ export const LushaFilter: React.FC<LushaFilterProps> = ({
 	}, []);
 
 	const handleApplyFilters = () => {
+		// Convert main industry IDs from strings to numbers
+		const mainIndustriesIds = selectedMainIndustries.map(id => parseInt(id, 10)).filter(id => !isNaN(id));
+		// Convert sub-industry IDs from strings to numbers
+		const subIndustriesIds = selectedSubIndustries.map(id => parseInt(id, 10)).filter(id => !isNaN(id));
+		
 		const filters: LushaFilters = {
 			departments: selectedDepartments,
 			seniority: selectedSeniority ? [selectedSeniority] : [],
 			jobTitle,
-			industries: selectedIndustries,
+			mainIndustriesIds,
+			subIndustriesIds,
 			location: selectedLocation,
 			companyName,
 			technologies: selectedTechnologies,
@@ -117,7 +108,8 @@ export const LushaFilter: React.FC<LushaFilterProps> = ({
 		setSelectedDepartments([]);
 		setSelectedSeniority('');
 		setJobTitle('');
-		setSelectedIndustries([]);
+		setSelectedMainIndustries([]);
+		setSelectedSubIndustries([]);
 		setSelectedLocation(null);
 		setCompanyName('');
 		setSelectedTechnologies([]);
@@ -128,7 +120,8 @@ export const LushaFilter: React.FC<LushaFilterProps> = ({
 		selectedDepartments.length > 0 ||
 		selectedSeniority !== '' ||
 		jobTitle !== '' ||
-		selectedIndustries.length > 0 ||
+		selectedMainIndustries.length > 0 ||
+		selectedSubIndustries.length > 0 ||
 		selectedLocation !== null ||
 		companyName !== '' ||
 		selectedTechnologies.length > 0;
@@ -137,11 +130,44 @@ export const LushaFilter: React.FC<LushaFilterProps> = ({
 		selectedDepartments.length,
 		selectedSeniority ? 1 : 0,
 		jobTitle ? 1 : 0,
-		selectedIndustries.length,
+		selectedMainIndustries.length,
+		selectedSubIndustries.length,
 		selectedLocation ? 1 : 0,
 		companyName ? 1 : 0,
 		selectedTechnologies.length,
 	].reduce((a, b) => a + b, 0);
+
+	// Get available sub-industries based on selected main industries
+	const getAvailableSubIndustries = () => {
+		if (selectedMainIndustries.length === 0) {
+			return [];
+		}
+		const subIndustries: Array<{ value: string; label: string }> = [];
+		selectedMainIndustries.forEach(mainId => {
+			const mainIndustry = industryData.find(ind => ind.main_industry_id.toString() === mainId);
+			if (mainIndustry && mainIndustry.sub_industries) {
+				mainIndustry.sub_industries.forEach(sub => {
+					subIndustries.push({
+						value: sub.id.toString(),
+						label: sub.value,
+					});
+				});
+			}
+		});
+		return subIndustries;
+	};
+
+	// Handle main industry selection change
+	const handleMainIndustryChange = (mainIndustryIds: string[]) => {
+		setSelectedMainIndustries(mainIndustryIds);
+		// Remove sub-industries that are no longer valid (not in selected main industries)
+		if (mainIndustryIds.length === 0) {
+			setSelectedSubIndustries([]);
+		} else {
+			const validSubIds = getAvailableSubIndustries().map(sub => sub.value);
+			setSelectedSubIndustries(prev => prev.filter(id => validSubIds.includes(id)));
+		}
+	};
 
 	return (
 		<div
@@ -198,21 +224,36 @@ export const LushaFilter: React.FC<LushaFilterProps> = ({
 								/>
 							</div>
 
-							{/* Industries */}
+							{/* Main Industries */}
 							<div className='flex-1 min-w-[200px]'>
 								<MultiSelectDropdown
-									label='Industries'
-									options={industryOptions.map(ind => ({
-										value: ind.value,
-										label: ind.label,
+									label='Main Industry'
+									options={industryData.map(ind => ({
+										value: ind.main_industry_id.toString(),
+										label: ind.main_industry,
 									}))}
-									value={selectedIndustries}
-									onChange={setSelectedIndustries}
+									value={selectedMainIndustries}
+									onChange={handleMainIndustryChange}
 									placeholder='All industries'
 									searchable
 									showSelectedCount
 								/>
 							</div>
+
+							{/* Sub-Industries (only shown if main industries are selected) */}
+							{selectedMainIndustries.length > 0 && (
+								<div className='w-56'>
+									<MultiSelectDropdown
+										label='Sub-Industry'
+										options={getAvailableSubIndustries()}
+										value={selectedSubIndustries}
+										onChange={setSelectedSubIndustries}
+										placeholder='All sub-industries'
+										searchable
+										showSelectedCount
+									/>
+								</div>
+							)}
 
 							{/* Company Name */}
 							<div className='w-56'>

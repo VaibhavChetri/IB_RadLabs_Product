@@ -60,6 +60,13 @@ import { ClientEscalationAdd } from '../pages/operations-reporting/client-escala
 import { ClientEscalationListing } from '../pages/operations-reporting/client-escalation/ClientEscalationListing';
 // Sales - Leads
 import { Leads } from '../pages/sales/Leads';
+// Leads - Tracking
+import { TrackingList } from '../pages/leads/TrackingList';
+import { CallbacksList } from '../pages/leads/CallbacksList';
+import { ReportsDashboard } from '../pages/leads/ReportsDashboard';
+// HR - Job Posting
+import { AddJobPosting } from '../pages/hr/job-posting/AddJobPosting';
+import { JobPostingListing } from '../pages/hr/job-posting/JobPostingListing';
 
 export interface RouteConfig {
 	path: string;
@@ -123,6 +130,14 @@ export const routes: RouteConfig[] = [
 	},
 	{ path: '/operations-reporting/client-escalation/add', component: ClientEscalationAdd },
 	{ path: '/operations-reporting/client-escalation/listing', component: ClientEscalationListing },
-	// Sales - Leads
+	// Sales - Leads (Search Lusha)
 	{ path: '/sales/leads', component: Leads },
+	// Leads - Tracking
+	{ path: '/leads/tracking', component: TrackingList },
+	{ path: '/leads/callbacks', component: CallbacksList },
+	{ path: '/leads/reports', component: ReportsDashboard },
+	// HR - Job Posting
+	{ path: '/hr/job-posting', component: JobPostingListing },
+	{ path: '/hr/job-posting/add', component: AddJobPosting },
+	{ path: '/hr/job-posting/edit/:id', component: AddJobPosting },
 ];

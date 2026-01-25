@@ -15,13 +15,9 @@ function App() {
 	// Restore auth state on page load
 	useEffect(() => {
 		const fetchAuthData = async () => {
-			console.log('App.tsx: Checking auth restoration...');
 			const tokenData = TokenManager.getTokenData();
-			console.log('Token data:', tokenData);
-			console.log('Is authenticated:', TokenManager.isAuthenticated());
 
 			if (tokenData && TokenManager.isAuthenticated()) {
-				console.log('Restoring auth state...');
 				// Restore user data from localStorage (stored during login)
 				const userData = TokenManager.getUserData();
 
@@ -34,9 +30,6 @@ function App() {
 					console.error('Failed to fetch menu permissions, using localStorage:', error);
 					menuPermissions = TokenManager.getMenuPermissions() || {};
 				}
-
-				console.log('Retrieved userData:', userData);
-				console.log('Retrieved menuPermissions:', menuPermissions);
 
 				const user = {
 					id: userData?.id || 'Unknown',
@@ -51,10 +44,8 @@ function App() {
 					state_name: userData?.state_name || undefined,
 					menuPermissions: menuPermissions || {},
 				};
-				console.log('Restoring user with menu permissions:', user);
 				dispatch(restoreAuth(user));
 			} else {
-				console.log('No valid auth found, marking as initialized');
 				dispatch(initializeAuth());
 			}
 		};

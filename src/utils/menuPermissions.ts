@@ -13,7 +13,7 @@ export const filterMenusByPermissions = (
 	menus: MenuItem[],
 	permissions: Record<string, MenuPermission>
 ): MenuItem[] => {
-	return menus
+	const filtered = menus
 		.filter(menu => {
 			const permission = permissions[menu.id];
 			return permission?.access === true;
@@ -22,18 +22,28 @@ export const filterMenusByPermissions = (
 			const permission = permissions[menu.id];
 			
 			// If menu has children, recursively filter them
-			if (menu.children && permission?.children) {
-				const filteredChildren = filterMenusByPermissions(
-					menu.children,
-					permission.children
-				);
-				
-				// Only include the parent menu if it has accessible children
-				// or if it's accessible itself (for parent-only access)
-				return {
-					...menu,
-					children: filteredChildren.length > 0 ? filteredChildren : undefined,
-				};
+			if (menu.children) {
+				if (permission?.children) {
+					// If children permissions exist, filter based on them
+					const filteredChildren = filterMenusByPermissions(
+						menu.children,
+						permission.children
+					);
+					
+					// Only include the parent menu if it has accessible children
+					// or if it's accessible itself (for parent-only access)
+					return {
+						...menu,
+						children: filteredChildren.length > 0 ? filteredChildren : undefined,
+					};
+				} else if (permission?.access === true) {
+					// If parent has access but no children permissions defined,
+					// show all children (cascading permissions)
+					return {
+						...menu,
+						children: menu.children,
+					};
+				}
 			}
 			
 			return menu;
@@ -45,6 +55,8 @@ export const filterMenusByPermissions = (
 			}
 			return true;
 		});
+	
+	return filtered;
 };
 
 /**

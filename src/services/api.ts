@@ -45,9 +45,43 @@ const apiClient: AxiosInstance = axios.create({
 apiClient.interceptors.request.use(
 	(config: InternalAxiosRequestConfig) => {
 		// Add Bearer token to requests
-		const bearerToken = TokenManager.getBearerToken();
+		const accessToken = TokenManager.getAccessToken();
+		const tokenData = TokenManager.getTokenData();
+		const bearerToken = accessToken ? `Bearer ${accessToken}` : null;
+		
+		// Check if token is expired
+		let tokenExpired = false;
+		if (tokenData && tokenData.access_expires) {
+			const expiryDate = new Date(tokenData.access_expires);
+			tokenExpired = expiryDate <= new Date();
+		}
+		
+		// Log token source and details
+		console.log('=== TOKEN SOURCE INFO ===');
+		console.log('localStorage key used: "auth_token"');
+		console.log('Token retrieved from:', localStorage.getItem('auth_token') ? 'localStorage["auth_token"]' : 'NOT FOUND');
+		console.log('Access token (raw):', accessToken);
+		console.log('Bearer token (formatted):', bearerToken);
+		console.log('Token data exists:', !!tokenData);
+		if (tokenData) {
+			console.log('Token expiry:', tokenData.access_expires);
+			console.log('Token expired?', tokenExpired);
+		}
+		console.log('========================');
+		
+		// #region agent log
+		fetch('http://127.0.0.1:7246/ingest/e3cfb356-6081-44f1-8554-1f32b413ba8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:47',message:'REQUEST INTERCEPTOR - TOKEN CHECK',data:{url:config.url,localStorageKey:'auth_token',hasBearerToken:!!bearerToken,hasAccessToken:!!accessToken,accessTokenValue:accessToken,hasTokenData:!!tokenData,tokenExpired,tokenExpiry:tokenData?.access_expires,authorizationHeader:config.headers?.Authorization},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
+		// #endregion
+		
 		if (bearerToken && config.headers) {
 			config.headers.Authorization = bearerToken;
+			// #region agent log
+			fetch('http://127.0.0.1:7246/ingest/e3cfb356-6081-44f1-8554-1f32b413ba8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:52',message:'TOKEN ADDED TO HEADERS',data:{authorizationHeader:config.headers.Authorization},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
+			// #endregion
+		} else {
+			// #region agent log
+			fetch('http://127.0.0.1:7246/ingest/e3cfb356-6081-44f1-8554-1f32b413ba8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:56',message:'NO TOKEN AVAILABLE',data:{bearerToken:bearerToken,hasHeaders:!!config.headers},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
+			// #endregion
 		}
 
 		// Update user activity on each request
@@ -55,6 +89,16 @@ apiClient.interceptors.request.use(
 
 		// Add request timestamp for debugging
 		(config as any).metadata = { startTime: new Date() };
+		
+		// Preserve skipAuthRedirect flag from config to request object
+		// This allows the response interceptor to check it
+		if ((config as any).skipAuthRedirect !== undefined) {
+			(config as any).skipAuthRedirect = (config as any).skipAuthRedirect;
+		}
+
+		// #region agent log
+		fetch('http://127.0.0.1:7246/ingest/e3cfb356-6081-44f1-8554-1f32b413ba8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:70',message:'REQUEST INTERCEPTOR EXIT',data:{finalAuthHeader:config.headers?.Authorization,url:config.url},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
+		// #endregion
 
 		return config;
 	},
@@ -76,19 +120,35 @@ apiClient.interceptors.response.use(
 		return response;
 	},
 	async (error: AxiosError) => {
+		// #region agent log
+		fetch('http://127.0.0.1:7246/ingest/e3cfb356-6081-44f1-8554-1f32b413ba8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:78',message:'INTERCEPTOR ERROR HANDLER',data:{status:error.response?.status,url:error.config?.url},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
+		// #endregion
+		
 		const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
 
 		// Handle 401 Unauthorized - Token refresh
 		if (error.response?.status === 401 && !originalRequest._retry) {
+			// #region agent log
+			fetch('http://127.0.0.1:7246/ingest/e3cfb356-6081-44f1-8554-1f32b413ba8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:82',message:'401 DETECTED - STARTING TOKEN REFRESH',data:{url:error.config?.url},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
+			// #endregion
+			
 			originalRequest._retry = true;
 
 			try {
 				const refreshToken = TokenManager.getRefreshToken();
+				// #region agent log
+				fetch('http://127.0.0.1:7246/ingest/e3cfb356-6081-44f1-8554-1f32b413ba8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:87',message:'BEFORE TOKEN REFRESH',data:{hasRefreshToken:!!refreshToken},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'})}).catch(()=>{});
+				// #endregion
+				
 				if (refreshToken) {
-					// Attempt to refresh token
-					const refreshResponse = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+					// Attempt to refresh token - Use correct endpoint: /oauth/refresh (not /auth/refresh)
+					const refreshResponse = await axios.post(`${API_BASE_URL}/oauth/refresh`, {
 						refresh_token: refreshToken,
 					});
+
+					// #region agent log
+					fetch('http://127.0.0.1:7246/ingest/e3cfb356-6081-44f1-8554-1f32b413ba8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:92',message:'TOKEN REFRESH SUCCESS',data:{hasAccessToken:!!refreshResponse.data?.access_token},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H3'})}).catch(()=>{});
+					// #endregion
 
 					const { access_token, refresh_token: newRefreshToken } = refreshResponse.data;
 
@@ -110,9 +170,40 @@ apiClient.interceptors.response.use(
 					return apiClient(originalRequest);
 				}
 			} catch (refreshError) {
-				// Refresh failed, redirect to login
-				TokenManager.clearTokens();
-				window.location.href = '/login';
+				// #region agent log
+				fetch('http://127.0.0.1:7246/ingest/e3cfb356-6081-44f1-8554-1f32b413ba8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:112',message:'TOKEN REFRESH FAILED - BEFORE REDIRECT CHECK',data:{refreshErrorStatus:(refreshError as any)?.response?.status,skipRedirect:(originalRequest as any).skipAuthRedirect,configKeys:Object.keys(originalRequest || {}),hasConfig:!!originalRequest},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'H3'})}).catch(()=>{});
+				// #endregion
+				
+				// Refresh failed - check if we should skip redirect
+				// Check both config.skipAuthRedirect and the request object itself
+				const skipRedirect = 
+					(originalRequest as any)?.skipAuthRedirect === true ||
+					(originalRequest as any)?.config?.skipAuthRedirect === true ||
+					(originalRequest as any)?.skipAuthRedirect === true;
+				
+				// #region agent log
+				fetch('http://127.0.0.1:7246/ingest/e3cfb356-6081-44f1-8554-1f32b413ba8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:118',message:'REDIRECT DECISION',data:{skipRedirect,willRedirect:!skipRedirect},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'H3'})}).catch(()=>{});
+				// #endregion
+				
+				if (!skipRedirect) {
+					// #region agent log
+					fetch('http://127.0.0.1:7246/ingest/e3cfb356-6081-44f1-8554-1f32b413ba8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:122',message:'REDIRECT SCHEDULED - setTimeout CALLED',data:{delay:100},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'H3'})}).catch(()=>{});
+					// #endregion
+					
+					// Only redirect if not explicitly skipped
+					// Add a small delay to allow error handlers to catch the error first
+					setTimeout(() => {
+						// #region agent log
+						fetch('http://127.0.0.1:7246/ingest/e3cfb356-6081-44f1-8554-1f32b413ba8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:128',message:'REDIRECT EXECUTING NOW',data:{target:'/login'},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'H3'})}).catch(()=>{});
+						// #endregion
+						TokenManager.clearTokens();
+						window.location.href = '/login';
+					}, 100);
+				} else {
+					// #region agent log
+					fetch('http://127.0.0.1:7246/ingest/e3cfb356-6081-44f1-8554-1f32b413ba8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:135',message:'REDIRECT SKIPPED - skipAuthRedirect=true',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'H3'})}).catch(()=>{});
+					// #endregion
+				}
 				return Promise.reject(refreshError);
 			}
 		}

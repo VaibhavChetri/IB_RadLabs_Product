@@ -1,0 +1,34 @@
+{
+	"parent": {
+		"id": null
+	},
+	"children": [
+		{
+			"name": "My Leads",
+			"slug": "my-leads",
+			"parent_id": null,
+			"sort_order": 2,
+			"level": 1,
+			"badge": null,
+			"status": 1
+		},
+		{
+			"name": "Today's Callbacks",
+			"slug": "callbacks",
+			"parent_id": null,
+			"sort_order": 3,
+			"level": 1,
+			"badge": null,
+			"status": 1
+		},
+		{
+			"name": "Reports",
+			"slug": "lead-reports",
+			"parent_id": null,
+			"sort_order": 4,
+			"level": 1,
+			"badge": null,
+			"status": 1
+		}
+	]
+}

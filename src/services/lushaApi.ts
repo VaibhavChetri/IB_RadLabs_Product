@@ -44,14 +44,15 @@ export interface SearchFilters {
 	contacts?: {
 		include?: {
 			departments?: string[];
-			seniority?: string[];
+			seniority?: number[]; // Changed to number[] to match API requirement
 			jobTitles?: string[];
 			locations?: Location[];
 		};
 	};
 	companies?: {
 		include?: {
-			industries?: string[];
+			mainIndustriesIds?: number[];
+			subIndustriesIds?: number[];
 			companyNames?: string[];
 			technologies?: string[];
 		};
@@ -118,6 +119,97 @@ export interface RevealResponse {
 	email: string;
 	phone: string;
 	creditsUsed: number;
+}
+
+// Company Enrich Types
+export interface CompanyEnrichRequest {
+	requestId: string;
+	companiesIds: string[];
+}
+
+export interface CompanyFundingRound {
+	currency?: string;
+	roundDate?: string;
+	roundType?: string;
+	roundAmount?: number;
+}
+
+export interface CompanyFunding {
+	isIpo: boolean;
+	rounds: CompanyFundingRound[];
+	currency?: string;
+	totalRounds: number;
+	lastRoundDate?: string;
+	lastRoundType?: string;
+	lastRoundAmount?: number;
+	totalRoundsAmount?: number;
+}
+
+export interface CompanySocial {
+	linkedin?: string;
+	crunchbase?: string;
+}
+
+export interface CompanyDomains {
+	email?: string;
+	homepage?: string;
+}
+
+export interface CompanySize {
+	max: number;
+	min: number;
+	employees_in_linkedin?: number;
+}
+
+export interface CompanySicNaics {
+	sic?: number;
+	naics?: number;
+	description: string;
+}
+
+export interface CompanyIndustryDetails {
+	sics?: CompanySicNaics[];
+	naics?: CompanySicNaics[];
+}
+
+export interface EnrichedCompany {
+	id: number;
+	fqdn?: string;
+	name: string;
+	social?: CompanySocial;
+	country?: string;
+	domains?: CompanyDomains;
+	founded?: number;
+	funding?: CompanyFunding;
+	logoUrl?: string;
+	continent?: string;
+	employees?: string;
+	companySize?: CompanySize;
+	countryIso2?: string;
+	description?: string;
+	rawLocation?: string;
+	subIndustry?: string;
+	mainIndustry?: string;
+	revenueRange?: number[];
+	specialities?: string[];
+	industryPrimaryGroupDetails?: CompanyIndustryDetails;
+	city?: string;
+	state?: string;
+	stateCode?: string;
+	coordinates?: number[];
+	[key: string]: unknown;
+}
+
+export interface CompanyEnrichResponse {
+	requestId: string;
+	companiesEnriched: number;
+	companiesFromCache: number;
+	companiesFromAPI: number;
+	creditsUsed: number;
+	data: {
+		requestId: string;
+		companies: EnrichedCompany[];
+	};
 }
 
 // Lusha API Service
@@ -207,5 +299,12 @@ export class LushaApiService {
 	 */
 	static async revealContact(request: RevealRequest): Promise<ApiResponse<RevealResponse>> {
 		return apiService.post('/lusha/reveal', request);
+	}
+
+	/**
+	 * Enrich company details
+	 */
+	static async enrichCompany(request: CompanyEnrichRequest): Promise<ApiResponse<CompanyEnrichResponse>> {
+		return apiService.post('/lusha/company/enrich', request);
 	}
 }

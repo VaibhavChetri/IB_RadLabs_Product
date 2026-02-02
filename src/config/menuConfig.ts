@@ -489,6 +489,25 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 		],
 	},
 	{
+		id: 'invoice',
+		name: 'Invoice',
+		icon: FileText,
+		children: [
+			{
+				id: 'invoice-list',
+				name: 'Invoice Listing',
+				icon: FileText,
+				href: '/billing/invoice',
+			},
+			{
+				id: 'billing-details',
+				name: 'Billing Details',
+				icon: FileText,
+				href: '/billing/details',
+			},
+		],
+	},
+	{
 		id: 'help',
 		name: 'Help & Support',
 		icon: HelpCircle,

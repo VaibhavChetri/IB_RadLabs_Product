@@ -37,24 +37,6 @@ const isoToLocalDateTime = (isoString: string): string => {
 };
 
 /**
- * Convert datetime-local value (YYYY-MM-DDTHH:mm) to MySQL datetime format
- * Treats the input as local time and converts to MySQL format (YYYY-MM-DD HH:mm:ss)
- */
-const localDateTimeToMySQL = (localDateTime: string): string => {
-	if (!localDateTime) return '';
-	// Create a date object treating the input as local time
-	const date = new Date(localDateTime);
-	// Format as MySQL datetime: YYYY-MM-DD HH:mm:ss
-	const year = date.getFullYear();
-	const month = String(date.getMonth() + 1).padStart(2, '0');
-	const day = String(date.getDate()).padStart(2, '0');
-	const hours = String(date.getHours()).padStart(2, '0');
-	const minutes = String(date.getMinutes()).padStart(2, '0');
-	const seconds = String(date.getSeconds()).padStart(2, '0');
-	return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-};
-
-/**
  * Convert ISO string to MySQL datetime format
  * Used when we have an ISO string stored and need to send to API
  */
@@ -176,19 +158,12 @@ export const OutreachLogModal: React.FC<OutreachLogModalProps> = ({
 		return true;
 	};
 
-	// Handle submit - SIMPLIFIED: Just call API and log response
+	// Handle submit
 	const handleSubmit = async (e: React.FormEvent) => {
-		// #region agent log
-		fetch('http://127.0.0.1:7246/ingest/e3cfb356-6081-44f1-8554-1f32b413ba8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'OutreachLogModal.tsx:126',message:'handleSubmit ENTRY',data:{hasEvent:!!e,formData},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
-		// #endregion
-		
 		e.preventDefault();
 		setError(null);
 
 		if (!validateForm()) {
-			// #region agent log
-			fetch('http://127.0.0.1:7246/ingest/e3cfb356-6081-44f1-8554-1f32b413ba8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'OutreachLogModal.tsx:132',message:'handleSubmit VALIDATION FAILED',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
-			// #endregion
 			return;
 		}
 
@@ -210,19 +185,8 @@ export const OutreachLogModal: React.FC<OutreachLogModalProps> = ({
 			payload.callback_scheduled_at = isoToMySQL(formData.callback_scheduled_at);
 		}
 		
-		// #region agent log
-		fetch('http://127.0.0.1:7246/ingest/e3cfb356-6081-44f1-8554-1f32b413ba8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'OutreachLogModal.tsx:150',message:'BEFORE API CALL',data:{payload},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
-		// #endregion
-		
-		console.log('=== LOG OUTREACH API CALL ===');
-		console.log('Payload being sent:', JSON.stringify(payload, null, 2));
-		
 		try {
 			const response = await LeadApiService.logOutreach(payload);
-			
-			// #region agent log
-			fetch('http://127.0.0.1:7246/ingest/e3cfb356-6081-44f1-8554-1f32b413ba8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'OutreachLogModal.tsx:166',message:'API CALL SUCCESS',data:{hasResponse:!!response,statusCode:response.status_code},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
-			// #endregion
 			
 			// Handle both success: true and status_code: 200/201 response formats
 			const responseAny = response as { success?: boolean; status_code?: number; message?: string };
@@ -236,17 +200,13 @@ export const OutreachLogModal: React.FC<OutreachLogModalProps> = ({
 				throw new Error(responseAny.message || 'Failed to log outreach');
 			}
 			
-		} catch (error: any) {
-			// #region agent log
-			fetch('http://127.0.0.1:7246/ingest/e3cfb356-6081-44f1-8554-1f32b413ba8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'OutreachLogModal.tsx:180',message:'API CALL ERROR',data:{errorStatus:error?.response?.status,errorMessage:error?.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H2'})}).catch(()=>{});
-			// #endregion
-			
+		} catch (error: unknown) {
 			// Extract error message
 			let errorMessage = 'Failed to log outreach';
-			if (error.response?.data?.message) {
-				errorMessage = error.response.data.message;
-			} else if (error.message) {
+			if (error instanceof Error) {
 				errorMessage = error.message;
+			} else if ((error as { response?: { data?: { message?: string } } })?.response?.data?.message) {
+				errorMessage = (error as { response: { data: { message: string } } }).response.data.message;
 			}
 			
 			setError(errorMessage);
@@ -340,9 +300,6 @@ export const OutreachLogModal: React.FC<OutreachLogModalProps> = ({
 								}
 								onChange={e => {
 									const value = e.target.value;
-									// #region agent log
-									fetch('http://127.0.0.1:7246/ingest/e3cfb356-6081-44f1-8554-1f32b413ba8e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'OutreachLogModal.tsx:318',message:'DATETIME INPUT CHANGE',data:{localValue:value,mysqlValue:value?localDateTimeToMySQL(value):null},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
-									// #endregion
 									// Store as ISO string internally for consistency, but convert to MySQL format when sending to API
 									if (value) {
 										const date = new Date(value);

@@ -67,6 +67,9 @@ import { ReportsDashboard } from '../pages/leads/ReportsDashboard';
 // HR - Job Posting
 import { AddJobPosting } from '../pages/hr/job-posting/AddJobPosting';
 import { JobPostingListing } from '../pages/hr/job-posting/JobPostingListing';
+// Billing - Invoice
+import InvoiceList from '../pages/billing/InvoiceList';
+import BillingDetails from '../pages/billing/BillingDetails';
 
 export interface RouteConfig {
 	path: string;
@@ -140,4 +143,7 @@ export const routes: RouteConfig[] = [
 	{ path: '/hr/job-posting', component: JobPostingListing },
 	{ path: '/hr/job-posting/add', component: AddJobPosting },
 	{ path: '/hr/job-posting/edit/:id', component: AddJobPosting },
+	// Billing - Invoice
+	{ path: '/billing/invoice', component: InvoiceList },
+	{ path: '/billing/details', component: BillingDetails },
 ];

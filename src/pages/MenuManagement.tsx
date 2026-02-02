@@ -53,6 +53,93 @@ export const MenuManagement: React.FC = () => {
 		console.log('Create menu clicked');
 	};
 
+	const handleAddSalesSubmenus = async () => {
+		try {
+			setLoading(true);
+			
+			// Find Sales menu ID
+			const response = await MenuManagementApiService.getMenus();
+			if (response.status_code !== 200) {
+				console.error('Failed to fetch menus');
+				return;
+			}
+
+			const salesMenu = response.data.menus.find((menu: Menu) => menu.slug === 'sales');
+			if (!salesMenu) {
+				console.error('Sales menu not found');
+				alert('Sales menu not found. Please ensure the Sales menu exists.');
+				return;
+			}
+
+			console.log(`Found Sales menu with ID: ${salesMenu.id}`);
+
+			// Add the 3 missing submenus
+			const hierarchyResponse = await MenuManagementApiService.createMenuHierarchy({
+				parent: {
+					id: salesMenu.id,
+				},
+				children: [
+					{
+						name: 'My Leads',
+						slug: 'my-leads',
+						parent_id: null,
+						sort_order: 2,
+						level: 1,
+						badge: null,
+						status: 1,
+					},
+					{
+						name: "Today's Callbacks",
+						slug: 'callbacks',
+						parent_id: null,
+						sort_order: 3,
+						level: 1,
+						badge: null,
+						status: 1,
+					},
+					{
+						name: 'Reports',
+						slug: 'lead-reports',
+						parent_id: null,
+						sort_order: 4,
+						level: 1,
+						badge: null,
+						status: 1,
+					},
+				],
+			});
+
+			if (hierarchyResponse.status_code === 200 || hierarchyResponse.status_code === 201) {
+				console.log('✅ Successfully added Sales submenus');
+				
+				// Refresh menu permissions
+				try {
+					const permissionResponse = await MenuApiService.getUserMenuPermissions();
+					const freshPermissions = permissionResponse.data?.menu_permissions || {};
+					await refreshPermissions(freshPermissions);
+					
+					const TokenManager = (await import('../utils/tokenManager')).default;
+					TokenManager.setMenuPermissions(freshPermissions);
+				} catch (error) {
+					console.error('Failed to refresh permissions:', error);
+				}
+
+				// Reload menus
+				await loadMenus();
+				
+				alert('✅ Successfully added Sales submenus: My Leads, Today\'s Callbacks, and Reports');
+			} else {
+				console.error('Failed to add submenus:', hierarchyResponse.message);
+				alert(`Failed to add submenus: ${hierarchyResponse.message}`);
+			}
+		} catch (error: any) {
+			console.error('Error adding Sales submenus:', error);
+			alert(`Error: ${error.message || 'Failed to add Sales submenus'}`);
+		} finally {
+			setLoading(false);
+		}
+	};
+
 	const handleManagePermissions = async (menu: Menu) => {
 		setSelectedMenu(menu);
 		setPermissionLoading(true);
@@ -523,13 +610,23 @@ export const MenuManagement: React.FC = () => {
 					<h1 className='text-2xl font-bold text-foreground'>Menus</h1>
 					<p className='text-sm text-foreground-muted'>Manage application menus and permissions</p>
 				</div>
-				<Button
-					onClick={handleCreateMenu}
-					className='flex items-center space-x-2 bg-primary hover:bg-primary/90'
-				>
-					<Plus className='w-4 h-4' />
-					<span>Add Menu</span>
-				</Button>
+				<div className='flex items-center space-x-2'>
+					<Button
+						onClick={handleAddSalesSubmenus}
+						className='flex items-center space-x-2 bg-orange-600 hover:bg-orange-700'
+						disabled={loading}
+					>
+						<Plus className='w-4 h-4' />
+						<span>Add Sales Submenus</span>
+					</Button>
+					<Button
+						onClick={handleCreateMenu}
+						className='flex items-center space-x-2 bg-primary hover:bg-primary/90'
+					>
+						<Plus className='w-4 h-4' />
+						<span>Add Menu</span>
+					</Button>
+				</div>
 			</div>
 
 			{/* Compact Table */}

@@ -11,6 +11,23 @@ import { filterMenusByPermissions, debugMenuPermissions } from '../utils/menuPer
 import { RootState } from '../store/index';
 import { updateUser } from '../store/slices/authSlice';
 
+/** Flatten nested permission tree so sidebar can match by menu id (e.g. invoice under billing becomes top-level). */
+function flattenPermissionTree(perms: Record<string, MenuPermission>): Record<string, MenuPermission> {
+	const flat: Record<string, MenuPermission> = {};
+	function walk(p: Record<string, MenuPermission>) {
+		Object.entries(p).forEach(([id, perm]) => {
+			if (perm && typeof perm === 'object' && 'access' in perm) {
+				flat[id] = perm;
+				if (perm.children && Object.keys(perm.children).length > 0) {
+					walk(perm.children);
+				}
+			}
+		});
+	}
+	walk(perms);
+	return flat;
+}
+
 export interface UseUserMenusReturn {
 	// Menu data
 	menus: MenuItem[];
@@ -42,6 +59,46 @@ export const useUserMenus = (): UseUserMenusReturn => {
 	// Get permissions from Redux state
 	const permissions = user?.menuPermissions || {};
 
+	// Flatten so nested menus (e.g. invoice under billing) are visible at top level for sidebar match
+	const flatPermissions = flattenPermissionTree(permissions);
+
+	// Normalize: API uses "invoice-menu" (and possibly invoices, billing, etc.); config uses "invoice"
+	const normalizedPermissions = { ...flatPermissions };
+	let invoicePerm: MenuPermission | undefined;
+	if (flatPermissions['invoice-menu']) {
+		invoicePerm = flatPermissions['invoice-menu'];
+		normalizedPermissions['invoice'] = invoicePerm;
+	}
+	const invoiceLikeKeys = Object.keys(flatPermissions).filter(k => /invoice|billing/i.test(k));
+	if (invoiceLikeKeys.length > 0 && !normalizedPermissions['invoice']) {
+		const withAccess = invoiceLikeKeys.find(k => flatPermissions[k]?.access === true);
+		invoicePerm = withAccess
+			? flatPermissions[withAccess]
+			: flatPermissions[invoiceLikeKeys[0]];
+		normalizedPermissions['invoice'] = invoicePerm;
+	}
+	// Normalize invoice permission children so backend slugs match config ids (invoice-list, billing-details)
+	if (invoicePerm?.children && typeof invoicePerm.children === 'object') {
+		const ch = invoicePerm.children as Record<string, MenuPermission>;
+		const normalizedChildren = { ...ch };
+		if (ch['invoice-listing'] && !normalizedChildren['invoice-list']) {
+			normalizedChildren['invoice-list'] = ch['invoice-listing'];
+		}
+		if (ch['invoice-list'] && !normalizedChildren['invoice-list']) {
+			normalizedChildren['invoice-list'] = ch['invoice-list'];
+		}
+		if (ch['billing'] && !normalizedChildren['billing-details']) {
+			normalizedChildren['billing-details'] = ch['billing'];
+		}
+		if (ch['billing-details'] && !normalizedChildren['billing-details']) {
+			normalizedChildren['billing-details'] = ch['billing-details'];
+		}
+		normalizedPermissions['invoice'] = {
+			...invoicePerm,
+			children: Object.keys(normalizedChildren).length > 0 ? normalizedChildren : invoicePerm.children,
+		};
+	}
+
 	// Update accessible menu IDs when permissions change
 	useEffect(() => {
 		if (permissions && Object.keys(permissions).length > 0) {
@@ -55,8 +112,8 @@ export const useUserMenus = (): UseUserMenusReturn => {
 		}
 	}, [permissions, isAuthenticated]);
 
-	// Filter menus based on permissions
-	const menus = filterMenusByPermissions(ALL_MENU_ITEMS, permissions);
+	// Filter menus based on permissions (use normalized so invoice/invoices/billing all work)
+	const menus = filterMenusByPermissions(ALL_MENU_ITEMS, normalizedPermissions);
 
 	// Check if user has access to a specific menu
 	const checkMenuAccess = useCallback(

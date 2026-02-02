@@ -13,6 +13,7 @@ interface UseDashboardDataQueryParams {
 	locationId: string | null;
 	clientId: string;
 	month: string;
+	year: string;
 	enabled?: boolean;
 }
 
@@ -35,14 +36,16 @@ export const useDashboardDataQuery = ({
 	locationId,
 	clientId,
 	month,
+	year,
 	enabled = true,
 }: UseDashboardDataQueryParams): UseDashboardDataQueryReturn => {
-	// Calculate date range from month
-	const dateRange = month ? getMonthDateRange(parseInt(month, 10)) : null;
+	// Calculate date range from month and selected year
+	const yearNum = year ? parseInt(year, 10) : undefined;
+	const dateRange = month ? getMonthDateRange(parseInt(month, 10), yearNum) : null;
 
 	// React Query hook with proper error handling and retry logic
 	const queryResult: UseQueryResult<DashboardKAMResponse, Error> = useQuery({
-		queryKey: ['dashboard', 'kam', locationId, clientId, month, dateRange],
+		queryKey: ['dashboard', 'kam', locationId, clientId, month, year, dateRange],
 		queryFn: async (): Promise<DashboardKAMResponse> => {
 			if (!locationId || !month || !dateRange) {
 				throw new Error('Missing required parameters');

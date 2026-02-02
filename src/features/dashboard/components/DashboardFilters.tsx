@@ -5,26 +5,34 @@ import { MONTH_OPTIONS } from '../config/constants';
 import { DropdownOption } from '../hooks/useDashboardFilters';
 
 interface DashboardFiltersProps {
+	selectedYear: string;
 	selectedMonth: string;
 	selectedClient: string;
 	selectedFacility: string;
+	yearOptions: DropdownOption[];
 	clientOptions: DropdownOption[];
 	facilityOptions: DropdownOption[];
 	loadingClients: boolean;
 	loadingFacilities: boolean;
+	showClientDropdown?: boolean;
+	onYearChange: (value: string) => void;
 	onMonthChange: (value: string) => void;
 	onClientChange: (value: string) => void;
 	onFacilityChange: (value: string) => void;
 }
 
 export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
+	selectedYear,
 	selectedMonth,
 	selectedClient,
 	selectedFacility,
+	yearOptions,
 	clientOptions,
 	facilityOptions,
 	loadingClients,
 	loadingFacilities,
+	showClientDropdown = true,
+	onYearChange,
 	onMonthChange,
 	onClientChange,
 	onFacilityChange,
@@ -33,6 +41,14 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
 		<Card className='p-4 sm:p-6'>
 			<div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
 				<FloatingDropdown
+					label='Year'
+					options={yearOptions}
+					value={selectedYear}
+					onChange={onYearChange}
+					placeholder='Select year'
+					className='w-full'
+				/>
+				<FloatingDropdown
 					label='Month'
 					options={[...MONTH_OPTIONS]}
 					value={selectedMonth}
@@ -40,16 +56,18 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
 					placeholder='Select month'
 					className='w-full'
 				/>
-				<FloatingDropdown
-					label='Client'
-					options={clientOptions}
-					value={selectedClient}
-					onChange={onClientChange}
-					placeholder='Select client'
-					loading={loadingClients}
-					className='w-full'
-					searchable
-				/>
+				{showClientDropdown && (
+					<FloatingDropdown
+						label='Client'
+						options={clientOptions}
+						value={selectedClient}
+						onChange={onClientChange}
+						placeholder='Select client'
+						loading={loadingClients}
+						className='w-full'
+						searchable
+					/>
+				)}
 				<FloatingDropdown
 					label='Washing Facility'
 					options={facilityOptions}

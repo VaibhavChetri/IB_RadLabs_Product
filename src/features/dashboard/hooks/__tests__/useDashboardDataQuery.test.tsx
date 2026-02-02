@@ -49,6 +49,7 @@ describe('useDashboardDataQuery', () => {
 					locationId: '1',
 					clientId: 'all',
 					month: '10',
+					year: '2025',
 				}),
 			{
 				wrapper: createWrapper(),
@@ -87,6 +88,7 @@ describe('useDashboardDataQuery', () => {
 					locationId: '1',
 					clientId: 'all',
 					month: '10',
+					year: '2025',
 				}),
 			{
 				wrapper: createWrapper(),
@@ -120,6 +122,7 @@ describe('useDashboardDataQuery', () => {
 					locationId: '1',
 					clientId: 'all',
 					month: '10',
+					year: '2025',
 				}),
 			{
 				wrapper: createWrapper(),
@@ -141,6 +144,7 @@ describe('useDashboardDataQuery', () => {
 					locationId: '1',
 					clientId: 'all',
 					month: '10',
+					year: '2025',
 					enabled: false,
 				}),
 			{
@@ -158,6 +162,7 @@ describe('useDashboardDataQuery', () => {
 					locationId: null,
 					clientId: 'all',
 					month: '10',
+					year: '2025',
 				}),
 			{
 				wrapper: createWrapper(),

@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../../../store';
 import { SkuApiService } from '../../../services/skuApi';
 import { CommonApiService } from '../../../services/commonApi';
-import { getCurrentMonth, CLIENT_ALL_OPTION } from '../config/constants';
+import { getCurrentMonth, getCurrentYear, getYearOptions, CLIENT_ALL_OPTION } from '../config/constants';
 
 export interface DropdownOption {
 	value: string;
@@ -12,15 +12,18 @@ export interface DropdownOption {
 
 interface UseDashboardFiltersReturn {
 	// State
+	selectedYear: string;
 	selectedMonth: string;
 	selectedClient: string;
 	selectedFacility: string;
+	yearOptions: DropdownOption[];
 	clientOptions: DropdownOption[];
 	facilityOptions: DropdownOption[];
 	loadingClients: boolean;
 	loadingFacilities: boolean;
 
 	// Setters
+	setSelectedYear: (value: string) => void;
 	setSelectedMonth: (value: string) => void;
 	setSelectedClient: (value: string) => void;
 	setSelectedFacility: (value: string) => void;
@@ -29,10 +32,12 @@ interface UseDashboardFiltersReturn {
 export const useDashboardFilters = (): UseDashboardFiltersReturn => {
 	const { user } = useSelector((state: RootState) => state.auth);
 
-	// Filter states
+	// Filter states: year defaults to this year; month to current month
+	const [selectedYear, setSelectedYear] = useState<string>(getCurrentYear().toString());
 	const [selectedMonth, setSelectedMonth] = useState<string>(getCurrentMonth().toString());
 	const [selectedClient, setSelectedClient] = useState<string>(CLIENT_ALL_OPTION.value);
 	const [selectedFacility, setSelectedFacility] = useState<string>('');
+	const yearOptions = getYearOptions();
 
 	// Options states
 	const [clientOptions, setClientOptions] = useState<DropdownOption[]>([CLIENT_ALL_OPTION]);
@@ -105,13 +110,16 @@ export const useDashboardFilters = (): UseDashboardFiltersReturn => {
 	}, [facilityOptions, selectedFacility]);
 
 	return {
+		selectedYear,
 		selectedMonth,
 		selectedClient,
 		selectedFacility,
+		yearOptions,
 		clientOptions,
 		facilityOptions,
 		loadingClients,
 		loadingFacilities,
+		setSelectedYear,
 		setSelectedMonth,
 		setSelectedClient,
 		setSelectedFacility,

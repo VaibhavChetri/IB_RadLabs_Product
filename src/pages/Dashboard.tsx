@@ -13,17 +13,23 @@ import {
 export const Dashboard: React.FC = () => {
 	const { user } = useSelector((state: RootState) => state.auth);
 	const {
+		selectedYear,
 		selectedMonth,
 		selectedClient,
 		selectedFacility,
+		yearOptions,
 		clientOptions,
 		facilityOptions,
 		loadingClients,
 		loadingFacilities,
+		setSelectedYear,
 		setSelectedMonth,
 		setSelectedClient,
 		setSelectedFacility,
 	} = useDashboardFilters();
+
+	const showClientDropdown = user?.userTypeId !== 28;
+	const clientIdForApi = showClientDropdown ? selectedClient : 'all';
 
 	// Fetch dashboard data using React Query (with caching and automatic refetching)
 	const {
@@ -33,9 +39,10 @@ export const Dashboard: React.FC = () => {
 		error,
 	} = useDashboardDataQuery({
 		locationId: selectedFacility,
-		clientId: selectedClient,
+		clientId: clientIdForApi,
 		month: selectedMonth,
-		enabled: !!selectedFacility && !!selectedMonth, // Only fetch when filters are ready
+		year: selectedYear,
+		enabled: !!selectedFacility && !!selectedMonth && !!selectedYear,
 	});
 
 	return (
@@ -50,13 +57,17 @@ export const Dashboard: React.FC = () => {
 				/>
 
 				<DashboardFilters
+					selectedYear={selectedYear}
 					selectedMonth={selectedMonth}
 					selectedClient={selectedClient}
 					selectedFacility={selectedFacility}
+					yearOptions={yearOptions}
 					clientOptions={clientOptions}
 					facilityOptions={facilityOptions}
 					loadingClients={loadingClients}
 					loadingFacilities={loadingFacilities}
+					showClientDropdown={showClientDropdown}
+					onYearChange={setSelectedYear}
 					onMonthChange={setSelectedMonth}
 					onClientChange={setSelectedClient}
 					onFacilityChange={setSelectedFacility}

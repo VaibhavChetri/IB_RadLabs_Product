@@ -19,5 +19,11 @@ export type {
 	DashboardResponse,
 } from './hooks/useDashboardData';
 export type { ChartFilter } from './hooks/useChartData';
-export { MONTH_OPTIONS, CLIENT_ALL_OPTION, getCurrentMonth } from './config/constants';
+export {
+	MONTH_OPTIONS,
+	CLIENT_ALL_OPTION,
+	getCurrentMonth,
+	getCurrentYear,
+	getYearOptions,
+} from './config/constants';
 export { getMonthDateRange, getDayFromDate } from './utils/dateUtils';

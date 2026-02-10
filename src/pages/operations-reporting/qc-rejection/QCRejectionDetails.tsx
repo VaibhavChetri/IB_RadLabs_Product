@@ -3,9 +3,10 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Button, Snackbar } from '../../../components/ui';
 import { SkuApiService } from '../../../services/skuApi';
-import { EscalationTypeService, QCRejectionService } from '../../../services/transitPlanApi';
+import { QCRejectionService } from '../../../services/transitPlanApi';
+import { ComplaintTypeService } from '../../../services/complaintTypeApi';
 import type { ClientSkuMapItem } from '../../../services/transitPlanApi';
-import type { EscalationType } from '../../../services/transitPlanApi';
+import type { ComplaintType } from '../../../services/complaintTypeApi';
 
 interface QCRejectionFormData {
 	[skuId: string]: {
@@ -19,7 +20,7 @@ export const QCRejectionDetails: React.FC = () => {
 	const navigate = useNavigate();
 
 	const [skus, setSkus] = useState<ClientSkuMapItem[]>([]);
-	const [rejectionReasons, setRejectionReasons] = useState<EscalationType[]>([]);
+	const [rejectionReasons, setRejectionReasons] = useState<ComplaintType[]>([]);
 	const [formData, setFormData] = useState<QCRejectionFormData>({});
 	const [loading, setLoading] = useState(true);
 	const [submitting, setSubmitting] = useState(false);
@@ -81,13 +82,15 @@ export const QCRejectionDetails: React.FC = () => {
 					setFormData(initialData);
 				}
 
-				// Load rejection reasons
-				const reasonsResponse = await EscalationTypeService.getEscalationTypes();
+				// Load rejection reasons from Complaint Types API
+				const reasonsResponse = await ComplaintTypeService.getComplaintTypes();
+				console.log('🔍 QC Rejection - Complaint Types Response:', reasonsResponse);
 				if (reasonsResponse?.data) {
-					// Filter only active reasons (status = 1 means Active)
+					// Filter only active reasons (status = 'Active')
 					const activeReasons = reasonsResponse.data.filter(
-						reason => reason.status === 1
+						reason => reason.status === 'Active'
 					);
+					console.log('🔍 QC Rejection - Active Reasons:', activeReasons);
 					setRejectionReasons(activeReasons);
 				}
 			} catch (error) {
@@ -254,6 +257,13 @@ export const QCRejectionDetails: React.FC = () => {
 					</div>
 				</div>
 
+				{/* Debug info */}
+				{process.env.NODE_ENV === 'development' && (
+					<div className='mb-4 p-2 bg-yellow-50 text-xs'>
+						Rejection Reasons Count: {rejectionReasons.length} | SKUs Count: {skus.length}
+					</div>
+				)}
+
 				{/* Table */}
 				<div className='bg-white border border-gray-200 rounded-lg overflow-hidden mb-6 shadow-sm'>
 					<div className='overflow-x-auto'>
@@ -264,14 +274,20 @@ export const QCRejectionDetails: React.FC = () => {
 									<th className='px-3 py-2 text-left text-xs font-bold text-gray-700 uppercase tracking-wider sticky left-0 bg-gradient-to-r from-gray-50 to-gray-100 z-10 min-w-[200px] border-r border-gray-300'>
 										SKU
 									</th>
-									{rejectionReasons.map(reason => (
-										<th
-											key={reason.id}
-											className='px-2 py-2 text-center text-xs font-bold text-gray-700 uppercase tracking-wider min-w-[100px]'
-										>
-											{reason.name}
+									{rejectionReasons.length === 0 ? (
+										<th className='px-2 py-2 text-center text-xs font-bold text-gray-700 uppercase tracking-wider'>
+											No QC Types Found
 										</th>
-									))}
+									) : (
+										rejectionReasons.map(reason => (
+											<th
+												key={reason.id}
+												className='px-2 py-2 text-center text-xs font-bold text-gray-700 uppercase tracking-wider min-w-[100px]'
+											>
+												{reason.name}
+											</th>
+										))
+									)}
 									<th className='px-2 py-2 text-center text-xs font-bold text-gray-700 uppercase tracking-wider min-w-[100px] bg-gray-200 border-l-2 border-gray-400'>
 										Total
 									</th>

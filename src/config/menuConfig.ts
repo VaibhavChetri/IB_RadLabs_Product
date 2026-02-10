@@ -387,7 +387,7 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 						id: 'QC-type',
 						name: 'QC Type Listing',
 						icon: FileText,
-						href: '/ops-admin/escalations/escalation-type',
+						href: '/ops-admin/qc/qc-type',
 					},
 				],
 			},

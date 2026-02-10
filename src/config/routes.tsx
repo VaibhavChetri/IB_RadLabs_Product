@@ -17,6 +17,8 @@ import { ReviewCostType } from '../pages/ops-admin/revenue/ReviewCostType';
 import { ReviewCategoryType } from '../pages/ops-admin/revenue/ReviewCategoryType';
 // Ops Admin - Escalations
 import { EscalationType } from '../pages/ops-admin/escalations/EscalationType';
+// Ops Admin - QC
+import { QCTypeListing } from '../pages/ops-admin/qc/QCTypeListing';
 // Ops Admin - Facility Resources
 import FacilityResourceListing from '../pages/ops-admin/facility-resources/FacilityResourceListing';
 // Ops Admin - Vehicles
@@ -114,6 +116,7 @@ export const routes: RouteConfig[] = [
 	{ path: '/ops-admin/revenue/review-cost-type', component: ReviewCostType },
 	{ path: '/ops-admin/revenue/review-category-type', component: ReviewCategoryType },
 	{ path: '/ops-admin/escalations/escalation-type', component: EscalationType },
+	{ path: '/ops-admin/qc/qc-type', component: QCTypeListing },
 	{ path: '/ops-admin/client-escalations/escalation-type', component: EscalationType },
 	{ path: '/ops-admin/facility-resources', component: FacilityResourceListing },
 	{ path: '/ops-admin/vehicles/listing', component: VehicleListing },

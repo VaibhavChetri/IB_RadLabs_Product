@@ -64,14 +64,19 @@ export interface SearchRequest {
 	pages: { page: number; size: number };
 }
 
+/** API can return emailAddresses as string[] or as { email: string }[] */
+export type EmailEntry = string | { email?: string };
+/** API can return phoneNumbers as string[] or as { phone?: string; number?: string }[] */
+export type PhoneEntry = string | { phone?: string; number?: string };
+
 export interface ContactResult {
 	contactId: string;
 	name: string;
 	companyName: string;
 	jobTitle: string;
 	location?: string;
-	emailAddresses?: string[];
-	phoneNumbers?: string[];
+	emailAddresses?: EmailEntry[];
+	phoneNumbers?: PhoneEntry[];
 	// Direct email/phone fields (from reveal response)
 	email?: string;
 	phone?: string;
@@ -86,6 +91,10 @@ export interface ContactResult {
 	hasMobilePhone?: boolean;
 	hasDirectPhone?: boolean;
 	personId?: number;
+	linkedinUrl?: string | null;
+	linkedinSearchUrl?: string;
+	smartLinkedinUrl?: string;
+	companyLinkedinUrl?: string;
 	[key: string]: unknown;
 }
 
@@ -212,6 +221,39 @@ export interface CompanyEnrichResponse {
 	};
 }
 
+// Saved Filters (Lusha)
+export interface SavedFilterFilterConfig {
+	contacts?: {
+		include?: {
+			departments?: string[];
+			jobTitles?: string[];
+			seniority?: number[];
+			locations?: Location[];
+		};
+	};
+	companies?: {
+		include?: {
+			mainIndustriesIds?: number[];
+			subIndustriesIds?: number[];
+			companyNames?: string[];
+			technologies?: string[];
+			industries?: string[];
+		};
+	};
+}
+
+export interface SavedFilter {
+	id: number;
+	name: string;
+	filterConfig: SavedFilterFilterConfig;
+	createdAt: string;
+}
+
+export interface SavedFilterCreatePayload {
+	name: string;
+	filterConfig: SavedFilterFilterConfig;
+}
+
 // Lusha API Service
 export class LushaApiService {
 	/**
@@ -304,7 +346,36 @@ export class LushaApiService {
 	/**
 	 * Enrich company details
 	 */
-	static async enrichCompany(request: CompanyEnrichRequest): Promise<ApiResponse<CompanyEnrichResponse>> {
+	static async enrichCompany(
+		request: CompanyEnrichRequest
+	): Promise<ApiResponse<CompanyEnrichResponse>> {
 		return apiService.post('/lusha/company/enrich', request);
+	}
+
+	/**
+	 * Save current search as a named filter
+	 */
+	static async saveFilter(payload: SavedFilterCreatePayload): Promise<ApiResponse<SavedFilter>> {
+		return apiService.post('/lusha/saved-filters', payload) as Promise<ApiResponse<SavedFilter>>;
+	}
+
+	/**
+	 * Get list of saved filters
+	 */
+	static async getSavedFilters(): Promise<ApiResponse<SavedFilter[]>> {
+		const res = await apiService.get('/lusha/saved-filters');
+		if (res.status_code !== 200) return res as ApiResponse<SavedFilter[]>;
+		const raw = res.data;
+		const list = Array.isArray(raw) ? raw : ((raw as { data?: SavedFilter[] })?.data ?? []);
+		return { ...res, data: list };
+	}
+
+	/**
+	 * Delete a saved filter
+	 */
+	static async deleteSavedFilter(id: number): Promise<ApiResponse<{ message?: string }>> {
+		return apiService.delete(`/lusha/saved-filters/${id}`) as Promise<
+			ApiResponse<{ message?: string }>
+		>;
 	}
 }

@@ -74,7 +74,16 @@ export const Dashboard: React.FC = () => {
 				/>
 
 				<ErrorBoundary>
-					<DashboardContent stats={stats} chartData={chartData} loading={loading} error={error} />
+					<DashboardContent
+						stats={stats}
+						chartData={chartData}
+						loading={loading}
+						error={error}
+						exportYear={selectedYear}
+						exportMonth={selectedMonth}
+						exportLocationId={selectedFacility}
+						exportClientId={clientIdForApi}
+					/>
 				</ErrorBoundary>
 			</div>
 		</ErrorBoundary>

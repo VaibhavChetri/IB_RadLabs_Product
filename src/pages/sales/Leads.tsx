@@ -3,12 +3,43 @@
  * Step 2: Search logic and integration
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { LushaFilter, LushaFilters } from '../../components/lusha/LushaFilter';
-import { LushaApiService, SearchRequest, ContactResult, EnrichedCompany, SearchResponse } from '../../services/lushaApi';
+import {
+	LushaApiService,
+	SearchRequest,
+	ContactResult,
+	EnrichedCompany,
+	SearchResponse,
+	SavedFilter,
+	SavedFilterFilterConfig,
+} from '../../services/lushaApi';
 import { LeadApiService } from '../../services/leadApi';
-import { Pagination, Button, Snackbar } from '../../components/ui';
-import { Search, Loader2, Building2, Globe, MapPin, Users, Briefcase, DollarSign, Calendar, CheckCircle2, Mail, Phone, ChevronDown } from 'lucide-react';
+import {
+	Pagination,
+	Button,
+	Snackbar,
+	FloatingInput,
+	FloatingDropdown,
+	Card,
+} from '../../components/ui';
+import {
+	Search,
+	Loader2,
+	Building2,
+	Globe,
+	MapPin,
+	Users,
+	Briefcase,
+	DollarSign,
+	Calendar,
+	CheckCircle2,
+	Mail,
+	Phone,
+	ChevronDown,
+	Bookmark,
+	Trash2,
+} from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { ApiResponse } from '../../services/api';
 import mockSearchResponse from '../../data/mockLushaSearchResponse.json';
@@ -31,7 +62,7 @@ export const Leads: React.FC = () => {
 	const [openAccordion, setOpenAccordion] = useState<string | null>(null);
 	const [enrichedCompanies, setEnrichedCompanies] = useState<Record<string, EnrichedCompany>>({});
 	const [enrichingCompanyId, setEnrichingCompanyId] = useState<string | null>(null);
-	
+
 	// Module 1: Selection and Bulk Actions
 	const [selectedContacts, setSelectedContacts] = useState<Set<string>>(new Set());
 	const [bulkRevealing, setBulkRevealing] = useState(false);
@@ -39,11 +70,26 @@ export const Leads: React.FC = () => {
 	// Removed: trackingContacts state - no longer used after removing Track Lead button
 	const [showRevealDropdown, setShowRevealDropdown] = useState(false);
 	const revealDropdownRef = useRef<HTMLDivElement>(null);
-	const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; type: 'success' | 'error' }>({
+	const [snackbar, setSnackbar] = useState<{
+		open: boolean;
+		message: string;
+		type: 'success' | 'error';
+	}>({
 		open: false,
 		message: '',
 		type: 'success',
 	});
+
+	// Saved filters
+	const [savedFilters, setSavedFilters] = useState<SavedFilter[]>([]);
+	const [savedFiltersLoading, setSavedFiltersLoading] = useState(false);
+	const [saveFilterModalOpen, setSaveFilterModalOpen] = useState(false);
+	const [saveFilterName, setSaveFilterName] = useState('');
+	const [saveFilterSubmitting, setSaveFilterSubmitting] = useState(false);
+	const [manageSavedOpen, setManageSavedOpen] = useState(false);
+	const [loadedInitialFilters, setLoadedInitialFilters] = useState<LushaFilters | null>(null);
+	const [selectedSavedFilterId, setSelectedSavedFilterId] = useState<number | null>(null);
+	const [deletingId, setDeletingId] = useState<number | null>(null);
 
 	// Close dropdown when clicking outside
 	useEffect(() => {
@@ -65,7 +111,11 @@ export const Leads: React.FC = () => {
 	/**
 	 * Transform LushaFilters to API SearchRequest format
 	 */
-	const transformFiltersToRequest = (filters: LushaFilters, page: number, size: number): SearchRequest => {
+	const transformFiltersToRequest = (
+		filters: LushaFilters,
+		page: number,
+		size: number
+	): SearchRequest => {
 		const request: SearchRequest = {
 			filters: {},
 			pages: {
@@ -88,7 +138,9 @@ export const Leads: React.FC = () => {
 
 		if (filters.seniority.length > 0) {
 			// Convert seniority ID strings to numbers (e.g., "4" -> 4)
-			contactIncludes.seniority = filters.seniority.map(id => parseInt(id, 10)).filter(id => !isNaN(id));
+			contactIncludes.seniority = filters.seniority
+				.map(id => parseInt(id, 10))
+				.filter(id => !isNaN(id));
 		}
 
 		if (filters.jobTitle.trim()) {
@@ -140,6 +192,53 @@ export const Leads: React.FC = () => {
 		return request;
 	};
 
+	/** Build filterConfig (for save API) from LushaFilters */
+	const lushaFiltersToFilterConfig = useCallback(
+		(filters: LushaFilters): SavedFilterFilterConfig => {
+			const request = transformFiltersToRequest(filters, 1, 20);
+			return request.filters;
+		},
+		[]
+	);
+
+	/** Build LushaFilters from saved filterConfig (for load) */
+	const filterConfigToLushaFilters = useCallback(
+		(config: SavedFilterFilterConfig): LushaFilters => {
+			const contacts = config.contacts?.include;
+			const companies = config.companies?.include;
+			return {
+				departments: contacts?.departments ?? [],
+				seniority: (contacts?.seniority ?? []).map(String),
+				jobTitle: contacts?.jobTitles?.[0] ?? '',
+				mainIndustriesIds: companies?.mainIndustriesIds ?? [],
+				subIndustriesIds: companies?.subIndustriesIds ?? [],
+				location: contacts?.locations?.[0] ?? null,
+				companyName: companies?.companyNames?.[0] ?? '',
+				technologies: companies?.technologies ?? [],
+			};
+		},
+		[]
+	);
+
+	/** Fetch saved filters list */
+	const fetchSavedFilters = useCallback(async () => {
+		setSavedFiltersLoading(true);
+		try {
+			const res = await LushaApiService.getSavedFilters();
+			if (res.status_code === 200 && Array.isArray(res.data)) {
+				setSavedFilters(res.data);
+			}
+		} catch (e) {
+			console.error('Failed to load saved filters', e);
+		} finally {
+			setSavedFiltersLoading(false);
+		}
+	}, []);
+
+	useEffect(() => {
+		fetchSavedFilters();
+	}, [fetchSavedFilters]);
+
 	/**
 	 * Perform search with current filters
 	 */
@@ -147,7 +246,7 @@ export const Leads: React.FC = () => {
 		setLoading(true);
 		setError(null);
 		setCurrentPage(page);
-		
+
 		// Use provided size or current itemsPerPage state
 		const pageSize = size ?? itemsPerPage;
 		if (size !== undefined) {
@@ -175,7 +274,7 @@ export const Leads: React.FC = () => {
 			} else {
 				// Make actual API call
 				response = await LushaApiService.searchLeads(request);
-				
+
 				// Log the full response for copying to mock data file
 				console.log('📋 FULL API RESPONSE (copy this to mockLushaSearchResponse.json):');
 				console.log('='.repeat(80));
@@ -197,7 +296,7 @@ export const Leads: React.FC = () => {
 				setLeadId(response.data.leadId || null);
 				setRequestId(nestedData?.requestId || null);
 				setCurrentFilters(filters);
-				
+
 				console.log('✅ Search successful:', {
 					leadId: response.data.leadId,
 					totalResults: total,
@@ -208,7 +307,7 @@ export const Leads: React.FC = () => {
 					creditsCharged: nestedData?.billing?.creditsCharged,
 					usingMockData: USE_MOCK_DATA,
 				});
-				
+
 				// Warn if API returned different page size than requested
 				if (pageLength !== pageSize && contacts.length > 0) {
 					console.warn(`⚠️ API returned ${pageLength} items but ${pageSize} were requested`);
@@ -227,20 +326,71 @@ export const Leads: React.FC = () => {
 	};
 
 	const handleApplyFilters = (filters: LushaFilters) => {
-		console.log('📋 Applied filters:', filters);
+		setSelectedSavedFilterId(null);
 		performSearch(filters, 1);
 	};
 
 	const handleClearFilters = () => {
-		console.log('🧹 Filters cleared');
 		setSearchResults([]);
 		setTotalResults(0);
 		setLeadId(null);
 		setCurrentPage(1);
 		setCurrentFilters(null);
+		setLoadedInitialFilters(null);
+		setSelectedSavedFilterId(null);
 		setError(null);
 	};
 
+	const handleLoadSavedFilter = (filter: SavedFilter) => {
+		const filters = filterConfigToLushaFilters(filter.filterConfig);
+		setSelectedSavedFilterId(filter.id);
+		setLoadedInitialFilters(filters);
+		performSearch(filters, 1);
+		setManageSavedOpen(false);
+	};
+
+	const handleSaveCurrentFilter = async () => {
+		if (!currentFilters || !saveFilterName.trim()) return;
+		setSaveFilterSubmitting(true);
+		try {
+			const payload = {
+				name: saveFilterName.trim(),
+				filterConfig: lushaFiltersToFilterConfig(currentFilters),
+			};
+			const res = await LushaApiService.saveFilter(payload);
+			if ((res.status_code === 200 || res.status_code === 201) && res.data) {
+				setSaveFilterModalOpen(false);
+				setSaveFilterName('');
+				setSnackbar({ open: true, message: 'Filter saved.', type: 'success' });
+				await fetchSavedFilters();
+			} else {
+				throw new Error(res.message || 'Failed to save filter');
+			}
+		} catch (e: unknown) {
+			const msg = (e as { message?: string })?.message ?? 'Failed to save filter';
+			setSnackbar({ open: true, message: msg, type: 'error' });
+		} finally {
+			setSaveFilterSubmitting(false);
+		}
+	};
+
+	const handleDeleteSavedFilter = async (id: number) => {
+		setDeletingId(id);
+		try {
+			const res = await LushaApiService.deleteSavedFilter(id);
+			if (res.status_code === 200) {
+				setSavedFilters(prev => prev.filter(f => f.id !== id));
+				setSnackbar({ open: true, message: 'Filter deleted.', type: 'success' });
+			} else {
+				throw new Error(res.message || 'Failed to delete filter');
+			}
+		} catch (e: unknown) {
+			const msg = e instanceof Error ? e.message : 'Failed to delete filter';
+			setSnackbar({ open: true, message: msg, type: 'error' });
+		} finally {
+			setDeletingId(null);
+		}
+	};
 
 	const handlePageChange = (page: number) => {
 		if (currentFilters) {
@@ -268,7 +418,7 @@ export const Leads: React.FC = () => {
 		}
 
 		const companyIdKey = companyId.toString();
-		
+
 		// If already enriched, just toggle accordion
 		if (enrichedCompanies[companyIdKey]) {
 			setOpenAccordion(openAccordion === contactId ? null : contactId);
@@ -340,26 +490,34 @@ export const Leads: React.FC = () => {
 	/**
 	 * Module 1: Reveal contact details (single with type selection)
 	 */
-	const handleRevealContact = async (contactId: string, revealType: 'email' | 'phone' | 'both' = 'both') => {
+	const handleRevealContact = async (
+		contactId: string,
+		revealType: 'email' | 'phone' | 'both' = 'both'
+	) => {
 		setRevealingContactId(contactId);
 		setError(null);
 
 		try {
 			console.log('🔓 Revealing contact:', contactId, revealType);
-			
+
 			// Use LushaApiService for single reveal (camelCase)
 			// For 'both', we need to make two calls or use the leadApi
 			if (revealType === 'both') {
 				// Use LeadApiService for 'both' option
 				const response = await LeadApiService.revealContact(contactId, 'both');
-				
+
 				if (response.status === 'Success' && response.data) {
 					// Handle both email and phone from response
-					const updateData: { email?: string; phone?: string; credits_used?: number; already_revealed?: boolean } = {
+					const updateData: {
+						email?: string;
+						phone?: string;
+						credits_used?: number;
+						already_revealed?: boolean;
+					} = {
 						credits_used: response.data.credits_used,
 						already_revealed: response.data.already_revealed,
 					};
-					
+
 					// Only update if value is not null/undefined
 					if (response.data.email !== null && response.data.email !== undefined) {
 						updateData.email = response.data.email;
@@ -367,7 +525,7 @@ export const Leads: React.FC = () => {
 					if (response.data.phone !== null && response.data.phone !== undefined) {
 						updateData.phone = response.data.phone;
 					}
-					
+
 					updateContactAfterReveal(contactId, updateData);
 					setSnackbar({
 						open: true,
@@ -377,18 +535,23 @@ export const Leads: React.FC = () => {
 				}
 			} else {
 				// Use LushaApiService for single type (email or phone)
-				const response = await LushaApiService.revealContact({ 
-					contactId, 
-					revealType: revealType === 'email' ? 'email' : 'phone' 
+				const response = await LushaApiService.revealContact({
+					contactId,
+					revealType: revealType === 'email' ? 'email' : 'phone',
 				});
 
 				if (response.status_code === 200 && response.data) {
 					// Only pass the field that was revealed, preserve the other
-					const updateData: { email?: string; phone?: string; credits_used?: number; already_revealed?: boolean } = {
+					const updateData: {
+						email?: string;
+						phone?: string;
+						credits_used?: number;
+						already_revealed?: boolean;
+					} = {
 						credits_used: response.data.creditsUsed,
 						already_revealed: response.data.alreadyRevealed,
 					};
-					
+
 					// Only update the field that was revealed
 					if (revealType === 'email' && response.data.email) {
 						updateData.email = response.data.email;
@@ -396,12 +559,12 @@ export const Leads: React.FC = () => {
 					if (revealType === 'phone' && response.data.phone) {
 						updateData.phone = response.data.phone;
 					}
-					
+
 					updateContactAfterReveal(contactId, updateData);
-					
+
 					setSnackbar({
 						open: true,
-						message: response.data.alreadyRevealed 
+						message: response.data.alreadyRevealed
 							? 'Contact already revealed (no credits charged)'
 							: `${revealType} revealed! Credits used: ${response.data.creditsUsed}`,
 						type: 'success',
@@ -412,7 +575,10 @@ export const Leads: React.FC = () => {
 			}
 		} catch (err: any) {
 			console.error('❌ Reveal error:', err);
-			const errorMsg = err.response?.data?.message || err.message || 'Failed to reveal contact details. Please try again.';
+			const errorMsg =
+				err.response?.data?.message ||
+				err.message ||
+				'Failed to reveal contact details. Please try again.';
 			setError(errorMsg);
 			setSnackbar({
 				open: true,
@@ -424,13 +590,21 @@ export const Leads: React.FC = () => {
 		}
 	};
 
-	const updateContactAfterReveal = (contactId: string, data: { email?: string | null; phone?: string | null; credits_used?: number; already_revealed?: boolean }) => {
+	const updateContactAfterReveal = (
+		contactId: string,
+		data: {
+			email?: string | null;
+			phone?: string | null;
+			credits_used?: number;
+			already_revealed?: boolean;
+		}
+	) => {
 		setSearchResults(prev =>
 			prev.map(contact => {
 				if (contact.contactId === contactId) {
 					// Preserve existing values - only update what was revealed
 					const updatedContact = { ...contact };
-					
+
 					// Update email if provided (and not null), otherwise keep existing
 					if (data.email !== undefined && data.email !== null) {
 						updatedContact.email = data.email;
@@ -440,7 +614,7 @@ export const Leads: React.FC = () => {
 						// Explicitly null means no email available, but keep existing if already revealed
 						// Don't overwrite existing email
 					}
-					
+
 					// Update phone if provided (and not null), otherwise keep existing
 					if (data.phone !== undefined && data.phone !== null) {
 						updatedContact.phone = data.phone;
@@ -450,7 +624,7 @@ export const Leads: React.FC = () => {
 						// Explicitly null means no phone available, but keep existing if already revealed
 						// Don't overwrite existing phone
 					}
-					
+
 					return updatedContact;
 				}
 				return contact;
@@ -472,7 +646,11 @@ export const Leads: React.FC = () => {
 		}
 
 		const count = selectedContacts.size;
-		if (!window.confirm(`Reveal ${revealType} for ${count} contact(s)? This will use ${count} credits.`)) {
+		if (
+			!window.confirm(
+				`Reveal ${revealType} for ${count} contact(s)? This will use ${count} credits.`
+			)
+		) {
 			return;
 		}
 
@@ -525,7 +703,12 @@ export const Leads: React.FC = () => {
 	 * Module 1: Check if contact can be tracked
 	 */
 	const canTrack = (contact: ContactResult): boolean => {
-		return !!(contact.email || contact.phone || contact.emailAddresses?.[0] || contact.phoneNumbers?.[0]);
+		return !!(
+			contact.email ||
+			contact.phone ||
+			contact.emailAddresses?.[0] ||
+			contact.phoneNumbers?.[0]
+		);
 	};
 
 	// Removed: handleStartTracking function - no longer used after removing Track Lead button
@@ -610,10 +793,147 @@ export const Leads: React.FC = () => {
 				<p className='text-sm text-gray-600 mt-1'>Search and discover new prospects using Lusha</p>
 			</div>
 
+			{/* Saved Filters bar */}
+			<div className='mb-4 flex flex-wrap items-center gap-3'>
+				<span className='text-sm font-medium text-gray-700'>Saved filters:</span>
+				<FloatingDropdown
+					label=''
+					options={savedFilters.map(f => ({ value: String(f.id), label: f.name }))}
+					value={selectedSavedFilterId != null ? String(selectedSavedFilterId) : ''}
+					onChange={value => {
+						const id = value ? parseInt(value, 10) : 0;
+						const filter = savedFilters.find(f => f.id === id);
+						if (filter) handleLoadSavedFilter(filter);
+					}}
+					placeholder={savedFiltersLoading ? 'Loading...' : 'Load saved filter...'}
+					className='w-56'
+					searchable
+				/>
+				<Button
+					variant='outline'
+					size='sm'
+					onClick={() => setSaveFilterModalOpen(true)}
+					disabled={!currentFilters}
+					className='inline-flex items-center gap-1.5'
+				>
+					<Bookmark className='w-4 h-4' />
+					Save current filter
+				</Button>
+				<Button
+					variant='ghost'
+					size='sm'
+					onClick={() => setManageSavedOpen(true)}
+					className='inline-flex items-center gap-1.5 text-gray-600'
+				>
+					Manage
+				</Button>
+			</div>
+
 			{/* Horizontal Filter Bar */}
 			<div className='mb-6'>
-				<LushaFilter onApplyFilters={handleApplyFilters} onClearFilters={handleClearFilters} />
+				<LushaFilter
+					key={selectedSavedFilterId != null ? `saved-${selectedSavedFilterId}` : 'default'}
+					onApplyFilters={handleApplyFilters}
+					onClearFilters={handleClearFilters}
+					initialFilters={loadedInitialFilters}
+				/>
 			</div>
+
+			{/* Save filter modal */}
+			{saveFilterModalOpen && (
+				<div
+					className='fixed inset-0 z-50 flex items-center justify-center bg-black/50'
+					onClick={() => !saveFilterSubmitting && setSaveFilterModalOpen(false)}
+				>
+					<Card className='w-full max-w-md p-6 shadow-xl' onClick={e => e.stopPropagation()}>
+						<h3 className='text-lg font-semibold text-gray-900 mb-4'>Save current filter</h3>
+						<FloatingInput
+							label='Filter name'
+							value={saveFilterName}
+							onChange={setSaveFilterName}
+							placeholder='e.g. Engineering leads'
+						/>
+						<div className='mt-6 flex justify-end gap-2'>
+							<Button
+								variant='outline'
+								onClick={() => setSaveFilterModalOpen(false)}
+								disabled={saveFilterSubmitting}
+							>
+								Cancel
+							</Button>
+							<Button
+								onClick={handleSaveCurrentFilter}
+								disabled={!saveFilterName.trim() || saveFilterSubmitting}
+								loading={saveFilterSubmitting}
+							>
+								Save
+							</Button>
+						</div>
+					</Card>
+				</div>
+			)}
+
+			{/* Manage saved filters modal */}
+			{manageSavedOpen && (
+				<div
+					className='fixed inset-0 z-50 flex items-center justify-center bg-black/50'
+					onClick={() => setManageSavedOpen(false)}
+				>
+					<Card
+						className='w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col shadow-xl'
+						onClick={e => e.stopPropagation()}
+					>
+						<div className='p-6 border-b border-gray-200'>
+							<h3 className='text-lg font-semibold text-gray-900'>Saved filters</h3>
+							<p className='text-sm text-gray-500 mt-1'>
+								Load or delete your saved search filters.
+							</p>
+						</div>
+						<div className='p-4 overflow-y-auto flex-1'>
+							{savedFilters.length === 0 ? (
+								<p className='text-sm text-gray-500 py-4'>
+									No saved filters yet. Run a search and use &quot;Save current filter&quot; to
+									create one.
+								</p>
+							) : (
+								<ul className='space-y-2'>
+									{savedFilters.map(f => (
+										<li
+											key={f.id}
+											className='flex items-center justify-between gap-4 py-2 px-3 rounded-lg bg-gray-50 hover:bg-gray-100'
+										>
+											<span className='text-sm font-medium text-gray-900 truncate'>{f.name}</span>
+											<div className='flex items-center gap-2 flex-shrink-0'>
+												<Button variant='ghost' size='sm' onClick={() => handleLoadSavedFilter(f)}>
+													Load
+												</Button>
+												<button
+													type='button'
+													onClick={() => handleDeleteSavedFilter(f.id)}
+													disabled={deletingId === f.id}
+													className='p-1.5 text-gray-400 hover:text-red-600 disabled:opacity-50'
+													title='Delete filter'
+												>
+													{deletingId === f.id ? (
+														<Loader2 className='w-4 h-4 animate-spin' />
+													) : (
+														<Trash2 className='w-4 h-4' />
+													)}
+												</button>
+											</div>
+										</li>
+									))}
+								</ul>
+							)}
+						</div>
+						<div className='p-4 border-t border-gray-200'>
+							<Button variant='outline' onClick={() => setManageSavedOpen(false)}>
+								Close
+							</Button>
+						</div>
+					</Card>
+				</div>
+			)}
 
 			{/* Error Message */}
 			{error && (
@@ -656,7 +976,9 @@ export const Leads: React.FC = () => {
 					{/* Results Summary */}
 					<div className='mb-4 flex items-center justify-between'>
 						<div className='text-sm text-gray-600'>
-							Found <span className='font-semibold text-gray-900'>{totalResults.toLocaleString()}</span> leads
+							Found{' '}
+							<span className='font-semibold text-gray-900'>{totalResults.toLocaleString()}</span>{' '}
+							leads
 							{leadId && (
 								<span className='ml-2 text-gray-500'>
 									(Lead ID: <span className='font-mono'>{leadId}</span>)
@@ -681,12 +1003,18 @@ export const Leads: React.FC = () => {
 												disabled={bulkRevealing}
 												variant='primary'
 												size='sm'
-												leftIcon={bulkRevealing ? <Loader2 className='w-4 h-4 animate-spin' /> : <Mail className='w-4 h-4' />}
+												leftIcon={
+													bulkRevealing ? (
+														<Loader2 className='w-4 h-4 animate-spin' />
+													) : (
+														<Mail className='w-4 h-4' />
+													)
+												}
 												rightIcon={<ChevronDown className='w-4 h-4' />}
 											>
 												{bulkRevealing ? 'Revealing...' : 'Reveal Contacts'}
 											</Button>
-											
+
 											{showRevealDropdown && !bulkRevealing && (
 												<div className='absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden'>
 													<div className='py-1'>
@@ -699,8 +1027,12 @@ export const Leads: React.FC = () => {
 														>
 															<Mail className='w-4 h-4 text-green-600' />
 															<div className='flex-1'>
-																<div className='text-sm font-medium text-gray-900'>Reveal Emails</div>
-																<div className='text-xs text-gray-500'>{selectedContacts.size} credits</div>
+																<div className='text-sm font-medium text-gray-900'>
+																	Reveal Emails
+																</div>
+																<div className='text-xs text-gray-500'>
+																	{selectedContacts.size} credits
+																</div>
 															</div>
 														</button>
 														<button
@@ -712,8 +1044,12 @@ export const Leads: React.FC = () => {
 														>
 															<Phone className='w-4 h-4 text-blue-600' />
 															<div className='flex-1'>
-																<div className='text-sm font-medium text-gray-900'>Reveal Phones</div>
-																<div className='text-xs text-gray-500'>{selectedContacts.size} credits</div>
+																<div className='text-sm font-medium text-gray-900'>
+																	Reveal Phones
+																</div>
+																<div className='text-xs text-gray-500'>
+																	{selectedContacts.size} credits
+																</div>
 															</div>
 														</button>
 														<div className='border-t border-gray-200 my-1'></div>
@@ -730,20 +1066,28 @@ export const Leads: React.FC = () => {
 															</div>
 															<div className='flex-1'>
 																<div className='text-sm font-medium text-gray-900'>Reveal Both</div>
-																<div className='text-xs text-gray-500'>{selectedContacts.size * 2} credits</div>
+																<div className='text-xs text-gray-500'>
+																	{selectedContacts.size * 2} credits
+																</div>
 															</div>
 														</button>
 													</div>
 												</div>
 											)}
 										</div>
-										
+
 										<Button
 											onClick={handleBulkStartTracking}
 											disabled={bulkTracking}
 											variant='outline'
 											size='sm'
-											leftIcon={bulkTracking ? <Loader2 className='w-4 h-4 animate-spin' /> : <CheckCircle2 className='w-4 h-4' />}
+											leftIcon={
+												bulkTracking ? (
+													<Loader2 className='w-4 h-4 animate-spin' />
+												) : (
+													<CheckCircle2 className='w-4 h-4' />
+												)
+											}
 										>
 											{bulkTracking ? 'Tracking...' : `Start Tracking (${selectedContacts.size})`}
 										</Button>
@@ -766,13 +1110,16 @@ export const Leads: React.FC = () => {
 										<div className='col-span-1'>
 											<input
 												type='checkbox'
-												checked={selectedContacts.size === searchResults.length && searchResults.length > 0}
+												checked={
+													selectedContacts.size === searchResults.length && searchResults.length > 0
+												}
 												onChange={handleSelectAll}
 												className='w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500'
 											/>
 										</div>
 										<div className='col-span-1'>#</div>
-										<div className='col-span-2'>Name</div>
+										<div className='col-span-1.5'>Name</div>
+										<div className='col-span-1'>LinkedIn</div>
 										<div className='col-span-1.5'>Job Title</div>
 										<div className='col-span-1.5'>Company</div>
 										<div className='col-span-1.5'>Location</div>
@@ -786,7 +1133,7 @@ export const Leads: React.FC = () => {
 									const isOpen = openAccordion === row.contactId;
 									const companyIdKey = row.companyId?.toString() || '';
 									const enrichedCompany = companyIdKey ? enrichedCompanies[companyIdKey] : null;
-									
+
 									return (
 										<div
 											key={row.contactId}
@@ -814,8 +1161,25 @@ export const Leads: React.FC = () => {
 														</span>
 													</div>
 													{/* Name */}
-													<div className='col-span-2'>
-														<span className='font-medium text-gray-900 text-sm'>{row.name || 'N/A'}</span>
+													<div className='col-span-1.5'>
+														<span className='font-medium text-gray-900 text-sm'>
+															{row.name || 'N/A'}
+														</span>
+													</div>
+													{/* LinkedIn — use smartLinkedinUrl when linkedinUrl is null */}
+													<div className='col-span-1'>
+														{row.linkedinUrl || row.smartLinkedinUrl ? (
+															<a
+																href={row.linkedinUrl || row.smartLinkedinUrl || '#'}
+																target='_blank'
+																rel='noopener noreferrer'
+																className='text-blue-600 hover:text-blue-800 hover:underline text-sm font-medium'
+															>
+																LinkedIn
+															</a>
+														) : (
+															<span className='text-gray-400 text-sm'>—</span>
+														)}
 													</div>
 													{/* Job Title */}
 													<div className='col-span-1.5'>
@@ -830,7 +1194,9 @@ export const Leads: React.FC = () => {
 															</div>
 														) : (
 															<button
-																onClick={() => row.companyId && handleEnrichCompany(row.companyId, row.contactId)}
+																onClick={() =>
+																	row.companyId && handleEnrichCompany(row.companyId, row.contactId)
+																}
 																disabled={!row.companyId}
 																className={cn(
 																	'text-left text-blue-600 hover:text-blue-800 hover:underline transition-colors text-sm font-medium flex items-center gap-1.5',
@@ -846,11 +1212,26 @@ export const Leads: React.FC = () => {
 													<div className='col-span-1.5'>
 														<span className='text-gray-600 text-sm'>{row.location || 'N/A'}</span>
 													</div>
-													{/* Contact Info */}
+													{/* Contact Info — API may return emailAddresses as [{ email }], phoneNumbers as [{ phone }] or strings */}
 													<div className='col-span-2'>
 														{(() => {
-															const email = row.emailAddresses?.[0] || row.email;
-															const phone = row.phoneNumbers?.[0] || row.phone;
+															const firstEmail = row.emailAddresses?.[0];
+															const email =
+																row.email ??
+																(typeof firstEmail === 'string'
+																	? firstEmail
+																	: ((firstEmail as { email?: string } | undefined)?.email ?? ''));
+															const firstPhone = row.phoneNumbers?.[0];
+															const phone =
+																row.phone ??
+																(typeof firstPhone === 'string'
+																	? firstPhone
+																	: (() => {
+																			const p = firstPhone as
+																				| { phone?: string; number?: string }
+																				| undefined;
+																			return p?.number ?? p?.phone ?? '';
+																		})());
 															const hasEmail = !!email;
 															const hasPhone = !!phone;
 															const isRevealing = revealingContactId === row.contactId;
@@ -873,11 +1254,15 @@ export const Leads: React.FC = () => {
 																					: 'bg-green-600 hover:bg-green-700 text-white'
 																			)}
 																		>
-																			{isRevealing ? <Loader2 className='h-3 w-3 animate-spin' /> : <Mail className='h-3 w-3' />}
+																			{isRevealing ? (
+																				<Loader2 className='h-3 w-3 animate-spin' />
+																			) : (
+																				<Mail className='h-3 w-3' />
+																			)}
 																			Reveal Email
 																		</button>
 																	)}
-																	
+
 																	{/* Phone Section */}
 																	{hasPhone ? (
 																		<div className='text-sm text-gray-700'>
@@ -894,7 +1279,11 @@ export const Leads: React.FC = () => {
 																					: 'bg-blue-600 hover:bg-blue-700 text-white'
 																			)}
 																		>
-																			{isRevealing ? <Loader2 className='h-3 w-3 animate-spin' /> : <Phone className='h-3 w-3' />}
+																			{isRevealing ? (
+																				<Loader2 className='h-3 w-3 animate-spin' />
+																			) : (
+																				<Phone className='h-3 w-3' />
+																			)}
 																			Reveal Phone
 																		</button>
 																	)}
@@ -939,7 +1328,9 @@ export const Leads: React.FC = () => {
 																				/>
 																			)}
 																			<div className='flex-1'>
-																				<h3 className='text-lg font-bold text-gray-900'>{enrichedCompany.name}</h3>
+																				<h3 className='text-lg font-bold text-gray-900'>
+																					{enrichedCompany.name}
+																				</h3>
 																				{enrichedCompany.fqdn && (
 																					<div className='flex items-center gap-1 mt-1 text-sm text-gray-600'>
 																						<Globe className='h-4 w-4' />
@@ -959,7 +1350,9 @@ export const Leads: React.FC = () => {
 																		{/* Description */}
 																		{enrichedCompany.description && (
 																			<div>
-																				<p className='text-sm text-gray-700 leading-relaxed'>{enrichedCompany.description}</p>
+																				<p className='text-sm text-gray-700 leading-relaxed'>
+																					{enrichedCompany.description}
+																				</p>
 																			</div>
 																		)}
 
@@ -968,8 +1361,12 @@ export const Leads: React.FC = () => {
 																			<div className='flex items-start gap-2'>
 																				<MapPin className='h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0' />
 																				<div className='text-sm text-gray-700'>
-																					{enrichedCompany.rawLocation || 
-																						[enrichedCompany.city, enrichedCompany.state, enrichedCompany.country]
+																					{enrichedCompany.rawLocation ||
+																						[
+																							enrichedCompany.city,
+																							enrichedCompany.state,
+																							enrichedCompany.country,
+																						]
 																							.filter(Boolean)
 																							.join(', ')}
 																				</div>
@@ -977,12 +1374,14 @@ export const Leads: React.FC = () => {
 																		)}
 
 																		{/* Industry */}
-																		{(enrichedCompany.mainIndustry || enrichedCompany.subIndustry) && (
+																		{(enrichedCompany.mainIndustry ||
+																			enrichedCompany.subIndustry) && (
 																			<div className='flex items-start gap-2'>
 																				<Briefcase className='h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0' />
 																				<div className='text-sm text-gray-700'>
 																					{enrichedCompany.mainIndustry}
-																					{enrichedCompany.subIndustry && ` • ${enrichedCompany.subIndustry}`}
+																					{enrichedCompany.subIndustry &&
+																						` • ${enrichedCompany.subIndustry}`}
 																				</div>
 																			</div>
 																		)}
@@ -991,7 +1390,9 @@ export const Leads: React.FC = () => {
 																		{enrichedCompany.employees && (
 																			<div className='flex items-start gap-2'>
 																				<Users className='h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0' />
-																				<div className='text-sm text-gray-700'>{enrichedCompany.employees}</div>
+																				<div className='text-sm text-gray-700'>
+																					{enrichedCompany.employees}
+																				</div>
 																			</div>
 																		)}
 
@@ -999,32 +1400,55 @@ export const Leads: React.FC = () => {
 																		{enrichedCompany.founded && (
 																			<div className='flex items-start gap-2'>
 																				<Calendar className='h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0' />
-																				<div className='text-sm text-gray-700'>Founded {enrichedCompany.founded}</div>
+																				<div className='text-sm text-gray-700'>
+																					Founded {enrichedCompany.founded}
+																				</div>
 																			</div>
 																		)}
 
 																		{/* Company ID */}
 																		<div className='flex items-start gap-2'>
 																			<span className='text-xs text-gray-400 mt-0.5'>ID:</span>
-																			<div className='text-sm text-gray-700 font-mono'>{enrichedCompany.id}</div>
+																			<div className='text-sm text-gray-700 font-mono'>
+																				{enrichedCompany.id}
+																			</div>
 																		</div>
 
 																		{/* Detailed Location */}
-																		{(enrichedCompany.city || enrichedCompany.state || enrichedCompany.stateCode) && (
+																		{(enrichedCompany.city ||
+																			enrichedCompany.state ||
+																			enrichedCompany.stateCode) && (
 																			<div>
-																				<h4 className='text-xs font-semibold text-gray-600 mb-1'>Location Details</h4>
+																				<h4 className='text-xs font-semibold text-gray-600 mb-1'>
+																					Location Details
+																				</h4>
 																				<div className='text-sm text-gray-700 space-y-1'>
-																					{enrichedCompany.city && <div>City: {enrichedCompany.city}</div>}
-																					{enrichedCompany.state && <div>State: {enrichedCompany.state}</div>}
-																					{enrichedCompany.stateCode && <div>State Code: {enrichedCompany.stateCode}</div>}
-																					{enrichedCompany.country && <div>Country: {enrichedCompany.country}</div>}
-																					{enrichedCompany.countryIso2 && <div>Country Code: {enrichedCompany.countryIso2}</div>}
-																					{enrichedCompany.continent && <div>Continent: {enrichedCompany.continent}</div>}
-																					{enrichedCompany.coordinates && enrichedCompany.coordinates.length === 2 && (
-																						<div className='text-xs text-gray-500'>
-																							Coordinates: {enrichedCompany.coordinates[0].toFixed(6)}, {enrichedCompany.coordinates[1].toFixed(6)}
-																						</div>
+																					{enrichedCompany.city && (
+																						<div>City: {enrichedCompany.city}</div>
 																					)}
+																					{enrichedCompany.state && (
+																						<div>State: {enrichedCompany.state}</div>
+																					)}
+																					{enrichedCompany.stateCode && (
+																						<div>State Code: {enrichedCompany.stateCode}</div>
+																					)}
+																					{enrichedCompany.country && (
+																						<div>Country: {enrichedCompany.country}</div>
+																					)}
+																					{enrichedCompany.countryIso2 && (
+																						<div>Country Code: {enrichedCompany.countryIso2}</div>
+																					)}
+																					{enrichedCompany.continent && (
+																						<div>Continent: {enrichedCompany.continent}</div>
+																					)}
+																					{enrichedCompany.coordinates &&
+																						enrichedCompany.coordinates.length === 2 && (
+																							<div className='text-xs text-gray-500'>
+																								Coordinates:{' '}
+																								{enrichedCompany.coordinates[0].toFixed(6)},{' '}
+																								{enrichedCompany.coordinates[1].toFixed(6)}
+																							</div>
+																						)}
 																				</div>
 																			</div>
 																		)}
@@ -1032,13 +1456,25 @@ export const Leads: React.FC = () => {
 																		{/* Domains */}
 																		{enrichedCompany.domains && (
 																			<div>
-																				<h4 className='text-xs font-semibold text-gray-600 mb-1'>Domains</h4>
+																				<h4 className='text-xs font-semibold text-gray-600 mb-1'>
+																					Domains
+																				</h4>
 																				<div className='text-sm text-gray-700 space-y-1'>
 																					{enrichedCompany.domains.email && (
-																						<div>Email Domain: <span className='font-mono'>{enrichedCompany.domains.email}</span></div>
+																						<div>
+																							Email Domain:{' '}
+																							<span className='font-mono'>
+																								{enrichedCompany.domains.email}
+																							</span>
+																						</div>
 																					)}
 																					{enrichedCompany.domains.homepage && (
-																						<div>Homepage: <span className='font-mono'>{enrichedCompany.domains.homepage}</span></div>
+																						<div>
+																							Homepage:{' '}
+																							<span className='font-mono'>
+																								{enrichedCompany.domains.homepage}
+																							</span>
+																						</div>
 																					)}
 																				</div>
 																			</div>
@@ -1047,11 +1483,21 @@ export const Leads: React.FC = () => {
 																		{/* Company Size Details */}
 																		{enrichedCompany.companySize && (
 																			<div>
-																				<h4 className='text-xs font-semibold text-gray-600 mb-1'>Company Size</h4>
+																				<h4 className='text-xs font-semibold text-gray-600 mb-1'>
+																					Company Size
+																				</h4>
 																				<div className='text-sm text-gray-700 space-y-1'>
-																					<div>Range: {enrichedCompany.companySize.min?.toLocaleString()} - {enrichedCompany.companySize.max?.toLocaleString()} employees</div>
+																					<div>
+																						Range:{' '}
+																						{enrichedCompany.companySize.min?.toLocaleString()} -{' '}
+																						{enrichedCompany.companySize.max?.toLocaleString()}{' '}
+																						employees
+																					</div>
 																					{enrichedCompany.companySize.employees_in_linkedin && (
-																						<div>LinkedIn Employees: {enrichedCompany.companySize.employees_in_linkedin.toLocaleString()}</div>
+																						<div>
+																							LinkedIn Employees:{' '}
+																							{enrichedCompany.companySize.employees_in_linkedin.toLocaleString()}
+																						</div>
 																					)}
 																				</div>
 																			</div>
@@ -1060,31 +1506,55 @@ export const Leads: React.FC = () => {
 																		{/* Industry Primary Group Details */}
 																		{enrichedCompany.industryPrimaryGroupDetails && (
 																			<div>
-																				<h4 className='text-xs font-semibold text-gray-600 mb-2'>Industry Classification</h4>
-																				{enrichedCompany.industryPrimaryGroupDetails.sics && enrichedCompany.industryPrimaryGroupDetails.sics.length > 0 && (
-																					<div className='mb-2'>
-																						<div className='text-xs font-medium text-gray-700 mb-1'>SIC Codes:</div>
-																						<div className='space-y-1'>
-																							{enrichedCompany.industryPrimaryGroupDetails.sics.map((sic, idx) => (
-																								<div key={idx} className='text-sm text-gray-700'>
-																									<span className='font-mono'>{sic.sic}</span>: {sic.description}
-																								</div>
-																							))}
+																				<h4 className='text-xs font-semibold text-gray-600 mb-2'>
+																					Industry Classification
+																				</h4>
+																				{enrichedCompany.industryPrimaryGroupDetails.sics &&
+																					enrichedCompany.industryPrimaryGroupDetails.sics.length >
+																						0 && (
+																						<div className='mb-2'>
+																							<div className='text-xs font-medium text-gray-700 mb-1'>
+																								SIC Codes:
+																							</div>
+																							<div className='space-y-1'>
+																								{enrichedCompany.industryPrimaryGroupDetails.sics.map(
+																									(sic, idx) => (
+																										<div
+																											key={idx}
+																											className='text-sm text-gray-700'
+																										>
+																											<span className='font-mono'>{sic.sic}</span>:{' '}
+																											{sic.description}
+																										</div>
+																									)
+																								)}
+																							</div>
 																						</div>
-																					</div>
-																				)}
-																				{enrichedCompany.industryPrimaryGroupDetails.naics && enrichedCompany.industryPrimaryGroupDetails.naics.length > 0 && (
-																					<div>
-																						<div className='text-xs font-medium text-gray-700 mb-1'>NAICS Codes:</div>
-																						<div className='space-y-1'>
-																							{enrichedCompany.industryPrimaryGroupDetails.naics.map((naics, idx) => (
-																								<div key={idx} className='text-sm text-gray-700'>
-																									<span className='font-mono'>{naics.naics}</span>: {naics.description}
-																								</div>
-																							))}
+																					)}
+																				{enrichedCompany.industryPrimaryGroupDetails.naics &&
+																					enrichedCompany.industryPrimaryGroupDetails.naics.length >
+																						0 && (
+																						<div>
+																							<div className='text-xs font-medium text-gray-700 mb-1'>
+																								NAICS Codes:
+																							</div>
+																							<div className='space-y-1'>
+																								{enrichedCompany.industryPrimaryGroupDetails.naics.map(
+																									(naics, idx) => (
+																										<div
+																											key={idx}
+																											className='text-sm text-gray-700'
+																										>
+																											<span className='font-mono'>
+																												{naics.naics}
+																											</span>
+																											: {naics.description}
+																										</div>
+																									)
+																								)}
+																							</div>
 																						</div>
-																					</div>
-																				)}
+																					)}
 																			</div>
 																		)}
 																	</div>
@@ -1094,7 +1564,9 @@ export const Leads: React.FC = () => {
 																		{/* Social Links */}
 																		{enrichedCompany.social && (
 																			<div>
-																				<h4 className='text-sm font-semibold text-gray-900 mb-2'>Social</h4>
+																				<h4 className='text-sm font-semibold text-gray-900 mb-2'>
+																					Social
+																				</h4>
 																				<div className='space-y-1'>
 																					{enrichedCompany.social.linkedin && (
 																						<a
@@ -1121,92 +1593,156 @@ export const Leads: React.FC = () => {
 																		)}
 
 																		{/* Revenue Range */}
-																		{enrichedCompany.revenueRange && enrichedCompany.revenueRange.length === 2 && (
-																			<div>
-																				<h4 className='text-sm font-semibold text-gray-900 mb-2'>Revenue</h4>
-																				<div className='flex items-center gap-2'>
-																					<DollarSign className='h-4 w-4 text-gray-400' />
-																					<span className='text-sm text-gray-700'>
-																						${(enrichedCompany.revenueRange[0] / 1000000).toFixed(0)}M - ${(enrichedCompany.revenueRange[1] / 1000000).toFixed(0)}M
-																					</span>
+																		{enrichedCompany.revenueRange &&
+																			enrichedCompany.revenueRange.length === 2 && (
+																				<div>
+																					<h4 className='text-sm font-semibold text-gray-900 mb-2'>
+																						Revenue
+																					</h4>
+																					<div className='flex items-center gap-2'>
+																						<DollarSign className='h-4 w-4 text-gray-400' />
+																						<span className='text-sm text-gray-700'>
+																							$
+																							{(enrichedCompany.revenueRange[0] / 1000000).toFixed(
+																								0
+																							)}
+																							M - $
+																							{(enrichedCompany.revenueRange[1] / 1000000).toFixed(
+																								0
+																							)}
+																							M
+																						</span>
+																					</div>
 																				</div>
-																			</div>
-																		)}
+																			)}
 
 																		{/* Funding */}
 																		{enrichedCompany.funding && (
 																			<div>
-																				<h4 className='text-sm font-semibold text-gray-900 mb-2'>Funding</h4>
+																				<h4 className='text-sm font-semibold text-gray-900 mb-2'>
+																					Funding
+																				</h4>
 																				<div className='space-y-3'>
 																					{enrichedCompany.funding.isIpo !== undefined && (
 																						<div className='text-sm text-gray-700'>
-																							IPO: <span className='font-medium'>{enrichedCompany.funding.isIpo ? 'Yes' : 'No'}</span>
+																							IPO:{' '}
+																							<span className='font-medium'>
+																								{enrichedCompany.funding.isIpo ? 'Yes' : 'No'}
+																							</span>
 																						</div>
 																					)}
 																					{enrichedCompany.funding.totalRounds > 0 && (
 																						<div className='text-sm text-gray-700'>
-																							<span className='font-medium'>{enrichedCompany.funding.totalRounds}</span> rounds
+																							<span className='font-medium'>
+																								{enrichedCompany.funding.totalRounds}
+																							</span>{' '}
+																							rounds
 																							{enrichedCompany.funding.totalRoundsAmount && (
 																								<span className='ml-2'>
-																									• {enrichedCompany.funding.currency || 'USD'} ${(enrichedCompany.funding.totalRoundsAmount / 1000000).toFixed(1)}M total
+																									• {enrichedCompany.funding.currency || 'USD'} $
+																									{(
+																										enrichedCompany.funding.totalRoundsAmount /
+																										1000000
+																									).toFixed(1)}
+																									M total
 																								</span>
 																							)}
 																						</div>
 																					)}
 																					{enrichedCompany.funding.lastRoundDate && (
 																						<div className='text-sm text-gray-700'>
-																							<div>Last Round: <span className='font-medium'>{enrichedCompany.funding.lastRoundType}</span></div>
-																							<div className='text-gray-600'>Date: {enrichedCompany.funding.lastRoundDate}</div>
+																							<div>
+																								Last Round:{' '}
+																								<span className='font-medium'>
+																									{enrichedCompany.funding.lastRoundType}
+																								</span>
+																							</div>
+																							<div className='text-gray-600'>
+																								Date: {enrichedCompany.funding.lastRoundDate}
+																							</div>
 																							{enrichedCompany.funding.lastRoundAmount && (
 																								<div className='text-gray-600'>
-																									Amount: {enrichedCompany.funding.currency || 'USD'} ${(enrichedCompany.funding.lastRoundAmount / 1000000).toFixed(1)}M
+																									Amount:{' '}
+																									{enrichedCompany.funding.currency || 'USD'} $
+																									{(
+																										enrichedCompany.funding.lastRoundAmount /
+																										1000000
+																									).toFixed(1)}
+																									M
 																								</div>
 																							)}
 																						</div>
 																					)}
-																					{enrichedCompany.funding.rounds && enrichedCompany.funding.rounds.length > 0 && (
-																						<div>
-																							<div className='text-xs font-medium text-gray-700 mb-2'>All Rounds:</div>
-																							<div className='space-y-2'>
-																								{enrichedCompany.funding.rounds.map((round, idx) => (
-																									<div key={idx} className='text-sm bg-gray-50 p-2 rounded border border-gray-200'>
-																										<div className='font-medium text-gray-900'>{round.roundType || 'N/A'}</div>
-																										{round.roundDate && <div className='text-gray-600 text-xs'>Date: {round.roundDate}</div>}
-																										{round.roundAmount && (
-																											<div className='text-gray-700 text-xs'>
-																												Amount: {round.currency || enrichedCompany.funding?.currency || 'USD'} ${(round.roundAmount / 1000000).toFixed(2)}M
+																					{enrichedCompany.funding.rounds &&
+																						enrichedCompany.funding.rounds.length > 0 && (
+																							<div>
+																								<div className='text-xs font-medium text-gray-700 mb-2'>
+																									All Rounds:
+																								</div>
+																								<div className='space-y-2'>
+																									{enrichedCompany.funding.rounds.map(
+																										(round, idx) => (
+																											<div
+																												key={idx}
+																												className='text-sm bg-gray-50 p-2 rounded border border-gray-200'
+																											>
+																												<div className='font-medium text-gray-900'>
+																													{round.roundType || 'N/A'}
+																												</div>
+																												{round.roundDate && (
+																													<div className='text-gray-600 text-xs'>
+																														Date: {round.roundDate}
+																													</div>
+																												)}
+																												{round.roundAmount && (
+																													<div className='text-gray-700 text-xs'>
+																														Amount:{' '}
+																														{round.currency ||
+																															enrichedCompany.funding?.currency ||
+																															'USD'}{' '}
+																														$
+																														{(round.roundAmount / 1000000).toFixed(
+																															2
+																														)}
+																														M
+																													</div>
+																												)}
 																											</div>
-																										)}
-																									</div>
-																								))}
+																										)
+																									)}
+																								</div>
 																							</div>
-																						</div>
-																					)}
+																						)}
 																				</div>
 																			</div>
 																		)}
 
 																		{/* Specialities */}
-																		{enrichedCompany.specialities && enrichedCompany.specialities.length > 0 && (
-																			<div>
-																				<h4 className='text-sm font-semibold text-gray-900 mb-2'>Specialities</h4>
-																				<div className='flex flex-wrap gap-2'>
-																					{enrichedCompany.specialities.slice(0, 10).map((speciality, idx) => (
-																						<span
-																							key={idx}
-																							className='px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md'
-																						>
-																							{speciality}
-																						</span>
-																					))}
-																					{enrichedCompany.specialities.length > 10 && (
-																						<span className='px-2 py-1 text-gray-500 text-xs'>
-																							+{enrichedCompany.specialities.length - 10} more
-																						</span>
-																					)}
+																		{enrichedCompany.specialities &&
+																			enrichedCompany.specialities.length > 0 && (
+																				<div>
+																					<h4 className='text-sm font-semibold text-gray-900 mb-2'>
+																						Specialities
+																					</h4>
+																					<div className='flex flex-wrap gap-2'>
+																						{enrichedCompany.specialities
+																							.slice(0, 10)
+																							.map((speciality, idx) => (
+																								<span
+																									key={idx}
+																									className='px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-md'
+																								>
+																									{speciality}
+																								</span>
+																							))}
+																						{enrichedCompany.specialities.length > 10 && (
+																							<span className='px-2 py-1 text-gray-500 text-xs'>
+																								+{enrichedCompany.specialities.length - 10} more
+																							</span>
+																						)}
+																					</div>
 																				</div>
-																			</div>
-																		)}
+																			)}
 																	</div>
 																</div>
 															</div>

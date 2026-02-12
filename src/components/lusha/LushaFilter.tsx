@@ -27,31 +27,57 @@ export interface LushaFilters {
 interface LushaFilterProps {
 	onApplyFilters: (filters: LushaFilters) => void;
 	onClearFilters: () => void;
+	/** When set (e.g. after loading a saved filter), form state is synced to these values */
+	initialFilters?: LushaFilters | null;
 	className?: string;
 }
 
 export const LushaFilter: React.FC<LushaFilterProps> = ({
 	onApplyFilters,
 	onClearFilters,
+	initialFilters,
 	className,
 }) => {
 	const [loading, setLoading] = useState(true);
 	const [showAdvanced, setShowAdvanced] = useState(false);
-	
+
 	// Filter options from API
 	const [departments, setDepartments] = useState<string[]>([]);
 	const [seniorityOptions, setSeniorityOptions] = useState<Array<{ id: number; name: string }>>([]);
-	const [industryData, setIndustryData] = useState<Array<{ main_industry: string; main_industry_id: number; sub_industries: Array<{ id: number; value: string }> }>>([]);
+	const [industryData, setIndustryData] = useState<
+		Array<{
+			main_industry: string;
+			main_industry_id: number;
+			sub_industries: Array<{ id: number; value: string }>;
+		}>
+	>([]);
 
-	// Filter state
-	const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
-	const [selectedSeniority, setSelectedSeniority] = useState<string>('');
-	const [jobTitle, setJobTitle] = useState<string>('');
-	const [selectedMainIndustries, setSelectedMainIndustries] = useState<string[]>([]);
-	const [selectedSubIndustries, setSelectedSubIndustries] = useState<string[]>([]);
-	const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
-	const [companyName, setCompanyName] = useState<string>('');
-	const [selectedTechnologies, setSelectedTechnologies] = useState<string[]>([]);
+	// Filter state — initialize from initialFilters when loading a saved filter (parent remounts with key)
+	const [selectedDepartments, setSelectedDepartments] = useState<string[]>(() => initialFilters?.departments ?? []);
+	const [selectedSeniority, setSelectedSeniority] = useState<string>(() => initialFilters?.seniority?.[0] ?? '');
+	const [jobTitle, setJobTitle] = useState<string>(() => initialFilters?.jobTitle ?? '');
+	const [selectedMainIndustries, setSelectedMainIndustries] = useState<string[]>(() =>
+		(initialFilters?.mainIndustriesIds ?? []).map(String)
+	);
+	const [selectedSubIndustries, setSelectedSubIndustries] = useState<string[]>(() =>
+		(initialFilters?.subIndustriesIds ?? []).map(String)
+	);
+	const [selectedLocation, setSelectedLocation] = useState<Location | null>(() => initialFilters?.location ?? null);
+	const [companyName, setCompanyName] = useState<string>(() => initialFilters?.companyName ?? '');
+	const [selectedTechnologies, setSelectedTechnologies] = useState<string[]>(() => initialFilters?.technologies ?? []);
+
+	// Sync form state when parent passes initialFilters (e.g. loaded saved filter)
+	useEffect(() => {
+		if (!initialFilters) return;
+		setSelectedDepartments(initialFilters.departments ?? []);
+		setSelectedSeniority(initialFilters.seniority?.[0] ?? '');
+		setJobTitle(initialFilters.jobTitle ?? '');
+		setSelectedMainIndustries((initialFilters.mainIndustriesIds ?? []).map(String));
+		setSelectedSubIndustries((initialFilters.subIndustriesIds ?? []).map(String));
+		setSelectedLocation(initialFilters.location ?? null);
+		setCompanyName(initialFilters.companyName ?? '');
+		setSelectedTechnologies(initialFilters.technologies ?? []);
+	}, [initialFilters]);
 
 	// Load filter options on mount
 	useEffect(() => {
@@ -87,10 +113,14 @@ export const LushaFilter: React.FC<LushaFilterProps> = ({
 
 	const handleApplyFilters = () => {
 		// Convert main industry IDs from strings to numbers
-		const mainIndustriesIds = selectedMainIndustries.map(id => parseInt(id, 10)).filter(id => !isNaN(id));
+		const mainIndustriesIds = selectedMainIndustries
+			.map(id => parseInt(id, 10))
+			.filter(id => !isNaN(id));
 		// Convert sub-industry IDs from strings to numbers
-		const subIndustriesIds = selectedSubIndustries.map(id => parseInt(id, 10)).filter(id => !isNaN(id));
-		
+		const subIndustriesIds = selectedSubIndustries
+			.map(id => parseInt(id, 10))
+			.filter(id => !isNaN(id));
+
 		const filters: LushaFilters = {
 			departments: selectedDepartments,
 			seniority: selectedSeniority ? [selectedSeniority] : [],
@@ -170,12 +200,7 @@ export const LushaFilter: React.FC<LushaFilterProps> = ({
 	};
 
 	return (
-		<div
-			className={cn(
-				'bg-white border border-gray-200 rounded-lg shadow-sm',
-				className
-			)}
-		>
+		<div className={cn('bg-white border border-gray-200 rounded-lg shadow-sm', className)}>
 			{loading ? (
 				<div className='flex items-center justify-center py-8 px-6'>
 					<div className='animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-gray-600 mr-3'></div>
@@ -257,18 +282,16 @@ export const LushaFilter: React.FC<LushaFilterProps> = ({
 
 							{/* Company Name */}
 							<div className='w-56'>
-								<label className='block text-xs font-medium text-gray-700 mb-1.5'>
-									Company
-								</label>
+								<label className='block text-xs font-medium text-gray-700 mb-1.5'>Company</label>
 								<AsyncAutocomplete
 									label=''
 									value={companyName}
 									onChange={setCompanyName}
-									onSelect={(item) => {
+									onSelect={item => {
 										const value = typeof item === 'string' ? item : item.label;
 										setCompanyName(value);
 									}}
-									searchFn={async (text) => {
+									searchFn={async text => {
 										const response = await LushaApiService.searchCompanyNames(text);
 										if (response.status_code === 200 && Array.isArray(response.data)) {
 											return response.data;
@@ -334,18 +357,20 @@ export const LushaFilter: React.FC<LushaFilterProps> = ({
 									</label>
 									<AsyncAutocomplete
 										label=''
-										value={selectedLocation ? `${selectedLocation.city}, ${selectedLocation.state}` : ''}
-										onChange={(value) => {
+										value={
+											selectedLocation ? `${selectedLocation.city}, ${selectedLocation.state}` : ''
+										}
+										onChange={value => {
 											if (!value) {
 												setSelectedLocation(null);
 											}
 										}}
-										onSelect={(item) => {
+										onSelect={item => {
 											if (typeof item === 'object' && item.value) {
 												setSelectedLocation(item.value);
 											}
 										}}
-										searchFn={async (text) => {
+										searchFn={async text => {
 											const response = await LushaApiService.searchLocations(text, 'contact');
 											if (response.status_code === 200 && Array.isArray(response.data)) {
 												return response.data.map((loc: Location) => ({
@@ -355,7 +380,7 @@ export const LushaFilter: React.FC<LushaFilterProps> = ({
 											}
 											return [];
 										}}
-										formatItem={(item) => {
+										formatItem={item => {
 											if (typeof item === 'object' && item.value) {
 												const loc = item.value as Location;
 												return `${loc.city}, ${loc.state}`;
@@ -376,13 +401,13 @@ export const LushaFilter: React.FC<LushaFilterProps> = ({
 										label=''
 										value=''
 										onChange={() => {}}
-										onSelect={(item) => {
+										onSelect={item => {
 											const value = typeof item === 'string' ? item : item.label;
 											if (value && !selectedTechnologies.includes(value)) {
 												setSelectedTechnologies(prev => [...prev, value]);
 											}
 										}}
-										searchFn={async (text) => {
+										searchFn={async text => {
 											const response = await LushaApiService.searchTechnologies(text);
 											if (response.status_code === 200 && Array.isArray(response.data)) {
 												return response.data;
@@ -402,9 +427,7 @@ export const LushaFilter: React.FC<LushaFilterProps> = ({
 													<button
 														type='button'
 														onClick={() => {
-															setSelectedTechnologies(prev =>
-																prev.filter(t => t !== tech)
-															);
+															setSelectedTechnologies(prev => prev.filter(t => t !== tech));
 														}}
 														className='text-gray-400 hover:text-gray-600 transition-colors'
 													>

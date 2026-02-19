@@ -47,8 +47,112 @@ import mockSearchResponse from '../../data/mockLushaSearchResponse.json';
 // Flag to use mock data instead of API calls
 // Set to false to capture real API response, then copy it to mockLushaSearchResponse.json and set to true
 const USE_MOCK_DATA = false;
+const DEFAULT_MOCK_RECIPIENTS = [
+	'shreyasgeetha@gmail.com',
+	'shreyas@getinfinitybox.com',
+	'shreyasananth.3@gmail.com',
+	'kirankaviraj08@gmail.com',
+	'shashwat@getinfinitybox.com',
+	'keshav@getinfinitybox.com',
+	'kiran@getinfinitybox.com',
+];
+
+const ENV_MOCK_RECIPIENTS = (import.meta.env.VITE_LEADS_MOCK_EMAIL_TO || '')
+	.split(',')
+	.map((email: string) => email.trim())
+	.filter(Boolean);
+
+const EFFECTIVE_MOCK_RECIPIENTS =
+	ENV_MOCK_RECIPIENTS.length > 0 ? ENV_MOCK_RECIPIENTS : DEFAULT_MOCK_RECIPIENTS;
+const MARVELL_TEMPLATE_HTML = `<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+  .container { max-width: 600px; margin: 20px auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; }
+  .header { border-bottom: 2px solid #27ae60; padding-bottom: 10px; margin-bottom: 20px; }
+  .header h2 { color: #27ae60; margin: 0; font-size: 22px; }
+  .section-title { color: #2c3e50; font-weight: bold; margin-top: 20px; text-transform: uppercase; font-size: 14px; letter-spacing: 1px; }
+  .service-card { background-color: #f9f9f9; padding: 15px; border-left: 4px solid #27ae60; margin: 15px 0; }
+  .benefit-list { margin: 15px 0; padding-left: 20px; }
+  .benefit-item { margin-bottom: 8px; }
+  .highlight { color: #27ae60; font-weight: bold; }
+  .footer { margin-top: 30px; padding-top: 15px; border-top: 1px solid #eee; font-size: 13px; color: #777; }
+  .cta-button { display: inline-block; padding: 12px 25px; background-color: #27ae60; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; }
+  @media only screen and (max-width: 480px) { .container { width: 95%; margin: 10px auto; } }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h2>Sustainability & Cost Efficiency for Marvell</h2>
+  </div>
+
+  <p>Hi Sir/Madam,</p>
+  
+  <p>I hope you are doing well.</p>
+  
+  <p>I am reaching out to introduce <b>InfinityBox</b> and explore how we can support your organization in reducing operational costs while significantly improving your sustainability outcomes.</p>
+
+  <p>We partner with 100+ enterprise leaders across India—including <b>Google, Morgan Stanley, Mahindra, and Airbus</b>—to optimize water usage, energy consumption, and CO₂ emissions.</p>
+
+  <div class="section-title">Our Solutions</div>
+
+  <div class="service-card">
+    <div style="font-weight: bold; color: #27ae60;">01. Dishwashing as a Service (Flagship)</div>
+    We manage your complete reusable crockery lifecycle, reducing water and chemical footprints.
+    <ul style="margin: 5px 0; padding-left: 20px;">
+      <li><b>30% Average Cost Savings</b> across 10 million+ orders.</li>
+      <li><b>CAPEX Savings:</b> We invest in the cutlery/crockery so you don't have to.</li>
+      <li><b>Flexible Models:</b> Onsite and Offsite operations available.</li>
+    </ul>
+  </div>
+
+  <div class="service-card">
+    <div style="font-weight: bold; color: #27ae60;">02. End-to-End Kitchen Design</div>
+    Expert design, procurement, and AMC management for corporate kitchens (servicing <b>Microsoft, Boeing, Dell</b>).
+  </div>
+
+  <div class="service-card">
+    <div style="font-weight: bold; color: #27ae60;">03. Event Infrastructure Management</div>
+    Full-service management for events (20–5,000+ pax) covering everything except the food—AV, decor, and premium crockery.
+  </div>
+
+  <div class="section-title">Why Partner with InfinityBox?</div>
+  <div class="benefit-list">
+    <div class="benefit-item">✓ <b>Hygienic Excellence:</b> 7-step process including UV treatment and protein/starch testing.</div>
+    <div class="benefit-item">✓ <b>ESG Reporting:</b> Measurable data on water conservation and carbon reduction.</div>
+    <div class="benefit-item">✓ <b>Dignity of Labor:</b> High-quality site performance through rigorous staff training and rewards.</div>
+  </div>
+
+  <p>I have attached our brochure for your reference. Would you be open to a <b>brief 20-minute discussion</b> next week to see where we can add the most value to your current setup?</p>
+
+  <p>Looking forward to your response.</p>
+
+  <div class="footer">
+    <b>Kiran Kaviraj</b><br>
+    India Sales Lead | InfinityBox<br>
+    <span class="highlight">+91 8356863102</span><br>
+    <a href="https://getinfinitybox.com/" style="color: #27ae60;">getinfinitybox.com</a>
+  </div>
+</div>
+
+</body>
+</html>`;
+
+const EMAIL_TEMPLATES = [
+	{
+		id: 'marvell_sustainability',
+		name: 'Marvell - Sustainability & Cost Efficiency',
+		subject: 'Sustainability & Cost Efficiency for Marvell',
+		html: MARVELL_TEMPLATE_HTML,
+	},
+];
 
 export const Leads: React.FC = () => {
+	type BulkEmailTarget = { contactId: string };
+
 	const [loading, setLoading] = useState(false);
 	const [searchResults, setSearchResults] = useState<ContactResult[]>([]);
 	const [totalResults, setTotalResults] = useState(0);
@@ -67,6 +171,11 @@ export const Leads: React.FC = () => {
 	const [selectedContacts, setSelectedContacts] = useState<Set<string>>(new Set());
 	const [bulkRevealing, setBulkRevealing] = useState(false);
 	const [bulkTracking, setBulkTracking] = useState(false);
+	const [bulkEmailing, setBulkEmailing] = useState(false);
+	const [bulkEmailModalOpen, setBulkEmailModalOpen] = useState(false);
+	const [selectedEmailTemplateId, setSelectedEmailTemplateId] = useState<string>(EMAIL_TEMPLATES[0].id);
+	const [pendingBulkEmailTargets, setPendingBulkEmailTargets] = useState<BulkEmailTarget[]>([]);
+	const [sendEmailInMockMode, setSendEmailInMockMode] = useState(false);
 	// Removed: trackingContacts state - no longer used after removing Track Lead button
 	const [showRevealDropdown, setShowRevealDropdown] = useState(false);
 	const revealDropdownRef = useRef<HTMLDivElement>(null);
@@ -711,6 +820,100 @@ export const Leads: React.FC = () => {
 		);
 	};
 
+	const selectedEmailTemplate =
+		EMAIL_TEMPLATES.find(template => template.id === selectedEmailTemplateId) || EMAIL_TEMPLATES[0];
+
+	const openBulkEmailComposer = () => {
+		if (selectedContacts.size === 0) {
+			setSnackbar({
+				open: true,
+				message: 'Please select at least one contact',
+				type: 'error',
+			});
+			return;
+		}
+
+		const selectedRows = searchResults.filter(row => selectedContacts.has(row.contactId));
+		const contactPayload: BulkEmailTarget[] = selectedRows.map(row => ({ contactId: row.contactId }));
+
+		if (contactPayload.length === 0) {
+			setSnackbar({
+				open: true,
+				message: 'No valid selected contacts found.',
+				type: 'error',
+			});
+			return;
+		}
+		setPendingBulkEmailTargets(contactPayload);
+		setBulkEmailModalOpen(true);
+	};
+
+	const handleBulkSendEmail = async () => {
+		if (pendingBulkEmailTargets.length === 0) return;
+
+		setBulkEmailing(true);
+		setError(null);
+
+		const contactCount = pendingBulkEmailTargets.length;
+
+		try {
+			await LeadApiService.bulkSendFollowupEmail({
+				contact_ids: pendingBulkEmailTargets.map(item => item.contactId),
+				subject: selectedEmailTemplate.subject,
+				template: selectedEmailTemplate.html,
+				mock: sendEmailInMockMode,
+				redact_recipients: !sendEmailInMockMode,
+				...(sendEmailInMockMode ? { mock_recipients: EFFECTIVE_MOCK_RECIPIENTS } : {}),
+			});
+
+			// Backend responds 202 Accepted — emails are queued and sending in the background.
+			// Optimistically mark all selected contacts as follow-up sent.
+			const sentAt = new Date().toISOString();
+			const targetContactIds = new Set(pendingBulkEmailTargets.map(item => item.contactId));
+
+			setSearchResults(prev =>
+				prev.map(contact => {
+					if (!targetContactIds.has(contact.contactId)) return contact;
+					const previousCount =
+						typeof contact.followup_email_count === 'number' ? contact.followup_email_count : 0;
+					return {
+						...contact,
+						followup_sent: true,
+						followup_sent_at: sentAt,
+						followup_email_count: previousCount + 1,
+						is_tracking: true,
+					};
+				})
+			);
+
+			setSnackbar({
+				open: true,
+				message: `Sending emails to ${contactCount} contact(s). This runs in the background.`,
+				type: 'success',
+			});
+			setBulkEmailModalOpen(false);
+			setPendingBulkEmailTargets([]);
+			clearSelection();
+		} catch (err: any) {
+			console.error('❌ Bulk email error:', err);
+			const errorMsg = err.response?.data?.message || err.message || 'Bulk email failed';
+			setError(errorMsg);
+			setSnackbar({
+				open: true,
+				message: errorMsg,
+				type: 'error',
+			});
+		} finally {
+			setBulkEmailing(false);
+		}
+	};
+
+	const handleCloseBulkEmailModal = () => {
+		if (bulkEmailing) return;
+		setBulkEmailModalOpen(false);
+		setPendingBulkEmailTargets([]);
+	};
+
 	// Removed: handleStartTracking function - no longer used after removing Track Lead button
 
 	/**
@@ -874,11 +1077,11 @@ export const Leads: React.FC = () => {
 			)}
 
 			{/* Manage saved filters modal */}
-			{manageSavedOpen && (
-				<div
-					className='fixed inset-0 z-50 flex items-center justify-center bg-black/50'
-					onClick={() => setManageSavedOpen(false)}
-				>
+				{manageSavedOpen && (
+					<div
+						className='fixed inset-0 z-50 flex items-center justify-center bg-black/50'
+						onClick={() => setManageSavedOpen(false)}
+					>
 					<Card
 						className='w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col shadow-xl'
 						onClick={e => e.stopPropagation()}
@@ -931,11 +1134,86 @@ export const Leads: React.FC = () => {
 								Close
 							</Button>
 						</div>
-					</Card>
-				</div>
-			)}
+						</Card>
+					</div>
+				)}
 
-			{/* Error Message */}
+				{bulkEmailModalOpen && (
+					<div
+						className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4'
+						onClick={handleCloseBulkEmailModal}
+					>
+						<Card
+							className='w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-xl'
+							onClick={e => e.stopPropagation()}
+						>
+							<div className='p-4 border-b border-gray-200'>
+								<h3 className='text-lg font-semibold text-gray-900'>Confirm Bulk Email</h3>
+								<p className='text-sm text-gray-600 mt-1'>
+									{pendingBulkEmailTargets.length} selected contact(s) with revealed emails
+								</p>
+							</div>
+
+							<div className='p-4 border-b border-gray-200'>
+								<div className='max-w-md'>
+									<FloatingDropdown
+										label='Email Template'
+										options={EMAIL_TEMPLATES.map(template => ({
+											value: template.id,
+											label: template.name,
+										}))}
+										value={selectedEmailTemplateId}
+										onChange={value => setSelectedEmailTemplateId(value)}
+										placeholder='Select template'
+									/>
+								</div>
+								<div className='mt-2 text-sm text-gray-700'>
+									<span className='font-medium'>Subject:</span> {selectedEmailTemplate.subject}
+								</div>
+								<label className='mt-3 inline-flex items-center gap-2 text-sm text-gray-700'>
+									<input
+										type='checkbox'
+										checked={sendEmailInMockMode}
+										onChange={e => setSendEmailInMockMode(e.target.checked)}
+										className='w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500'
+									/>
+									Send in mock mode
+								</label>
+							</div>
+
+							<div className='p-4 overflow-auto flex-1 bg-gray-50'>
+								<div className='text-xs text-gray-500 mb-2'>HTML Preview</div>
+								<iframe
+									title='Email template preview'
+									srcDoc={selectedEmailTemplate.html}
+									className='w-full h-[460px] bg-white border border-gray-200 rounded'
+								/>
+							</div>
+
+							<div className='p-4 border-t border-gray-200 flex items-center justify-between gap-3'>
+								<div className='text-xs text-gray-600'>
+									{sendEmailInMockMode
+										? `Mock mode enabled. mock_recipients: ${EFFECTIVE_MOCK_RECIPIENTS.join(', ')}`
+										: 'Mock mode disabled. Emails go to actual contact emails.'}
+								</div>
+								<div className='flex items-center gap-2'>
+									<Button variant='outline' onClick={handleCloseBulkEmailModal} disabled={bulkEmailing}>
+										Cancel
+									</Button>
+									<Button
+										onClick={handleBulkSendEmail}
+										loading={bulkEmailing}
+										disabled={bulkEmailing || pendingBulkEmailTargets.length === 0}
+									>
+										{bulkEmailing ? 'Sending...' : 'Send Email'}
+									</Button>
+								</div>
+							</div>
+						</Card>
+					</div>
+				)}
+
+				{/* Error Message */}
 			{error && (
 				<div className='mb-6 p-4 bg-red-50 border border-red-200 rounded-lg'>
 					<div className='text-red-800 font-medium'>Error</div>
@@ -974,18 +1252,27 @@ export const Leads: React.FC = () => {
 			) : (
 				<>
 					{/* Results Summary */}
-					<div className='mb-4 flex items-center justify-between'>
-						<div className='text-sm text-gray-600'>
-							Found{' '}
-							<span className='font-semibold text-gray-900'>{totalResults.toLocaleString()}</span>{' '}
-							leads
-							{leadId && (
+						<div className='mb-4 flex items-center justify-between gap-3'>
+							<div className='text-sm text-gray-600'>
+								Found{' '}
+								<span className='font-semibold text-gray-900'>{totalResults.toLocaleString()}</span>{' '}
+								leads
+								{leadId && (
 								<span className='ml-2 text-gray-500'>
 									(Lead ID: <span className='font-mono'>{leadId}</span>)
-								</span>
-							)}
+									</span>
+								)}
+							</div>
+							<Button
+								onClick={openBulkEmailComposer}
+								disabled={selectedContacts.size === 0 || bulkEmailing || bulkRevealing}
+								variant='outline'
+								size='sm'
+								leftIcon={<Mail className='w-4 h-4' />}
+							>
+								Email Template Preview
+							</Button>
 						</div>
-					</div>
 
 					{/* Module 1: Bulk Action Bar */}
 					{selectedContacts.size > 0 && (
@@ -997,13 +1284,13 @@ export const Leads: React.FC = () => {
 									</span>
 									<div className='flex items-center gap-2'>
 										{/* Reveal Dropdown */}
-										<div className='relative' ref={revealDropdownRef}>
-											<Button
-												onClick={() => setShowRevealDropdown(!showRevealDropdown)}
-												disabled={bulkRevealing}
-												variant='primary'
-												size='sm'
-												leftIcon={
+											<div className='relative' ref={revealDropdownRef}>
+												<Button
+													onClick={() => setShowRevealDropdown(!showRevealDropdown)}
+													disabled={bulkRevealing || bulkEmailing}
+													variant='primary'
+													size='sm'
+													leftIcon={
 													bulkRevealing ? (
 														<Loader2 className='w-4 h-4 animate-spin' />
 													) : (
@@ -1012,8 +1299,8 @@ export const Leads: React.FC = () => {
 												}
 												rightIcon={<ChevronDown className='w-4 h-4' />}
 											>
-												{bulkRevealing ? 'Revealing...' : 'Reveal Contacts'}
-											</Button>
+													{bulkRevealing ? 'Revealing...' : 'Reveal Contacts'}
+												</Button>
 
 											{showRevealDropdown && !bulkRevealing && (
 												<div className='absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden'>
@@ -1074,13 +1361,29 @@ export const Leads: React.FC = () => {
 													</div>
 												</div>
 											)}
-										</div>
+											</div>
 
-										<Button
-											onClick={handleBulkStartTracking}
-											disabled={bulkTracking}
-											variant='outline'
-											size='sm'
+											<Button
+												onClick={openBulkEmailComposer}
+												disabled={bulkEmailing || bulkRevealing}
+												variant='primary'
+												size='sm'
+												leftIcon={
+													bulkEmailing ? (
+														<Loader2 className='w-4 h-4 animate-spin' />
+													) : (
+														<Mail className='w-4 h-4' />
+													)
+												}
+											>
+												{bulkEmailing ? 'Sending Emails...' : `Send Bulk Email (${selectedContacts.size})`}
+											</Button>
+
+											<Button
+												onClick={handleBulkStartTracking}
+												disabled={bulkTracking || bulkEmailing}
+												variant='outline'
+												size='sm'
 											leftIcon={
 												bulkTracking ? (
 													<Loader2 className='w-4 h-4 animate-spin' />
@@ -1093,12 +1396,15 @@ export const Leads: React.FC = () => {
 										</Button>
 									</div>
 								</div>
-								<Button onClick={clearSelection} variant='outline' size='sm'>
-									Clear Selection
-								</Button>
+									<Button onClick={clearSelection} variant='outline' size='sm'>
+										Clear Selection
+									</Button>
+								</div>
+								<div className='mt-2 text-xs text-blue-800'>
+									Mock recipients are controlled by backend env: LEADS_MOCK_EMAIL_TO
+								</div>
 							</div>
-						</div>
-					)}
+						)}
 
 					{/* Results Table with Accordion */}
 					<div className='bg-white rounded-lg border border-gray-200 overflow-hidden'>
@@ -1291,13 +1597,24 @@ export const Leads: React.FC = () => {
 															);
 														})()}
 													</div>
-													{/* Actions */}
-													<div className='col-span-1.5'>
-														{row.is_tracking === true && (
-															<span className='inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded'>
-																<CheckCircle2 className='w-3 h-3' />
-																Tracking
-															</span>
+														{/* Actions */}
+														<div className='col-span-1.5'>
+															{row.followup_sent === true && (
+																<div className='mb-1 inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-800 text-xs font-medium rounded'>
+																	<Mail className='w-3 h-3' />
+																	Follow-up Sent
+																</div>
+															)}
+															{row.followup_sent_at && (
+																<div className='text-[11px] text-gray-500 mb-1'>
+																	{new Date(row.followup_sent_at).toLocaleString('en-US')}
+																</div>
+															)}
+															{row.is_tracking === true && (
+																<span className='inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded'>
+																	<CheckCircle2 className='w-3 h-3' />
+																	Tracking
+																</span>
 														)}
 													</div>
 												</div>

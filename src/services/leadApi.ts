@@ -44,6 +44,33 @@ export interface BulkRevealResponse {
 	}>;
 }
 
+export interface BulkFollowupEmailRequest {
+	contact_ids: string[];
+	subject: string;
+	template?: string;
+	content?: string;
+	from?: string;
+	mock?: boolean;
+	mock_recipients?: string[];
+	redact_recipients?: boolean;
+}
+
+export interface BulkFollowupEmailResponse {
+	success: boolean;
+	message: string;
+	data: {
+		sent: number;
+		failed: number;
+		skipped_no_email: number;
+		results: Array<{
+			contact_id: string;
+			email: string | null;
+			success: boolean;
+			error: string | null;
+		}>;
+	};
+}
+
 export interface CanTrackResponse {
 	can_track: boolean;
 	reason: string | null;
@@ -317,6 +344,16 @@ export class LeadApiService {
 			contact_ids: contactIds,
 			reveal_type: revealType,
 		});
+	}
+
+	/**
+	 * Bulk Send Follow-up Email
+	 * POST /v1/api/leads/send-email
+	 */
+	static async bulkSendFollowupEmail(
+		payload: BulkFollowupEmailRequest
+	): Promise<ApiResponse<BulkFollowupEmailResponse>> {
+		return apiService.post('/leads/send-email', payload);
 	}
 
 	/**

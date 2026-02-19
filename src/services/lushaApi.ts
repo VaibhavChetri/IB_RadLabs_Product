@@ -95,6 +95,10 @@ export interface ContactResult {
 	linkedinSearchUrl?: string;
 	smartLinkedinUrl?: string;
 	companyLinkedinUrl?: string;
+	is_tracking?: boolean;
+	followup_sent?: boolean;
+	followup_sent_at?: string;
+	followup_email_count?: number;
 	[key: string]: unknown;
 }
 

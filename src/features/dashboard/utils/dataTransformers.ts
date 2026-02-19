@@ -59,20 +59,33 @@ export const calculateYAxisTicks = (
 
 	const maxCount = Math.max(...chartData.map(d => d.count));
 	const minCount = Math.min(...chartData.map(d => d.count));
+	if (!Number.isFinite(maxCount) || !Number.isFinite(minCount)) return [];
+
+	const safeTickRounding =
+		Number.isFinite(tickRounding) && tickRounding > 0 ? Math.floor(tickRounding) : 1;
 
 	// Round up to nearest thousand for max, round down for min
-	const maxValue = Math.ceil(maxCount / tickRounding) * tickRounding;
-	const minValue = Math.floor(minCount / tickRounding) * tickRounding;
+	const maxValue = Math.ceil(maxCount / safeTickRounding) * safeTickRounding;
+	const minValue = Math.floor(minCount / safeTickRounding) * safeTickRounding;
 
 	// Calculate step size to get desired number of ticks
 	const range = maxValue - minValue;
-	const idealStep = range / (minTicks + (maxTicks - minTicks) / 2);
-	const step = Math.ceil(idealStep / tickRounding) * tickRounding;
+	if (range === 0) return [minValue];
+
+	const requestedTicks = minTicks + (maxTicks - minTicks) / 2;
+	const safeRequestedTicks =
+		Number.isFinite(requestedTicks) && requestedTicks > 0 ? requestedTicks : 1;
+	const idealStep = range / safeRequestedTicks;
+	const step = Math.max(1, Math.ceil(idealStep / safeTickRounding) * safeTickRounding);
 
 	// Generate ticks
 	const ticks: number[] = [];
+	let iterations = 0;
 	for (let i = minValue; i <= maxValue; i += step) {
 		ticks.push(i);
+		iterations += 1;
+		// Safety guard to avoid infinite loops due to unexpected inputs.
+		if (iterations > 1000) break;
 	}
 
 	// Ensure max value is included

@@ -72,6 +72,8 @@ import { JobPostingListing } from '../pages/hr/job-posting/JobPostingListing';
 // Billing - Invoice
 import InvoiceList from '../pages/billing/InvoiceList';
 import BillingDetails from '../pages/billing/BillingDetails';
+// 3D Builder
+import { ThreeDBuilder } from '../pages/3d-builder/ThreeDBuilder';
 
 export interface RouteConfig {
 	path: string;
@@ -149,4 +151,6 @@ export const routes: RouteConfig[] = [
 	// Billing - Invoice
 	{ path: '/billing/invoice', component: InvoiceList },
 	{ path: '/billing/details', component: BillingDetails },
+	// 3D Builder
+	{ path: '/dashboard/3d-builder', component: ThreeDBuilder },
 ];

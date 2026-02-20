@@ -1,0 +1,22 @@
+{
+  "parent": {
+    "name": "Dashboard",
+    "slug": "dashboard-menu",
+    "parent_id": null,
+    "sort_order": 15,
+    "level": 0,
+    "badge": null,
+    "status": 1
+  },
+  "children": [
+    {
+      "name": "3D Builder",
+      "slug": "3d-builder",
+      "parent_id": null,
+      "sort_order": 1,
+      "level": 1,
+      "badge": null,
+      "status": 1
+    }
+  ]
+}

@@ -30,6 +30,7 @@ import {
 	PhoneCall,
 	BarChart,
 	ShoppingCart,
+	Box,
 	// ArrowLeft, // Deprecated - Received section commented out
 } from 'lucide-react';
 
@@ -54,6 +55,12 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 				name: 'Ops Dashboard',
 				icon: Activity,
 				href: '/ops-dashboard',
+			},
+			{
+				id: '3d-builder',
+				name: '3D Builder',
+				icon: Box,
+				href: '/dashboard/3d-builder',
 			},
 		],
 	},

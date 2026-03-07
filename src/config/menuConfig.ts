@@ -31,6 +31,8 @@ import {
 	BarChart,
 	ShoppingCart,
 	Box,
+	Receipt,
+	DollarSign,
 	// ArrowLeft, // Deprecated - Received section commented out
 } from 'lucide-react';
 
@@ -256,6 +258,19 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 				name: 'P&L Graphs',
 				icon: BarChart3,
 				href: '/p-and-l/graphs',
+			},
+		],
+	},
+	{
+		id: 'finances',
+		name: 'Finances',
+		icon: DollarSign,
+		children: [
+			{
+				id: 'amazon-invoice',
+				name: 'Amazon Invoice',
+				icon: Receipt,
+				href: '/finances/amazon-invoice',
 			},
 		],
 	},

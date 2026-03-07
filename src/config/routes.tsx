@@ -74,6 +74,9 @@ import InvoiceList from '../pages/billing/InvoiceList';
 import BillingDetails from '../pages/billing/BillingDetails';
 // 3D Builder
 import { ThreeDBuilder } from '../pages/3d-builder/ThreeDBuilder';
+// Finances - Amazon Invoice
+import AmazonInvoiceList from '../pages/finances/AmazonInvoiceList';
+import AmazonInvoiceDetail from '../pages/finances/AmazonInvoiceDetail';
 
 export interface RouteConfig {
 	path: string;
@@ -153,4 +156,7 @@ export const routes: RouteConfig[] = [
 	{ path: '/billing/details', component: BillingDetails },
 	// 3D Builder
 	{ path: '/dashboard/3d-builder', component: ThreeDBuilder },
+	// Finances - Amazon Invoice
+	{ path: '/finances/amazon-invoice', component: AmazonInvoiceList },
+	{ path: '/finances/amazon-invoice/:invoiceNumber', component: AmazonInvoiceDetail },
 ];

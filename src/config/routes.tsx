@@ -81,6 +81,8 @@ import { ThreeDBuilder } from '../pages/3d-builder/ThreeDBuilder';
 // Finances - Amazon Invoice
 import AmazonInvoiceList from '../pages/finances/AmazonInvoiceList';
 import AmazonInvoiceDetail from '../pages/finances/AmazonInvoiceDetail';
+// Finances - Zoho Payment Received
+import { ZohoPaymentList } from '../pages/finances/ZohoPaymentList';
 
 export interface RouteConfig {
 	path: string;
@@ -167,4 +169,6 @@ export const routes: RouteConfig[] = [
 	// Finances - Amazon Invoice
 	{ path: '/finances/amazon-invoice', component: AmazonInvoiceList },
 	{ path: '/finances/amazon-invoice/:invoiceNumber', component: AmazonInvoiceDetail },
+	// Finances - Zoho Payment Received
+	{ path: '/finances/zoho-payment-received', component: ZohoPaymentList },
 ];

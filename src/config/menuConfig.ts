@@ -272,6 +272,12 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 				icon: Receipt,
 				href: '/finances/amazon-invoice',
 			},
+			{
+				id: 'zoho-payment-received',
+				name: 'Zoho Payment Received',
+				icon: Receipt,
+				href: '/finances/zoho-payment-received',
+			},
 		],
 	},
 	// 4. ANALYTICS & REPORTS (Combined)

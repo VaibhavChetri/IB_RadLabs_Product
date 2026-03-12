@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/guru/Desktop/Work/InfinityBox/projects/smart-bin-backend/**)",
+      "Bash(curl -X POST http://localhost:3000/v1/api/menus/hierarchy -H \"Content-Type: application/json\" -d '{:*)",
+      "Bash(lsof -i -P -n)",
+      "Bash(curl -X POST http://localhost:5000/v1/api/menus/hierarchy -H \"Content-Type: application/json\" -d '{:*)",
+      "Read(//Users/guru/Desktop/Work/InfinityBox/projects/**)"
+    ]
+  }
+}

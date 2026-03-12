@@ -89,6 +89,6 @@ export class ZohoPaymentApi {
 
 		return apiService.get(
 			`/billing/zoho/customer-payments?${params.toString()}`
-		) as Promise<GetZohoPaymentsResponse>;
+		) as unknown as Promise<GetZohoPaymentsResponse>;
 	}
 }

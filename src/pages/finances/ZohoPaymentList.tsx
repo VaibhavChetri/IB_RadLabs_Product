@@ -15,7 +15,6 @@ import {
 import { Table } from '../../components/ui/DataDisplay';
 import { ZohoPaymentApi, ZohoPayment, ZohoPaymentFilters } from '../../services/zohoPaymentApi';
 import type { TableColumn } from '../../components/ui/DataDisplay';
-import { Download } from 'lucide-react';
 
 interface PaginationData {
 	totalCount: number;

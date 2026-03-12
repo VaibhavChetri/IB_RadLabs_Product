@@ -25,6 +25,7 @@ const EditMasterPlan: React.FC = () => {
 	const [vehicles, setVehicles] = useState<VehicleOption[]>([]);
 
 	// Fetch vehicles data and restore edit data from localStorage
+	// Load vehicles once on mount
 	useEffect(() => {
 		const loadVehicles = async () => {
 			try {
@@ -35,8 +36,10 @@ const EditMasterPlan: React.FC = () => {
 			}
 		};
 		loadVehicles();
+	}, []); // Only run once on mount
 
-		// Restore edit data from localStorage if Redux is empty
+	// Restore edit data from localStorage if Redux is empty
+	useEffect(() => {
 		if (!editMasterPlanData) {
 			const savedData = localStorage.getItem('editMasterPlanData');
 			if (savedData) {
@@ -61,7 +64,7 @@ const EditMasterPlan: React.FC = () => {
 
 	// Memoize the update callback
 	const handleUpdateCallback = useCallback(
-		(id: string, field: string, value: string | number) => {
+		(id: string, field: string, value: string | number | number[]) => {
 			console.log('🔄 Update callback called:', { id, field, value });
 			if (field === 'vehicleType') {
 				// When vehicle type changes, update vehicle_id, driver_name, and driver_phone
@@ -76,6 +79,10 @@ const EditMasterPlan: React.FC = () => {
 						updateEditMasterPlanData({ field: 'driver_phone', value: selectedVehicle.driver_phone })
 					);
 				}
+			} else if (field === 'days') {
+				// Handle days field directly - no vehicle lookup needed
+				console.log('📝 Updating days:', value);
+				dispatch(updateEditMasterPlanData({ field: 'days', value }));
 			} else {
 				// Map other field names from TransitEntry to Redux field names
 				const fieldMapping: Record<string, string> = {
@@ -87,7 +94,7 @@ const EditMasterPlan: React.FC = () => {
 				dispatch(updateEditMasterPlanData({ field: reduxField, value }));
 			}
 		},
-		[dispatch, vehicles]
+		[dispatch, vehicles] // vehicles needed for vehicleType field lookup
 	);
 
 	if (!editMasterPlanData) {
@@ -137,7 +144,7 @@ const EditMasterPlan: React.FC = () => {
 	const handleUpdate = async () => {
 		setSubmitting(true);
 		try {
-			const payload = {
+			const payload: any = {
 				id: editMasterPlanData.id,
 				vehicleId: editMasterPlanData.vehicle_id!,
 				driverName: editMasterPlanData.driver_name,
@@ -149,6 +156,11 @@ const EditMasterPlan: React.FC = () => {
 				transitTime: convertTimeFormat(editMasterPlanData.transit_time),
 				facilityId: editMasterPlanData.facility_id!,
 			};
+
+			// Add days if they exist
+			if ((editMasterPlanData as any).days && (editMasterPlanData as any).days.length > 0) {
+				payload.days = (editMasterPlanData as any).days;
+			}
 
 			console.log('Update payload:', payload);
 			console.log('Current Redux state:', editMasterPlanData);
@@ -190,6 +202,7 @@ const EditMasterPlan: React.FC = () => {
 		date: editMasterPlanData.transit_date,
 		time: editMasterPlanData.transit_time,
 		vehicleType: String(editMasterPlanData.vehicle_id),
+		days: (editMasterPlanData as any).days || [],
 	};
 
 	return (

@@ -103,7 +103,7 @@ export class AmazonInvoicesApiService {
 		});
 		const query = searchParams.toString();
 		const url = query ? `${BASE_PATH}?${query}` : BASE_PATH;
-		return apiService.get(url) as Promise<ListInvoicesResponse>;
+		return apiService.get(url) as unknown as Promise<ListInvoicesResponse>;
 	}
 
 	/**
@@ -111,13 +111,13 @@ export class AmazonInvoicesApiService {
 	 */
 	static async getInvoiceByNumber(invoiceNumber: string): Promise<DetailResponse> {
 		const encoded = encodeURIComponent(invoiceNumber);
-		return apiService.get(`${BASE_PATH}/${encoded}`) as Promise<DetailResponse>;
+		return apiService.get(`${BASE_PATH}/${encoded}`) as unknown as Promise<DetailResponse>;
 	}
 
 	/**
 	 * Get filter options for UI (document types, sellers, date/amount range)
 	 */
 	static async getFilters(): Promise<FiltersResponse> {
-		return apiService.get(`${BASE_PATH}/filters`) as Promise<FiltersResponse>;
+		return apiService.get(`${BASE_PATH}/filters`) as unknown as Promise<FiltersResponse>;
 	}
 }

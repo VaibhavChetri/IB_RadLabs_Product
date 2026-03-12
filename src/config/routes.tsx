@@ -25,6 +25,10 @@ import FacilityResourceListing from '../pages/ops-admin/facility-resources/Facil
 import { VehicleListing } from '../pages/ops-admin/vehicles/VehicleListing';
 // Ops Admin - Containers
 import ContainerListing from '../pages/ops-admin/containers/ContainerListing';
+// Ops Admin - Users
+import { ManageUsers } from '../pages/ops-admin/users/ManageUsers';
+import { AddUser } from '../pages/ops-admin/users/AddUser';
+import { EditUser } from '../pages/ops-admin/users/EditUser';
 // Transit Plan - Master Plan
 import CreateMasterPlan from '../pages/transit-plan/master-plan/CreateMasterPlan';
 import EditMasterPlan from '../pages/transit-plan/master-plan/EditMasterPlan';
@@ -126,6 +130,10 @@ export const routes: RouteConfig[] = [
 	{ path: '/ops-admin/facility-resources', component: FacilityResourceListing },
 	{ path: '/ops-admin/vehicles/listing', component: VehicleListing },
 	{ path: '/ops-admin/containers/listing', component: ContainerListing },
+	// Ops Admin - Users
+	{ path: '/ops-admin/users', component: ManageUsers },
+	{ path: '/ops-admin/users/add', component: AddUser },
+	{ path: '/ops-admin/users/:userId', component: EditUser },
 	{ path: '/p-and-l/summary', component: PLSummary },
 	{ path: '/p-and-l/graphs', component: PLGraphs },
 	{ path: '/revenue/monthly-estimate/add', component: MonthlyEstimateAdd },

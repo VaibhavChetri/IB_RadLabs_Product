@@ -10,7 +10,7 @@ interface TransitSectionProps {
 	vehicles: VehicleOption[];
 	onAdd: () => void;
 	onRemove: (id: string) => void;
-	onUpdate: (id: string, field: keyof TransitEntry, value: string) => void;
+	onUpdate: (id: string, field: keyof TransitEntry, value: string | number[]) => void;
 }
 
 export const TransitSection: React.FC<TransitSectionProps> = ({
@@ -55,6 +55,7 @@ export const TransitSection: React.FC<TransitSectionProps> = ({
 							<th className='px-3 py-2 text-center w-20'>Actions</th>
 							<th className='px-3 py-2 text-left'>Time</th>
 							<th className='px-3 py-2 text-left'>Vehicle Type</th>
+							<th className='px-3 py-2 text-left'>Days</th>
 						</tr>
 					</thead>
 					<tbody>

@@ -458,6 +458,25 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 					},
 				],
 			},
+			{
+				id: 'users',
+				name: 'Users',
+				icon: Users,
+				children: [
+					{
+						id: 'manage-users',
+						name: 'Manage Users',
+						icon: Users,
+						href: '/ops-admin/users',
+					},
+					{
+						id: 'add-user',
+						name: 'Add User',
+						icon: UserPlus,
+						href: '/ops-admin/users/add',
+					},
+				],
+			},
 		],
 	},
 	{

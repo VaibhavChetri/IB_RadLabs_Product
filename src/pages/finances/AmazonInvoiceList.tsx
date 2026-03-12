@@ -316,7 +316,7 @@ const AmazonInvoiceList: React.FC = () => {
 					<FloatingInput
 						label="Search"
 						value={search}
-						onChange={e => setSearch(e.target.value)}
+						onChange={setSearch}
 						placeholder="Invoice number..."
 						className="w-48"
 					/>
@@ -357,16 +357,16 @@ const AmazonInvoiceList: React.FC = () => {
 							<FloatingInput
 								label="Min Total (₹)"
 								type="number"
-								value={minTotal}
-								onChange={e => setMinTotal(e.target.value === '' ? '' : Number(e.target.value))}
+								value={minTotal === '' ? '' : String(minTotal)}
+								onChange={v => setMinTotal(v === '' ? '' : Number(v))}
 								placeholder={String(filterOptions.range.min_grand_total)}
 								className="w-32"
 							/>
 							<FloatingInput
 								label="Max Total (₹)"
 								type="number"
-								value={maxTotal}
-								onChange={e => setMaxTotal(e.target.value === '' ? '' : Number(e.target.value))}
+								value={maxTotal === '' ? '' : String(maxTotal)}
+								onChange={v => setMaxTotal(v === '' ? '' : Number(v))}
 								placeholder={String(filterOptions.range.max_grand_total)}
 								className="w-32"
 							/>

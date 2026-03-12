@@ -146,8 +146,18 @@ const MasterPlanListing: React.FC = () => {
 							className='p-1.5 rounded hover:bg-gray-100'
 							title='Edit'
 							onClick={() => {
-								// Store raw row data in Redux for editing
-								dispatch(setEditMasterPlanData(row));
+								// Transform day columns (sun, mon, tue, etc.) into days array
+								const dayMap = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+								const days: number[] = [];
+								dayMap.forEach((day, index) => {
+									if ((row as any)[day] === 1) {
+										days.push(index);
+									}
+								});
+
+								// Store transformed row data in Redux for editing
+								const editData = { ...row, days };
+								dispatch(setEditMasterPlanData(editData));
 								navigate('/transit-plan/master-plan/edit');
 							}}
 						>

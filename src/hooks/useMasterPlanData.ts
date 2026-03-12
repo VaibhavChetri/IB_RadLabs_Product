@@ -13,6 +13,7 @@ export interface TransitEntry {
 	date: string;
 	time: string;
 	vehicleType: string;
+	days?: number[]; // Day of week: 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat, 7=Sun (alternative)
 }
 
 export interface MasterPlanData {
@@ -77,10 +78,10 @@ export const useMasterPlanData = (isEditMode: boolean = false) => {
 			facilityId: '',
 			clientId: '',
 			dispatchTransits: [
-				{ id: '1', date: new Date().toISOString().split('T')[0], time: '', vehicleType: '' },
+				{ id: '1', date: new Date().toISOString().split('T')[0], time: '', vehicleType: '', days: [] },
 			],
 			pickupTransits: [
-				{ id: '1', date: new Date().toISOString().split('T')[0], time: '', vehicleType: '' },
+				{ id: '1', date: new Date().toISOString().split('T')[0], time: '', vehicleType: '', days: [] },
 			],
 		};
 	});
@@ -132,6 +133,7 @@ export const useMasterPlanData = (isEditMode: boolean = false) => {
 			date: new Date().toISOString().split('T')[0],
 			time: '',
 			vehicleType: '',
+			days: [],
 		};
 
 		if (type === 'dispatch') {
@@ -165,7 +167,7 @@ export const useMasterPlanData = (isEditMode: boolean = false) => {
 		type: 'dispatch' | 'pickup',
 		id: string,
 		field: keyof TransitEntry,
-		value: string
+		value: string | number[]
 	) => {
 		if (type === 'dispatch') {
 			setData(prev => ({
@@ -233,6 +235,7 @@ export const useMasterPlanData = (isEditMode: boolean = false) => {
 							transitTime: convertTimeFormat(transit.time), // Convert to "HH:MM:SS" format
 							driverName: vehicle?.driver_name || '',
 							driverPhone: vehicle?.driver_phone || '',
+							...(transit.days && transit.days.length > 0 && { days: transit.days }),
 						};
 					}),
 			});
@@ -252,6 +255,7 @@ export const useMasterPlanData = (isEditMode: boolean = false) => {
 							transitTime: convertTimeFormat(transit.time), // Convert to "HH:MM:SS" format
 							driverName: vehicle?.driver_name || '',
 							driverPhone: vehicle?.driver_phone || '',
+							...(transit.days && transit.days.length > 0 && { days: transit.days }),
 						};
 					}),
 			});
@@ -272,10 +276,10 @@ export const useMasterPlanData = (isEditMode: boolean = false) => {
 			facilityId: '',
 			clientId: '',
 			dispatchTransits: [
-				{ id: '1', date: new Date().toISOString().split('T')[0], time: '', vehicleType: '' },
+				{ id: '1', date: new Date().toISOString().split('T')[0], time: '', vehicleType: '', days: [] },
 			],
 			pickupTransits: [
-				{ id: '1', date: new Date().toISOString().split('T')[0], time: '', vehicleType: '' },
+				{ id: '1', date: new Date().toISOString().split('T')[0], time: '', vehicleType: '', days: [] },
 			],
 		});
 	};

@@ -30,6 +30,7 @@ const STORAGE_KEY = 'zoho_invoice_filters';
 const DEFAULT_FILTERS: ZohoInvoiceFilters = {
 	page: 1,
 	limit: 50,
+	invoice_date: '',
 	date_start: '',
 	date_end: '',
 	customer_name: '',
@@ -74,6 +75,10 @@ export const ZohoInvoiceList: React.FC = () => {
 		currentPage: 1,
 		totalPages: 0,
 	});
+	const [facets, setFacets] = useState<{ branches: string[]; businessUnits: string[] }>({
+		branches: [],
+		businessUnits: [],
+	});
 	const [snackbar, setSnackbar] = useState({
 		open: false,
 		message: '',
@@ -95,6 +100,9 @@ export const ZohoInvoiceList: React.FC = () => {
 					currentPage: response.pagination.page,
 					totalPages: response.pagination.totalPages,
 				});
+				if (response.facets) {
+					setFacets(response.facets);
+				}
 			}
 		} catch (err: any) {
 			const errorMsg =
@@ -192,14 +200,16 @@ export const ZohoInvoiceList: React.FC = () => {
 		{ label: 'Void', value: 'void' },
 	];
 
-	// Branch code options for dropdown
+	// Branch code options for dropdown (dynamic from facets)
 	const branchCodeOptions = [
 		{ label: 'All', value: '' },
-		{ label: 'HYD', value: 'HYD' },
-		{ label: 'BLR', value: 'BLR' },
-		{ label: 'MUM', value: 'MUM' },
-		{ label: 'DEL', value: 'DEL' },
-		{ label: 'CHE', value: 'CHE' },
+		...facets.branches.map(b => ({ label: b, value: b })),
+	];
+
+	// Business unit options for dropdown (dynamic from facets)
+	const businessUnitOptions = [
+		{ label: 'All', value: '' },
+		...facets.businessUnits.map(u => ({ label: u, value: u })),
 	];
 
 	// Table columns
@@ -312,6 +322,13 @@ export const ZohoInvoiceList: React.FC = () => {
 			{/* Filters */}
 			<Card className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
 				<FloatingInput
+					label='Invoice Date'
+					type='date'
+					value={filters.invoice_date || ''}
+					onChange={(value) => handleFilterChange('invoice_date', value)}
+				/>
+
+				<FloatingInput
 					label='Start Date'
 					type='date'
 					value={filters.date_start || ''}
@@ -346,9 +363,9 @@ export const ZohoInvoiceList: React.FC = () => {
 					onChange={(value) => handleFilterChange('branch_code', value)}
 				/>
 
-				<FloatingInput
+				<FloatingDropdown
 					label='Business Unit'
-					placeholder='Search...'
+					options={businessUnitOptions}
 					value={filters.business_unit || ''}
 					onChange={(value) => handleFilterChange('business_unit', value)}
 				/>

@@ -220,11 +220,6 @@ export const ZohoPaymentList: React.FC = () => {
 			dataIndex: 'customer_name',
 		},
 		{
-			key: 'payment_mode',
-			title: 'Mode',
-			dataIndex: 'payment_mode',
-		},
-		{
 			key: 'amount',
 			title: 'Amount',
 			render: (_, record: ZohoPayment) => {
@@ -256,6 +251,11 @@ export const ZohoPaymentList: React.FC = () => {
 					{record.payment_status}
 				</span>
 			),
+		},
+		{
+			key: 'payment_mode',
+			title: 'Mode',
+			dataIndex: 'payment_mode',
 		},
 	];
 

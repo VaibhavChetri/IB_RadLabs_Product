@@ -46,6 +46,7 @@ export interface ZohoInvoice {
 }
 
 export interface ZohoInvoiceFilters {
+	invoice_date?: string;
 	date_start?: string;
 	date_end?: string;
 	customer_name?: string;
@@ -63,12 +64,18 @@ export interface ZohoInvoicePagination {
 	totalPages: number;
 }
 
+export interface ZohoInvoiceFacets {
+	branches: string[];
+	businessUnits: string[];
+}
+
 export interface GetZohoInvoicesResponse {
 	status: boolean;
 	statusCode: number;
 	message: string;
 	data: ZohoInvoice[];
 	pagination: ZohoInvoicePagination;
+	facets: ZohoInvoiceFacets;
 }
 
 export interface ImportZohoInvoicesResponse {
@@ -86,8 +93,14 @@ export class ZohoInvoiceApi {
 	static async getInvoices(filters: ZohoInvoiceFilters): Promise<GetZohoInvoicesResponse> {
 		const params = new URLSearchParams();
 
-		if (filters.date_start) params.append('date_start', filters.date_start);
-		if (filters.date_end) params.append('date_end', filters.date_end);
+		// If invoice_date is set, use it; otherwise use date_start and date_end
+		if (filters.invoice_date) {
+			params.append('invoice_date', filters.invoice_date);
+		} else {
+			if (filters.date_start) params.append('date_start', filters.date_start);
+			if (filters.date_end) params.append('date_end', filters.date_end);
+		}
+
 		if (filters.customer_name) params.append('customer_name', filters.customer_name);
 		if (filters.status) params.append('status', filters.status);
 		if (filters.branch_code) params.append('branch_code', filters.branch_code);

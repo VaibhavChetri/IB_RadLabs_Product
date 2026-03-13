@@ -72,6 +72,16 @@ export interface GetZohoPaymentsResponse {
 	pagination: ZohoPaymentPagination;
 }
 
+export interface ImportZohoPaymentsResponse {
+	status: boolean;
+	statusCode: number;
+	message: string;
+	data: {
+		imported: number;
+		updated: number;
+	};
+}
+
 export class ZohoPaymentApi {
 	/**
 	 * Get list of Zoho customer payments with filters
@@ -90,5 +100,20 @@ export class ZohoPaymentApi {
 		return apiService.get(
 			`/billing/zoho/customer-payments?${params.toString()}`
 		) as unknown as Promise<GetZohoPaymentsResponse>;
+	}
+
+	/**
+	 * Import Zoho customer payments for a date range
+	 * POST /v1/api/billing/zoho/customer-payments/import
+	 */
+	static async importCustomerPayments(dateStart: string, dateEnd: string): Promise<ImportZohoPaymentsResponse> {
+		const params = new URLSearchParams();
+		params.append('date_start', dateStart);
+		params.append('date_end', dateEnd);
+
+		return apiService.post(
+			`/billing/zoho/customer-payments/import?${params.toString()}`,
+			{}
+		) as unknown as Promise<ImportZohoPaymentsResponse>;
 	}
 }

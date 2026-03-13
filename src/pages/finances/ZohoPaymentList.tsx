@@ -11,10 +11,12 @@ import {
 	FloatingDropdown,
 	Pagination,
 	Snackbar,
+	Button,
 } from '../../components/ui';
 import { Table } from '../../components/ui/DataDisplay';
 import { ZohoPaymentApi, ZohoPayment, ZohoPaymentFilters } from '../../services/zohoPaymentApi';
 import type { TableColumn } from '../../components/ui/DataDisplay';
+import { RefreshCw } from 'lucide-react';
 
 interface PaginationData {
 	totalCount: number;
@@ -27,6 +29,14 @@ export const ZohoPaymentList: React.FC = () => {
 	const [payments, setPayments] = useState<ZohoPayment[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const [filterValues, setFilterValues] = useState<ZohoPaymentFilters>({
+		page: 1,
+		limit: 50,
+		date_start: '',
+		date_end: '',
+		customer_name: '',
+		payment_mode: '',
+	});
 	const [filters, setFilters] = useState<ZohoPaymentFilters>({
 		page: 1,
 		limit: 50,
@@ -46,6 +56,7 @@ export const ZohoPaymentList: React.FC = () => {
 		message: '',
 		type: 'success' as 'success' | 'error',
 	});
+	const [isImporting, setIsImporting] = useState(false);
 
 	// Fetch payments
 	const fetchPayments = useCallback(async () => {
@@ -76,10 +87,77 @@ export const ZohoPaymentList: React.FC = () => {
 		fetchPayments();
 	}, [fetchPayments]);
 
-	// Handle filter changes
+	// Handle refresh from Zoho
+	const handleRefreshFromZoho = useCallback(async () => {
+		// Check if both date filters are set
+		if (!filters.date_start || !filters.date_end) {
+			setSnackbar({
+				open: true,
+				message: 'Please set both Start Date and End Date filters before refreshing',
+				type: 'error',
+			});
+			return;
+		}
+
+		setIsImporting(true);
+		try {
+			// Call import API with filtered dates
+			const importResponse = await ZohoPaymentApi.importCustomerPayments(filters.date_start, filters.date_end);
+			if (importResponse.statusCode === 200) {
+				setSnackbar({
+					open: true,
+					message: `Successfully imported ${importResponse.data.imported} new payments`,
+					type: 'success',
+				});
+
+				// Fetch the updated payment list
+				setLoading(true);
+				const getFilters = { ...filters, page: 1 };
+				const response = await ZohoPaymentApi.getCustomerPayments(getFilters);
+				if (response.statusCode === 200 && response.data) {
+					setPayments(response.data);
+					setPagination({
+						totalCount: response.pagination.total,
+						pageSize: response.pagination.limit,
+						currentPage: response.pagination.page,
+						totalPages: response.pagination.totalPages,
+					});
+					setFilters(getFilters);
+				}
+				setLoading(false);
+			}
+		} catch (err: any) {
+			const errorMsg =
+				err.response?.data?.message || err.message || 'Failed to refresh payments from Zoho';
+			setSnackbar({ open: true, message: errorMsg, type: 'error' });
+		} finally {
+			setIsImporting(false);
+		}
+	}, [filters]);
+
+	// Handle filter changes (update temp filter values, not actual filters)
 	const handleFilterChange = (field: keyof ZohoPaymentFilters, value: string) => {
-		setFilters(prev => ({ ...prev, [field]: value, page: 1 }));
+		setFilterValues(prev => ({ ...prev, [field]: value }));
 	};
+
+	// Handle search button click
+	const handleSearch = useCallback(() => {
+		setFilters({ ...filterValues, page: 1 });
+	}, [filterValues]);
+
+	// Handle reset filters
+	const handleResetFilters = useCallback(() => {
+		const emptyFilters: ZohoPaymentFilters = {
+			page: 1,
+			limit: 50,
+			date_start: '',
+			date_end: '',
+			customer_name: '',
+			payment_mode: '',
+		};
+		setFilterValues(emptyFilters);
+		setFilters(emptyFilters);
+	}, []);
 
 	// Handle pagination
 	const handlePageChange = (newPage: number) => {
@@ -159,51 +237,62 @@ export const ZohoPaymentList: React.FC = () => {
 
 	return (
 		<div className='space-y-6'>
-			<PageHeader
-				title='Zoho Payment Received'
-				totalItems={pagination.totalCount}
-				itemType='payments'
-				icon='💰'
-			/>
+			<div className='flex items-center justify-between'>
+				<PageHeader
+					title='Zoho Payment Received'
+					totalItems={pagination.totalCount}
+					itemType='payments'
+					icon='💰'
+				/>
+				<Button
+					onClick={handleRefreshFromZoho}
+					disabled={isImporting}
+					className='flex items-center gap-2'
+					variant='outline'
+				>
+					<RefreshCw className={`h-4 w-4 ${isImporting ? 'animate-spin' : ''}`} />
+					{isImporting ? 'Refreshing...' : 'Refresh from Zoho'}
+				</Button>
+			</div>
 
 			{/* Filters */}
 			<Card className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4'>
 				<FloatingInput
 					label='Start Date'
 					type='date'
-					value={filters.date_start || ''}
+					value={filterValues.date_start || ''}
 					onChange={(value) => handleFilterChange('date_start', value)}
 				/>
 
 				<FloatingInput
 					label='End Date'
 					type='date'
-					value={filters.date_end || ''}
+					value={filterValues.date_end || ''}
 					onChange={(value) => handleFilterChange('date_end', value)}
 				/>
 
 				<FloatingInput
 					label='Customer Name'
 					placeholder='Search...'
-					value={filters.customer_name || ''}
+					value={filterValues.customer_name || ''}
 					onChange={(value) => handleFilterChange('customer_name', value)}
 				/>
 
 				<FloatingDropdown
 					label='Payment Mode'
 					options={paymentModes}
-					value={filters.payment_mode || ''}
+					value={filterValues.payment_mode || ''}
 					onChange={(value) => handleFilterChange('payment_mode', value)}
 				/>
 
-				<button
-					onClick={() => {
-						setFilters({ page: 1, limit: 50, date_start: '', date_end: '', customer_name: '', payment_mode: '' });
-					}}
-					className='px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition'
-				>
-					Reset Filters
-				</button>
+				<div className='flex gap-2'>
+					<Button onClick={handleSearch} className='flex-1'>
+						Search
+					</Button>
+					<Button onClick={handleResetFilters} variant='outline' className='flex-1'>
+						Reset
+					</Button>
+				</div>
 			</Card>
 
 			{/* Payments Table */}

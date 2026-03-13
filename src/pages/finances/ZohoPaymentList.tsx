@@ -1,9 +1,10 @@
 /**
  * Zoho Payment Received Listing Page
  * Displays all customer payments from Zoho with filters
+ * Persists filter state to localStorage for page refresh resilience
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
 	PageHeader,
 	Card,
@@ -25,26 +26,46 @@ interface PaginationData {
 	totalPages: number;
 }
 
+const STORAGE_KEY = 'zoho_payment_filters';
+const DEFAULT_FILTERS: ZohoPaymentFilters = {
+	page: 1,
+	limit: 50,
+	date_start: '',
+	date_end: '',
+	customer_name: '',
+	payment_mode: '',
+};
+
+const getStoredFilters = (): ZohoPaymentFilters => {
+	try {
+		const stored = localStorage.getItem(STORAGE_KEY);
+		if (stored) {
+			const parsed = JSON.parse(stored);
+			return { ...DEFAULT_FILTERS, ...parsed, page: 1, limit: 50 };
+		}
+	} catch (error) {
+		console.error('Failed to parse stored filters:', error);
+	}
+	return DEFAULT_FILTERS;
+};
+
+const saveFilters = (filters: ZohoPaymentFilters) => {
+	try {
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(filters));
+	} catch (error) {
+		console.error('Failed to save filters to storage:', error);
+	}
+};
+
 export const ZohoPaymentList: React.FC = () => {
 	const [payments, setPayments] = useState<ZohoPayment[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	const [filterValues, setFilterValues] = useState<ZohoPaymentFilters>({
-		page: 1,
-		limit: 50,
-		date_start: '',
-		date_end: '',
-		customer_name: '',
-		payment_mode: '',
-	});
-	const [filters, setFilters] = useState<ZohoPaymentFilters>({
-		page: 1,
-		limit: 50,
-		date_start: '',
-		date_end: '',
-		customer_name: '',
-		payment_mode: '',
-	});
+
+	// Initialize from localStorage on mount
+	const initialFilters = useRef(getStoredFilters());
+	const [filters, setFilters] = useState<ZohoPaymentFilters>(initialFilters.current);
+
 	const [pagination, setPagination] = useState<PaginationData>({
 		totalCount: 0,
 		pageSize: 50,
@@ -59,11 +80,11 @@ export const ZohoPaymentList: React.FC = () => {
 	const [isImporting, setIsImporting] = useState(false);
 
 	// Fetch payments
-	const fetchPayments = useCallback(async () => {
+	const fetchPayments = useCallback(async (currentFilters: ZohoPaymentFilters) => {
 		setLoading(true);
 		setError(null);
 		try {
-			const response = await ZohoPaymentApi.getCustomerPayments(filters);
+			const response = await ZohoPaymentApi.getCustomerPayments(currentFilters);
 			if (response.statusCode === 200 && response.data) {
 				setPayments(response.data);
 				setPagination({
@@ -81,15 +102,40 @@ export const ZohoPaymentList: React.FC = () => {
 		} finally {
 			setLoading(false);
 		}
-	}, [filters]);
+	}, []);
 
+	// Fetch on mount with stored filters
 	useEffect(() => {
-		fetchPayments();
+		fetchPayments(initialFilters.current);
+	}, [fetchPayments]);
+
+	// Handle filter changes
+	const handleFilterChange = useCallback(
+		(field: keyof ZohoPaymentFilters, value: string) => {
+			const updatedFilters = { ...filters, [field]: value, page: 1 };
+			setFilters(updatedFilters);
+			saveFilters(updatedFilters);
+		},
+		[filters]
+	);
+
+	// Handle search button click
+	const handleSearch = useCallback(() => {
+		// Filters are already updated via handleFilterChange
+		// Just fetch with current filters
+		fetchPayments({ ...filters, page: 1 });
+	}, [filters, fetchPayments]);
+
+	// Handle reset filters
+	const handleResetFilters = useCallback(() => {
+		setFilters(DEFAULT_FILTERS);
+		saveFilters(DEFAULT_FILTERS);
+		fetchPayments(DEFAULT_FILTERS);
 	}, [fetchPayments]);
 
 	// Handle refresh from Zoho
 	const handleRefreshFromZoho = useCallback(async () => {
-		// Check if both date filters are set
+		// Check if both date filters are set in current filters state
 		if (!filters.date_start || !filters.date_end) {
 			setSnackbar({
 				open: true,
@@ -102,7 +148,10 @@ export const ZohoPaymentList: React.FC = () => {
 		setIsImporting(true);
 		try {
 			// Call import API with filtered dates
-			const importResponse = await ZohoPaymentApi.importCustomerPayments(filters.date_start, filters.date_end);
+			const importResponse = await ZohoPaymentApi.importCustomerPayments(
+				filters.date_start,
+				filters.date_end
+			);
 			if (importResponse.statusCode === 200) {
 				setSnackbar({
 					open: true,
@@ -111,20 +160,7 @@ export const ZohoPaymentList: React.FC = () => {
 				});
 
 				// Fetch the updated payment list
-				setLoading(true);
-				const getFilters = { ...filters, page: 1 };
-				const response = await ZohoPaymentApi.getCustomerPayments(getFilters);
-				if (response.statusCode === 200 && response.data) {
-					setPayments(response.data);
-					setPagination({
-						totalCount: response.pagination.total,
-						pageSize: response.pagination.limit,
-						currentPage: response.pagination.page,
-						totalPages: response.pagination.totalPages,
-					});
-					setFilters(getFilters);
-				}
-				setLoading(false);
+				await fetchPayments({ ...filters, page: 1 });
 			}
 		} catch (err: any) {
 			const errorMsg =
@@ -133,36 +169,18 @@ export const ZohoPaymentList: React.FC = () => {
 		} finally {
 			setIsImporting(false);
 		}
-	}, [filters]);
-
-	// Handle filter changes (update temp filter values, not actual filters)
-	const handleFilterChange = (field: keyof ZohoPaymentFilters, value: string) => {
-		setFilterValues(prev => ({ ...prev, [field]: value }));
-	};
-
-	// Handle search button click
-	const handleSearch = useCallback(() => {
-		setFilters({ ...filterValues, page: 1 });
-	}, [filterValues]);
-
-	// Handle reset filters
-	const handleResetFilters = useCallback(() => {
-		const emptyFilters: ZohoPaymentFilters = {
-			page: 1,
-			limit: 50,
-			date_start: '',
-			date_end: '',
-			customer_name: '',
-			payment_mode: '',
-		};
-		setFilterValues(emptyFilters);
-		setFilters(emptyFilters);
-	}, []);
+	}, [filters, fetchPayments]);
 
 	// Handle pagination
-	const handlePageChange = (newPage: number) => {
-		setFilters(prev => ({ ...prev, page: newPage }));
-	};
+	const handlePageChange = useCallback(
+		(newPage: number) => {
+			const updatedFilters = { ...filters, page: newPage };
+			setFilters(updatedFilters);
+			saveFilters(updatedFilters);
+			fetchPayments(updatedFilters);
+		},
+		[filters, fetchPayments]
+	);
 
 	// Payment modes for dropdown
 	const paymentModes = [
@@ -260,28 +278,28 @@ export const ZohoPaymentList: React.FC = () => {
 				<FloatingInput
 					label='Start Date'
 					type='date'
-					value={filterValues.date_start || ''}
+					value={filters.date_start || ''}
 					onChange={(value) => handleFilterChange('date_start', value)}
 				/>
 
 				<FloatingInput
 					label='End Date'
 					type='date'
-					value={filterValues.date_end || ''}
+					value={filters.date_end || ''}
 					onChange={(value) => handleFilterChange('date_end', value)}
 				/>
 
 				<FloatingInput
 					label='Customer Name'
 					placeholder='Search...'
-					value={filterValues.customer_name || ''}
+					value={filters.customer_name || ''}
 					onChange={(value) => handleFilterChange('customer_name', value)}
 				/>
 
 				<FloatingDropdown
 					label='Payment Mode'
 					options={paymentModes}
-					value={filterValues.payment_mode || ''}
+					value={filters.payment_mode || ''}
 					onChange={(value) => handleFilterChange('payment_mode', value)}
 				/>
 

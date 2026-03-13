@@ -198,6 +198,12 @@ export const ZohoPaymentList: React.FC = () => {
 	// Table columns
 	const columns: TableColumn<ZohoPayment>[] = [
 		{
+			key: 'sno',
+			title: 'S.No',
+			render: (_, __, index) => index! + 1,
+			width: 60,
+		},
+		{
 			key: 'payment_date',
 			title: 'Payment Date',
 			dataIndex: 'payment_date',

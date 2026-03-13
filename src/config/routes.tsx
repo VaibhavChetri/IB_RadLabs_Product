@@ -83,6 +83,8 @@ import AmazonInvoiceList from '../pages/finances/AmazonInvoiceList';
 import AmazonInvoiceDetail from '../pages/finances/AmazonInvoiceDetail';
 // Finances - Zoho Payment Received
 import { ZohoPaymentList } from '../pages/finances/ZohoPaymentList';
+// Finances - Zoho Invoices
+import { ZohoInvoiceList } from '../pages/finances/ZohoInvoiceList';
 
 export interface RouteConfig {
 	path: string;
@@ -171,4 +173,6 @@ export const routes: RouteConfig[] = [
 	{ path: '/finances/amazon-invoice/:invoiceNumber', component: AmazonInvoiceDetail },
 	// Finances - Zoho Payment Received
 	{ path: '/finances/zoho-payment-received', component: ZohoPaymentList },
+	// Finances - Zoho Invoices
+	{ path: '/finances/zoho-invoices', component: ZohoInvoiceList },
 ];

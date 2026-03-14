@@ -55,6 +55,7 @@ export interface ZohoInvoiceFilters {
 	status?: string;
 	branch_code?: string;
 	business_unit?: string;
+	place_of_supply?: string;
 	page?: number;
 	limit?: number;
 }
@@ -69,6 +70,7 @@ export interface ZohoInvoicePagination {
 export interface ZohoInvoiceFacets {
 	branches: string[];
 	businessUnits: string[];
+	placesOfSupply: string[];
 }
 
 export interface ZohoInvoiceSummary {
@@ -112,6 +114,7 @@ export class ZohoInvoiceApi {
 		if (filters.status) params.append('status', filters.status);
 		if (filters.branch_code) params.append('branch_code', filters.branch_code);
 		if (filters.business_unit) params.append('business_unit', filters.business_unit);
+		if (filters.place_of_supply) params.append('place_of_supply', filters.place_of_supply);
 		if (filters.page) params.append('page', filters.page.toString());
 		if (filters.limit) params.append('limit', filters.limit.toString());
 

@@ -37,6 +37,7 @@ const DEFAULT_FILTERS: ZohoInvoiceFilters = {
 	status: '',
 	branch_code: '',
 	business_unit: '',
+	place_of_supply: '',
 };
 
 const getStoredFilters = (): ZohoInvoiceFilters => {
@@ -75,9 +76,10 @@ export const ZohoInvoiceList: React.FC = () => {
 		currentPage: 1,
 		totalPages: 0,
 	});
-	const [facets, setFacets] = useState<{ branches: string[]; businessUnits: string[] }>({
+	const [facets, setFacets] = useState<{ branches: string[]; businessUnits: string[]; placesOfSupply: string[] }>({
 		branches: [],
 		businessUnits: [],
+		placesOfSupply: [],
 	});
 	const [summary, setSummary] = useState<{ totalInvoiceAmount: number }>({ totalInvoiceAmount: 0 });
 	const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -241,6 +243,11 @@ export const ZohoInvoiceList: React.FC = () => {
 		...facets.businessUnits.map(u => ({ label: u, value: u })),
 	];
 
+	// Place of supply options for dropdown (dynamic from facets)
+	const placeOfSupplyOptions = [
+		{ label: 'All', value: '' },
+		...facets.placesOfSupply.map(p => ({ label: p, value: p })),
+	];
 
 	// Compute selected total
 	const selectedTotal = invoices
@@ -466,7 +473,15 @@ export const ZohoInvoiceList: React.FC = () => {
 					searchable
 				/>
 
-				<div className='flex gap-2 col-span-1 lg:col-span-3'>
+				<MultiSelectDropdown
+					label='Place of Supply'
+					options={placeOfSupplyOptions}
+					value={filters.place_of_supply ? filters.place_of_supply.split(',').filter(Boolean) : []}
+					onChange={(values) => handleFilterChange('place_of_supply', values.join(','))}
+					searchable
+				/>
+
+				<div className='flex gap-2 col-span-1 lg:col-span-4'>
 					<Button onClick={handleSearch} className='flex-1'>
 						Search
 					</Button>

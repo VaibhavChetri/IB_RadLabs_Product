@@ -190,8 +190,8 @@ export const ZohoInvoiceList: React.FC = () => {
 		[filters, fetchInvoices]
 	);
 
-	// Status options for dropdown
-	const statusOptions = [
+	// Status tabs configuration
+	const statusTabs = [
 		{ label: 'All', value: '' },
 		{ label: 'Sent', value: 'sent' },
 		{ label: 'Paid', value: 'paid' },
@@ -199,6 +199,14 @@ export const ZohoInvoiceList: React.FC = () => {
 		{ label: 'Draft', value: 'draft' },
 		{ label: 'Void', value: 'void' },
 	];
+
+	// Handle status tab click
+	const handleStatusTabClick = useCallback((statusValue: string) => {
+		const updatedFilters = { ...filters, status: statusValue, page: 1 };
+		setFilters(updatedFilters);
+		saveFilters(updatedFilters);
+		fetchInvoices(updatedFilters);
+	}, [filters, fetchInvoices]);
 
 	// Branch code options for dropdown (dynamic from facets)
 	const branchCodeOptions = [
@@ -319,8 +327,25 @@ export const ZohoInvoiceList: React.FC = () => {
 				</Button>
 			</div>
 
+			{/* Status Tabs */}
+			<div className='flex gap-2 overflow-x-auto pb-2'>
+				{statusTabs.map((tab) => (
+					<button
+						key={tab.value}
+						onClick={() => handleStatusTabClick(tab.value)}
+						className={`px-4 py-2 rounded-lg whitespace-nowrap font-medium transition-colors ${
+							filters.status === tab.value
+								? 'bg-primary-500 text-white'
+								: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+						}`}
+					>
+						{tab.label}
+					</button>
+				))}
+			</div>
+
 			{/* Filters */}
-			<Card className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
+			<Card className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
 				<FloatingInput
 					label='Invoice Date'
 					type='date'
@@ -350,13 +375,6 @@ export const ZohoInvoiceList: React.FC = () => {
 				/>
 
 				<FloatingDropdown
-					label='Status'
-					options={statusOptions}
-					value={filters.status || ''}
-					onChange={(value) => handleFilterChange('status', value)}
-				/>
-
-				<FloatingDropdown
 					label='Branch Code'
 					options={branchCodeOptions}
 					value={filters.branch_code || ''}
@@ -370,7 +388,7 @@ export const ZohoInvoiceList: React.FC = () => {
 					onChange={(value) => handleFilterChange('business_unit', value)}
 				/>
 
-				<div className='flex gap-2 col-span-1 lg:col-span-2'>
+				<div className='flex gap-2 col-span-1 lg:col-span-3'>
 					<Button onClick={handleSearch} className='flex-1'>
 						Search
 					</Button>

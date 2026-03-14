@@ -9,7 +9,7 @@ import {
 	PageHeader,
 	Card,
 	FloatingInput,
-	FloatingDropdown,
+	MultiSelectDropdown,
 	Pagination,
 	Snackbar,
 	Button,
@@ -79,6 +79,8 @@ export const ZohoInvoiceList: React.FC = () => {
 		branches: [],
 		businessUnits: [],
 	});
+	const [summary, setSummary] = useState<{ totalInvoiceAmount: number }>({ totalInvoiceAmount: 0 });
+	const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 	const [snackbar, setSnackbar] = useState({
 		open: false,
 		message: '',
@@ -90,6 +92,7 @@ export const ZohoInvoiceList: React.FC = () => {
 	const fetchInvoices = useCallback(async (currentFilters: ZohoInvoiceFilters) => {
 		setLoading(true);
 		setError(null);
+		setSelectedIds(new Set()); // Clear selection on fetch
 		try {
 			const response = await ZohoInvoiceApi.getInvoices(currentFilters);
 			if (response.statusCode === 200 && response.data) {
@@ -102,6 +105,9 @@ export const ZohoInvoiceList: React.FC = () => {
 				});
 				if (response.facets) {
 					setFacets(response.facets);
+				}
+				if (response.summary) {
+					setSummary(response.summary);
 				}
 			}
 		} catch (err: any) {
@@ -200,9 +206,24 @@ export const ZohoInvoiceList: React.FC = () => {
 		{ label: 'Void', value: 'void' },
 	];
 
-	// Handle status tab click
+	// Handle status tab click (multi-select toggle)
 	const handleStatusTabClick = useCallback((statusValue: string) => {
-		const updatedFilters = { ...filters, status: statusValue, page: 1 };
+		let newStatus: string;
+		if (statusValue === '') {
+			newStatus = ''; // All - clears all selections
+		} else {
+			const current = filters.status ? filters.status.split(',').filter(Boolean) : [];
+			const idx = current.indexOf(statusValue);
+			if (idx >= 0) {
+				// Remove if already selected
+				const next = current.filter(s => s !== statusValue);
+				newStatus = next.join(',');
+			} else {
+				// Add if not selected
+				newStatus = [...current, statusValue].join(',');
+			}
+		}
+		const updatedFilters = { ...filters, status: newStatus, page: 1 };
 		setFilters(updatedFilters);
 		saveFilters(updatedFilters);
 		fetchInvoices(updatedFilters);
@@ -220,12 +241,34 @@ export const ZohoInvoiceList: React.FC = () => {
 		...facets.businessUnits.map(u => ({ label: u, value: u })),
 	];
 
-	// Determine which date filtering mode is active
-	const isDateRangeMode = !!filters.date_start || !!filters.date_end;
-	const isSingleDateMode = !!filters.invoice_date;
+
+	// Compute selected total
+	const selectedTotal = invoices
+		.filter(inv => selectedIds.has(inv.id))
+		.reduce((sum, inv) => sum + parseFloat(String(inv.total || 0)), 0);
 
 	// Table columns
 	const columns: TableColumn<ZohoInvoice>[] = [
+		{
+			key: 'select',
+			title: '',
+			render: (_, record: ZohoInvoice) => (
+				<input
+					type='checkbox'
+					checked={selectedIds.has(record.id)}
+					onChange={() => {
+						setSelectedIds(prev => {
+							const next = new Set(prev);
+							if (next.has(record.id)) next.delete(record.id);
+							else next.add(record.id);
+							return next;
+						});
+					}}
+					className='cursor-pointer'
+				/>
+			),
+			width: 40,
+		},
 		{
 			key: 'sno',
 			title: 'S.No',
@@ -305,6 +348,16 @@ export const ZohoInvoiceList: React.FC = () => {
 			dataIndex: 'cf_business_unit',
 		},
 		{
+			key: 'key_account_manager',
+			title: 'Key Account Manager',
+			dataIndex: 'key_account_manager',
+		},
+		{
+			key: 'place_of_service_supply',
+			title: 'Place of Supply',
+			dataIndex: 'place_of_service_supply',
+		},
+		{
 			key: 'reference_number',
 			title: 'Reference',
 			dataIndex: 'reference_number',
@@ -331,66 +384,64 @@ export const ZohoInvoiceList: React.FC = () => {
 				</Button>
 			</div>
 
-			{/* Status Tabs */}
+			{/* Status Tabs - Multi-select */}
 			<div className='flex gap-2 overflow-x-auto pb-2'>
-				{statusTabs.map((tab) => (
-					<button
-						key={tab.value}
-						onClick={() => handleStatusTabClick(tab.value)}
-						className={`px-4 py-2 rounded-lg whitespace-nowrap font-medium transition-colors ${
-							filters.status === tab.value
-								? 'bg-primary-500 text-white'
-								: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-						}`}
-					>
-						{tab.label}
-					</button>
-				))}
+				{statusTabs.map((tab) => {
+					const activeStatuses = filters.status ? filters.status.split(',').filter(Boolean) : [];
+					const isActive = tab.value === '' ? activeStatuses.length === 0 : activeStatuses.includes(tab.value);
+					return (
+						<button
+							key={tab.value}
+							onClick={() => handleStatusTabClick(tab.value)}
+							className={`px-4 py-2 rounded-lg whitespace-nowrap font-medium transition-colors ${
+								isActive
+									? 'bg-primary-500 text-white'
+									: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+							}`}
+						>
+							{tab.label}
+						</button>
+					);
+				})}
 			</div>
 
 			{/* Filters */}
 			<Card className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-				{!isDateRangeMode && (
-					<FloatingInput
-						label='Invoice Date'
-						type='date'
-						value={filters.invoice_date || ''}
-						onChange={(value) => {
-							// Clear range filters when setting single date
-							const updatedFilters = { ...filters, invoice_date: value, date_start: '', date_end: '' };
-							setFilters(updatedFilters);
-							saveFilters(updatedFilters);
-						}}
-					/>
-				)}
+				<FloatingInput
+					label='Invoice Date'
+					type='date'
+					value={filters.invoice_date || ''}
+					onChange={(value) => {
+						// Clear range filters when setting single date
+						const updatedFilters = { ...filters, invoice_date: value, date_start: '', date_end: '' };
+						setFilters(updatedFilters);
+						saveFilters(updatedFilters);
+					}}
+				/>
 
-				{!isSingleDateMode && (
-					<>
-						<FloatingInput
-							label='Start Date'
-							type='date'
-							value={filters.date_start || ''}
-							onChange={(value) => {
-								// Clear single date when setting range
-								const updatedFilters = { ...filters, date_start: value, invoice_date: '' };
-								setFilters(updatedFilters);
-								saveFilters(updatedFilters);
-							}}
-						/>
+				<FloatingInput
+					label='Start Date'
+					type='date'
+					value={filters.date_start || ''}
+					onChange={(value) => {
+						// Clear single date when setting range
+						const updatedFilters = { ...filters, date_start: value, invoice_date: '' };
+						setFilters(updatedFilters);
+						saveFilters(updatedFilters);
+					}}
+				/>
 
-						<FloatingInput
-							label='End Date'
-							type='date'
-							value={filters.date_end || ''}
-							onChange={(value) => {
-								// Clear single date when setting range
-								const updatedFilters = { ...filters, date_end: value, invoice_date: '' };
-								setFilters(updatedFilters);
-								saveFilters(updatedFilters);
-							}}
-						/>
-					</>
-				)}
+				<FloatingInput
+					label='End Date'
+					type='date'
+					value={filters.date_end || ''}
+					onChange={(value) => {
+						// Clear single date when setting range
+						const updatedFilters = { ...filters, date_end: value, invoice_date: '' };
+						setFilters(updatedFilters);
+						saveFilters(updatedFilters);
+					}}
+				/>
 
 				<FloatingInput
 					label='Customer Name'
@@ -399,18 +450,20 @@ export const ZohoInvoiceList: React.FC = () => {
 					onChange={(value) => handleFilterChange('customer_name', value)}
 				/>
 
-				<FloatingDropdown
+				<MultiSelectDropdown
 					label='Branch Code'
 					options={branchCodeOptions}
-					value={filters.branch_code || ''}
-					onChange={(value) => handleFilterChange('branch_code', value)}
+					value={filters.branch_code ? filters.branch_code.split(',').filter(Boolean) : []}
+					onChange={(values) => handleFilterChange('branch_code', values.join(','))}
+					searchable
 				/>
 
-				<FloatingDropdown
+				<MultiSelectDropdown
 					label='Business Unit'
 					options={businessUnitOptions}
-					value={filters.business_unit || ''}
-					onChange={(value) => handleFilterChange('business_unit', value)}
+					value={filters.business_unit ? filters.business_unit.split(',').filter(Boolean) : []}
+					onChange={(values) => handleFilterChange('business_unit', values.join(','))}
+					searchable
 				/>
 
 				<div className='flex gap-2 col-span-1 lg:col-span-3'>
@@ -422,6 +475,24 @@ export const ZohoInvoiceList: React.FC = () => {
 					</Button>
 				</div>
 			</Card>
+
+			{/* Summary Cards */}
+			<div className='flex justify-between items-center gap-4'>
+				<div className='text-sm text-gray-500'>
+					Total (filtered):
+					<span className='ml-2 font-semibold text-gray-900'>
+						₹ {summary.totalInvoiceAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+					</span>
+				</div>
+				{selectedIds.size > 0 && (
+					<div className='text-sm text-primary-600'>
+						Selected ({selectedIds.size}):
+						<span className='ml-2 font-semibold'>
+							₹ {selectedTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+						</span>
+					</div>
+				)}
+			</div>
 
 			{/* Invoices Table */}
 			<Card>

@@ -43,6 +43,8 @@ export interface ZohoInvoice {
 	custom_fields_json: any;
 	created_at: string;
 	updated_at: string;
+	key_account_manager?: string;
+	place_of_service_supply?: string;
 }
 
 export interface ZohoInvoiceFilters {
@@ -69,6 +71,10 @@ export interface ZohoInvoiceFacets {
 	businessUnits: string[];
 }
 
+export interface ZohoInvoiceSummary {
+	totalInvoiceAmount: number;
+}
+
 export interface GetZohoInvoicesResponse {
 	status: boolean;
 	statusCode: number;
@@ -76,6 +82,7 @@ export interface GetZohoInvoicesResponse {
 	data: ZohoInvoice[];
 	pagination: ZohoInvoicePagination;
 	facets: ZohoInvoiceFacets;
+	summary: ZohoInvoiceSummary;
 }
 
 export interface ImportZohoInvoicesResponse {

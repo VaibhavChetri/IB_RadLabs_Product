@@ -220,6 +220,10 @@ export const ZohoInvoiceList: React.FC = () => {
 		...facets.businessUnits.map(u => ({ label: u, value: u })),
 	];
 
+	// Determine which date filtering mode is active
+	const isDateRangeMode = !!filters.date_start || !!filters.date_end;
+	const isSingleDateMode = !!filters.invoice_date;
+
 	// Table columns
 	const columns: TableColumn<ZohoInvoice>[] = [
 		{
@@ -346,26 +350,47 @@ export const ZohoInvoiceList: React.FC = () => {
 
 			{/* Filters */}
 			<Card className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-				<FloatingInput
-					label='Invoice Date'
-					type='date'
-					value={filters.invoice_date || ''}
-					onChange={(value) => handleFilterChange('invoice_date', value)}
-				/>
+				{!isDateRangeMode && (
+					<FloatingInput
+						label='Invoice Date'
+						type='date'
+						value={filters.invoice_date || ''}
+						onChange={(value) => {
+							// Clear range filters when setting single date
+							const updatedFilters = { ...filters, invoice_date: value, date_start: '', date_end: '' };
+							setFilters(updatedFilters);
+							saveFilters(updatedFilters);
+						}}
+					/>
+				)}
 
-				<FloatingInput
-					label='Start Date'
-					type='date'
-					value={filters.date_start || ''}
-					onChange={(value) => handleFilterChange('date_start', value)}
-				/>
+				{!isSingleDateMode && (
+					<>
+						<FloatingInput
+							label='Start Date'
+							type='date'
+							value={filters.date_start || ''}
+							onChange={(value) => {
+								// Clear single date when setting range
+								const updatedFilters = { ...filters, date_start: value, invoice_date: '' };
+								setFilters(updatedFilters);
+								saveFilters(updatedFilters);
+							}}
+						/>
 
-				<FloatingInput
-					label='End Date'
-					type='date'
-					value={filters.date_end || ''}
-					onChange={(value) => handleFilterChange('date_end', value)}
-				/>
+						<FloatingInput
+							label='End Date'
+							type='date'
+							value={filters.date_end || ''}
+							onChange={(value) => {
+								// Clear single date when setting range
+								const updatedFilters = { ...filters, date_end: value, invoice_date: '' };
+								setFilters(updatedFilters);
+								saveFilters(updatedFilters);
+							}}
+						/>
+					</>
+				)}
 
 				<FloatingInput
 					label='Customer Name'

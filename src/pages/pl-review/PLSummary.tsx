@@ -49,6 +49,9 @@ export const PLSummary: React.FC = () => {
 		(user?.userTypeId !== 4 || selectedCity)
 	);
 
+	// Determine city_id to use - selected city for user_type_id=4, otherwise user's city
+	const cityId = user?.userTypeId === 4 ? (selectedCity ? parseInt(selectedCity) : undefined) : user?.city_id;
+
 	// Call APIs at page level - regardless of active tab
 	// This ensures all APIs are called when filters change, not when tabs change
 	// Note: ClientWisePLData is called inside the ClientWisePLTab component with its own week filter
@@ -59,21 +62,21 @@ export const PLSummary: React.FC = () => {
 		shouldFetch
 	);
 	const unitEconomicsQuery = useUnitEconomicsData(
-		user?.city_id,
+		cityId,
 		selectedFacility,
 		selectedMonth,
 		selectedYear,
 		shouldFetch
 	);
 	const ebitdaQuery = useEBITDAData(
-		user?.city_id,
+		cityId,
 		selectedFacility,
 		selectedMonth,
 		selectedYear,
 		shouldFetch
 	);
 	const escalationsQuery = useEscalationData(
-		user?.city_id,
+		cityId,
 		selectedFacility,
 		selectedMonth,
 		selectedYear,
@@ -106,6 +109,7 @@ export const PLSummary: React.FC = () => {
 		ebitdaQuery.error,
 		escalationsQuery.error,
 		shouldFetch,
+		cityId,
 	]);
 
 	// Handle search - no-op since APIs auto-fetch on filter change
@@ -118,7 +122,7 @@ export const PLSummary: React.FC = () => {
 	const tabItems = useMemo(
 		() =>
 			getPLTabItems({
-				cityId: user?.city_id,
+				cityId,
 				facilityId: selectedFacility,
 				month: selectedMonth,
 				year: selectedYear,
@@ -131,7 +135,7 @@ export const PLSummary: React.FC = () => {
 					});
 				},
 			}),
-		[selectedFacility, selectedMonth, selectedYear, user?.city_id]
+		[cityId, selectedFacility, selectedMonth, selectedYear]
 	);
 
 	return (

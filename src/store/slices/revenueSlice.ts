@@ -44,7 +44,7 @@ const revenueSlice = createSlice({
 			state.budgets[action.payload.costingTypeId] = action.payload.value;
 		},
 		setBudgets: (state, action: PayloadAction<Record<number, string>>) => {
-			state.budgets = { ...state.budgets, ...action.payload };
+			state.budgets = action.payload;
 		},
 		setOnSiteManPowerEstimate: (
 			state,
@@ -56,10 +56,7 @@ const revenueSlice = createSlice({
 			state,
 			action: PayloadAction<Record<number, string>>
 		) => {
-			state.onSiteManPowerEstimates = {
-				...state.onSiteManPowerEstimates,
-				...action.payload,
-			};
+			state.onSiteManPowerEstimates = action.payload;
 		},
 		setLastUpdated: (
 			state,

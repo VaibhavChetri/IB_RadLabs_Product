@@ -36,28 +36,29 @@ export const OnSiteManPowerTable: React.FC<OnSiteManPowerTableProps> = ({
 }) => {
 	// Transform clients into table rows
 	const tableData: OnSiteManPowerRow[] = React.useMemo(() => {
-		if (!clients || clients.length === 0) {
-			return [];
-		}
-		
-		const rows = clients.map(client => {
-			// Check if we have estimate from API (manPowerResults) or from state
-			let estimateValue = estimates[client.client_id] || '0';
+		const rows: OnSiteManPowerRow[] = [];
 
-			// If no estimate in state, check manPowerResults
-			if (!estimates[client.client_id] && manPowerResults) {
-				const manPowerItem = manPowerResults.find(item => item.client_id === client.client_id);
-				if (manPowerItem) {
-					estimateValue = parseFloat(manPowerItem.est).toString();
+		// Add client rows if available
+		if (clients && clients.length > 0) {
+			clients.forEach(client => {
+				// Check if we have estimate from API (manPowerResults) or from state
+				let estimateValue = estimates[client.client_id] || '0';
+
+				// If no estimate in state, check manPowerResults
+				if (!estimates[client.client_id] && manPowerResults) {
+					const manPowerItem = manPowerResults.find(item => item.client_id === client.client_id);
+					if (manPowerItem) {
+						estimateValue = parseFloat(manPowerItem.est).toString();
+					}
 				}
-			}
 
-			return {
-				id: client.client_id,
-				clientName: client.client_name,
-				estimate: estimateValue,
-			};
-		});
+				rows.push({
+					id: client.client_id,
+					clientName: client.client_name,
+					estimate: estimateValue,
+				});
+			});
+		}
 
 		// Calculate total
 		const total = rows.reduce((sum, row) => {
@@ -65,14 +66,12 @@ export const OnSiteManPowerTable: React.FC<OnSiteManPowerTableProps> = ({
 			return sum + value;
 		}, 0);
 
-		// Add total row only if there are client rows
-		if (rows.length > 0) {
-			rows.push({
-				id: -1, // Special ID for total row
-				clientName: 'Total',
-				estimate: total.toString(),
-			});
-		}
+		// Always add total row (even if no clients)
+		rows.push({
+			id: -1, // Special ID for total row
+			clientName: 'Total',
+			estimate: total.toString(),
+		});
 
 		return rows;
 	}, [clients, estimates, manPowerResults]);
@@ -131,13 +130,6 @@ export const OnSiteManPowerTable: React.FC<OnSiteManPowerTableProps> = ({
 		);
 	}
 
-	if (tableData.length === 0) {
-		return (
-			<div className='bg-white rounded-lg border border-gray-200 p-6'>
-				<div className='text-center text-gray-500'>No clients available</div>
-			</div>
-		);
-	}
 
 	return (
 		<div className='bg-white rounded-lg border border-gray-200 overflow-hidden'>

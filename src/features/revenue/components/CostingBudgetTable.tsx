@@ -103,14 +103,6 @@ export const CostingBudgetTable: React.FC<CostingBudgetTableProps> = ({
 		);
 	}
 
-	if (tableData.length === 0) {
-		return (
-			<div className='bg-white rounded-lg border border-gray-200 p-6'>
-				<div className='text-center text-gray-500'>No costing types available</div>
-			</div>
-		);
-	}
-
 	return (
 		<div className='bg-white rounded-lg border border-gray-200 overflow-hidden'>
 			<div className='bg-gray-50 border-b border-gray-200 px-6 py-3'>

@@ -21,11 +21,15 @@ export const PLSummary: React.FC = () => {
 	const {
 		selectedMonth,
 		selectedYear,
+		selectedCity,
 		selectedFacility,
 		monthOptions,
 		yearOptions,
+		cityOptions,
+		facilityOptions,
 		setSelectedMonth,
 		setSelectedYear,
+		setSelectedCity,
 		setSelectedFacility,
 	} = usePLFilters();
 
@@ -37,7 +41,13 @@ export const PLSummary: React.FC = () => {
 	});
 
 	// Determine if we should fetch - all filters must be set
-	const shouldFetch = !!(selectedMonth && selectedYear && selectedFacility);
+	// For user_type_id=4, city must also be selected
+	const shouldFetch = !!(
+		selectedMonth &&
+		selectedYear &&
+		selectedFacility &&
+		(user?.userTypeId !== 4 || selectedCity)
+	);
 
 	// Call APIs at page level - regardless of active tab
 	// This ensures all APIs are called when filters change, not when tabs change
@@ -138,11 +148,15 @@ export const PLSummary: React.FC = () => {
 				<PLFilters
 					selectedMonth={selectedMonth}
 					selectedYear={selectedYear}
+					selectedCity={selectedCity}
 					selectedFacility={selectedFacility}
 					monthOptions={monthOptions}
 					yearOptions={yearOptions}
+					cityOptions={cityOptions}
+					facilityOptions={facilityOptions}
 					onMonthChange={setSelectedMonth}
 					onYearChange={setSelectedYear}
+					onCityChange={setSelectedCity}
 					onFacilityChange={setSelectedFacility}
 					onSearch={handleSearch}
 				/>

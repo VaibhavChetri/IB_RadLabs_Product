@@ -55,11 +55,15 @@ export const MonthlyEstimateAdd: React.FC = () => {
 	const {
 		selectedMonth,
 		selectedYear,
+		selectedCity,
 		selectedFacility,
 		monthOptions,
 		yearOptions,
+		cityOptions,
+		facilityOptions,
 		setSelectedMonth,
 		setSelectedYear,
+		setSelectedCity,
 		setSelectedFacility,
 	} = useRevenueFilters();
 
@@ -332,11 +336,15 @@ export const MonthlyEstimateAdd: React.FC = () => {
 			<RevenueAddFilters
 				selectedMonth={selectedMonth}
 				selectedYear={selectedYear}
+				selectedCity={selectedCity}
 				selectedFacility={selectedFacility}
 				monthOptions={monthOptions}
 				yearOptions={yearOptions}
+				cityOptions={cityOptions}
+				facilityOptions={facilityOptions}
 				onMonthChange={setSelectedMonth}
 				onYearChange={setSelectedYear}
+				onCityChange={setSelectedCity}
 				onFacilityChange={setSelectedFacility}
 				onSearch={handleSearch}
 			/>

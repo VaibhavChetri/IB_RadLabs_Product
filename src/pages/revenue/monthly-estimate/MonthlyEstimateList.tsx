@@ -75,13 +75,17 @@ export const MonthlyEstimateList: React.FC = () => {
 	const {
 		selectedMonth,
 		selectedYear,
+		selectedCity,
 		selectedFacility,
 		selectedCostCategory,
 		monthOptions,
 		yearOptions,
+		cityOptions,
+		facilityOptions,
 		costCategoryOptions,
 		setSelectedMonth,
 		setSelectedYear,
+		setSelectedCity,
 		setSelectedFacility,
 		setSelectedCostCategory,
 	} = useRevenueFilters();
@@ -93,21 +97,26 @@ export const MonthlyEstimateList: React.FC = () => {
 	});
 
 	// Determine if we should fetch - cost category is optional (can be empty to show all)
-	const shouldFetch = !!(selectedMonth && selectedYear && selectedFacility);
+	// For user_type_id=4, city must also be selected
+	const shouldFetch = !!(selectedMonth && selectedYear && selectedFacility && (user?.userTypeId !== 4 || selectedCity));
+
+	// Determine city_id to use - selected city for user_type_id=4, otherwise user's city
+	const cityId = user?.userTypeId === 4 ? (selectedCity ? parseInt(selectedCity) : undefined) : user?.city_id;
 
 	console.log('MonthlyEstimateList - Filter values:', {
 		selectedMonth,
 		selectedYear,
+		selectedCity,
 		selectedFacility,
 		selectedCostCategory,
-		cityId: user?.city_id,
+		cityId,
 		shouldFetch,
 	});
 
 	// Call revenue listing API
 	// costCategoryId is optional - pass undefined if empty to show all data
 	const { data, isLoading, error } = useRevenueListingData(
-		user?.city_id,
+		cityId,
 		selectedFacility,
 		selectedMonth,
 		selectedYear,
@@ -411,13 +420,17 @@ export const MonthlyEstimateList: React.FC = () => {
 			<RevenueFilters
 				selectedMonth={selectedMonth}
 				selectedYear={selectedYear}
+				selectedCity={selectedCity}
 				selectedFacility={selectedFacility}
 				selectedCostCategory={selectedCostCategory}
 				monthOptions={monthOptions}
 				yearOptions={yearOptions}
+				cityOptions={cityOptions}
+				facilityOptions={facilityOptions}
 				costCategoryOptions={costCategoryOptions}
 				onMonthChange={setSelectedMonth}
 				onYearChange={setSelectedYear}
+				onCityChange={setSelectedCity}
 				onFacilityChange={setSelectedFacility}
 				onCostCategoryChange={setSelectedCostCategory}
 				onSearch={handleSearch}

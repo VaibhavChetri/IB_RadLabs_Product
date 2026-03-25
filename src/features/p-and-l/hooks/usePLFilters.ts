@@ -78,8 +78,11 @@ export const usePLFilters = (): UsePLFiltersReturn => {
 						label: city.name,
 					}));
 					setCityOptions(cityList);
-					// Auto-select first city
-					if (cityList.length > 0) {
+					// Auto-select Bangalore if available, otherwise first city
+					const bangaloreCity = cityList.find(city => city.label.toLowerCase() === 'bangalore');
+					if (bangaloreCity) {
+						setSelectedCity(bangaloreCity.value);
+					} else if (cityList.length > 0) {
 						setSelectedCity(cityList[0].value);
 					}
 				}

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useQueryClient } from '@tanstack/react-query';
-import { Button, PageHeader, Snackbar } from '../../../components/ui';
+import { Button, FloatingDropdown, Snackbar, PageHeader } from '../../../components/ui';
 import { TableSkeleton } from '../../../components/ui/Skeleton';
 import {
 	useEmployeeManagerOptions,
@@ -16,6 +16,9 @@ type CellState = 'present' | 'absent' | 'optional' | 'unmarked';
 const today = new Date();
 const currentMonth = today.getMonth() + 1;
 const currentYear = today.getFullYear();
+const previousMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+const previousMonth = previousMonthDate.getMonth() + 1;
+const previousMonthYear = previousMonthDate.getFullYear();
 
 const getDaysInMonth = (month: number, year: number) =>
 	new Date(year, month, 0).getDate();
@@ -54,6 +57,7 @@ const getCellClasses = (state: CellState) => {
 
 export const MarkAttendance: React.FC = () => {
 	const [attendanceGrid, setAttendanceGrid] = useState<Record<string, CellState>>({});
+	const [selectedPeriod, setSelectedPeriod] = useState<'current' | 'previous'>('current');
 	const [snackbar, setSnackbar] = useState<{
 		open: boolean;
 		message: string;
@@ -61,11 +65,20 @@ export const MarkAttendance: React.FC = () => {
 	}>({ open: false, message: '', type: 'success' });
 	const user = useSelector((state: RootState) => state.auth.user);
 	const queryClient = useQueryClient();
+	const selectedMonth = selectedPeriod === 'current' ? currentMonth : previousMonth;
+	const selectedYear = selectedPeriod === 'current' ? currentYear : previousMonthYear;
+	const monthLabel = new Date(selectedYear, selectedMonth - 1, 1).toLocaleString('en-IN', {
+		month: 'long',
+	});
+	const periodOptions = [
+		{ value: 'current', label: `${new Date(currentYear, currentMonth - 1, 1).toLocaleString('en-IN', { month: 'long' })} ${currentYear}` },
+		{ value: 'previous', label: `${new Date(previousMonthYear, previousMonth - 1, 1).toLocaleString('en-IN', { month: 'long' })} ${previousMonthYear}` },
+	];
 
 	const { data: employeeData, isLoading: employeeLoading } = useEmployeeManagerOptions();
 	const { data: existingAttendanceData, isLoading: attendanceLoading } = useTeamAttendance({
-		month: currentMonth,
-		year: currentYear,
+		month: selectedMonth,
+		year: selectedYear,
 		limit: 'all',
 	});
 	const markMutation = useMarkAttendance({ invalidateOnSuccess: false });
@@ -109,15 +122,18 @@ export const MarkAttendance: React.FC = () => {
 	const days = useMemo(
 		() =>
 			Array.from(
-				{ length: getDaysInMonth(currentMonth, currentYear) },
+				{ length: getDaysInMonth(selectedMonth, selectedYear) },
 				(_, index) => index + 1
 			),
-		[]
+		[selectedMonth, selectedYear]
 	);
 
 	const activeDays = useMemo(
-		() => days.filter(day => isTodayOrPast(currentYear, currentMonth, day)),
-		[days]
+		() =>
+			selectedPeriod === 'current'
+				? days.filter(day => isTodayOrPast(selectedYear, selectedMonth, day))
+				: days,
+		[days, selectedMonth, selectedPeriod, selectedYear]
 	);
 
 	useEffect(() => {
@@ -127,11 +143,12 @@ export const MarkAttendance: React.FC = () => {
 
 		employees.forEach((employee: any) => {
 			days.forEach(day => {
-				const dateKey = toIsoDate(currentYear, currentMonth, day);
+				const dateKey = toIsoDate(selectedYear, selectedMonth, day);
 				const key = `${employee.id}-${dateKey}`;
-				nextGrid[key] = !isTodayOrPast(currentYear, currentMonth, day)
+				nextGrid[key] = selectedPeriod === 'current' &&
+					!isTodayOrPast(selectedYear, selectedMonth, day)
 					? 'unmarked'
-					: isSunday(currentYear, currentMonth, day)
+					: isSunday(selectedYear, selectedMonth, day)
 					? 'optional'
 					: 'unmarked';
 			});
@@ -153,32 +170,32 @@ export const MarkAttendance: React.FC = () => {
 		});
 
 		setAttendanceGrid(nextGrid);
-	}, [employees, filteredAttendanceRows, days]);
+	}, [employees, filteredAttendanceRows, days, selectedMonth, selectedPeriod, selectedYear]);
 
 	const getCellState = (employeeId: number, day: number): CellState => {
-		const key = `${employeeId}-${toIsoDate(currentYear, currentMonth, day)}`;
+		const key = `${employeeId}-${toIsoDate(selectedYear, selectedMonth, day)}`;
 		if (Object.prototype.hasOwnProperty.call(attendanceGrid, key)) {
 			return attendanceGrid[key];
 		}
-		return !isTodayOrPast(currentYear, currentMonth, day)
+		return selectedPeriod === 'current' && !isTodayOrPast(selectedYear, selectedMonth, day)
 			? 'unmarked'
-			: isSunday(currentYear, currentMonth, day)
+			: isSunday(selectedYear, selectedMonth, day)
 			? 'optional'
 			: 'unmarked';
 	};
 
 	const setCellState = (employeeId: number, day: number, value: CellState) => {
-		const key = `${employeeId}-${toIsoDate(currentYear, currentMonth, day)}`;
+		const key = `${employeeId}-${toIsoDate(selectedYear, selectedMonth, day)}`;
 		setAttendanceGrid(prev => ({ ...prev, [key]: value }));
 	};
 
 	const toggleCell = (employeeId: number, day: number) => {
 		const current = getCellState(employeeId, day);
-		if (!isTodayOrPast(currentYear, currentMonth, day)) {
+		if (selectedPeriod === 'current' && !isTodayOrPast(selectedYear, selectedMonth, day)) {
 			setCellState(employeeId, day, current === 'present' ? 'unmarked' : 'present');
 			return;
 		}
-		if (isSunday(currentYear, currentMonth, day)) {
+		if (isSunday(selectedYear, selectedMonth, day)) {
 			setCellState(employeeId, day, current === 'present' ? 'optional' : 'present');
 			return;
 		}
@@ -193,12 +210,13 @@ export const MarkAttendance: React.FC = () => {
 		setAttendanceGrid(prev => {
 			const next = { ...prev };
 			employees.forEach((employee: any) => {
-				const key = `${employee.id}-${toIsoDate(currentYear, currentMonth, day)}`;
+				const key = `${employee.id}-${toIsoDate(selectedYear, selectedMonth, day)}`;
 				next[key] = checked
 					? 'present'
-					: !isTodayOrPast(currentYear, currentMonth, day)
+					: selectedPeriod === 'current' &&
+					  !isTodayOrPast(selectedYear, selectedMonth, day)
 					? 'unmarked'
-					: isSunday(currentYear, currentMonth, day)
+					: isSunday(selectedYear, selectedMonth, day)
 					? 'optional'
 					: 'unmarked';
 			});
@@ -210,9 +228,10 @@ export const MarkAttendance: React.FC = () => {
 		const states = employees.map((employee: any) => getCellState(employee.id, day));
 
 		if (!states.length) {
-			return !isTodayOrPast(currentYear, currentMonth, day)
+			return selectedPeriod === 'current' &&
+				!isTodayOrPast(selectedYear, selectedMonth, day)
 				? 'unmarked'
-				: isSunday(currentYear, currentMonth, day)
+				: isSunday(selectedYear, selectedMonth, day)
 				? 'optional'
 				: 'unmarked';
 		}
@@ -252,7 +271,7 @@ export const MarkAttendance: React.FC = () => {
 
 		try {
 			for (const day of activeDays) {
-				const date = toIsoDate(currentYear, currentMonth, day);
+				const date = toIsoDate(selectedYear, selectedMonth, day);
 				const presentEmployeeIds = employees
 					.filter((employee: any) => getCellState(employee.id, day) === 'present')
 					.map((employee: any) => employee.id);
@@ -287,9 +306,7 @@ export const MarkAttendance: React.FC = () => {
 
 			setSnackbar({
 				open: true,
-				message: `Attendance saved for ${employees.length} employee(s) for ${today.toLocaleString('en-IN', {
-					month: 'long',
-				})} ${currentYear}.`,
+				message: `Attendance saved for ${employees.length} employee(s) for ${monthLabel} ${selectedYear}.`,
 				type: 'success',
 			});
 		} catch (error: any) {
@@ -317,7 +334,7 @@ export const MarkAttendance: React.FC = () => {
 					<div className='flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4'>
 						<div>
 							<h2 className='text-lg font-semibold text-gray-900'>
-								{today.toLocaleString('en-IN', { month: 'long' })} {currentYear}
+								{monthLabel} {selectedYear}
 							</h2>
 							<p className='text-sm text-gray-500 mt-1'>
 								Only direct reportees of the logged-in manager are shown below.
@@ -326,6 +343,15 @@ export const MarkAttendance: React.FC = () => {
 							</p>
 						</div>
 						<div className='flex gap-3 flex-wrap'>
+							<div className='w-full sm:w-[220px]'>
+								<FloatingDropdown
+									label='Attendance Month'
+									options={periodOptions}
+									value={selectedPeriod}
+									onChange={value => setSelectedPeriod(value as 'current' | 'previous')}
+									searchable={false}
+								/>
+							</div>
 							<div className='rounded-xl bg-emerald-50 border border-emerald-100 px-4 py-3 text-sm'>
 								<span className='font-semibold text-emerald-700'>
 									Present:
@@ -338,7 +364,7 @@ export const MarkAttendance: React.FC = () => {
 							</div>
 							<div className='rounded-xl bg-gray-50 border border-gray-200 px-4 py-3 text-sm'>
 								<span className='font-semibold text-gray-700'>Scope:</span>{' '}
-								Until today
+								{selectedPeriod === 'current' ? 'Until today' : 'Full month'}
 							</div>
 							<Button
 								onClick={handleSubmit}
@@ -369,10 +395,10 @@ export const MarkAttendance: React.FC = () => {
 										</th>
 								{days.map(day => {
 									const columnState = getColumnState(day);
-									const sunday = isSunday(currentYear, currentMonth, day);
+									const sunday = isSunday(selectedYear, selectedMonth, day);
 									const weekdayLabel = getWeekdayLabel(
-										currentYear,
-										currentMonth,
+										selectedYear,
+										selectedMonth,
 										day
 									);
 									return (
@@ -418,7 +444,7 @@ export const MarkAttendance: React.FC = () => {
 											</td>
 											{days.map(day => {
 												const state = getCellState(employee.id, day);
-												const sunday = isSunday(currentYear, currentMonth, day);
+												const sunday = isSunday(selectedYear, selectedMonth, day);
 												return (
 													<td
 														key={`${employee.id}-${day}`}

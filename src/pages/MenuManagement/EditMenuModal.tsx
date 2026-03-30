@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X } from 'lucide-react';
+import { X, ChevronRight } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Menu } from '../../services/menuManagementApi';
 
@@ -112,6 +112,20 @@ export const EditMenuModal: React.FC<EditMenuModalProps> = ({
 
 	const flatParentOptions = flattenMenus(possibleParents);
 
+	// Find parent name for display
+	const findMenuById = (menus: Menu[], id: number): Menu | null => {
+		for (const m of menus) {
+			if (m.id === id) return m;
+			if (m.children) {
+				const found = findMenuById(m.children, id);
+				if (found) return found;
+			}
+		}
+		return null;
+	};
+
+	const currentParent = menu.parent_id ? findMenuById(allMenus, menu.parent_id) : null;
+
 	const nameErr = touched ? validateName(name) : null;
 	const slugErr = touched ? validateSlug(slug) : null;
 	const sortErr = touched ? validateSortOrder(sortOrder) : null;
@@ -147,6 +161,8 @@ export const EditMenuModal: React.FC<EditMenuModalProps> = ({
 			status,
 		});
 	};
+
+	const hasChildren = menu.children && menu.children.length > 0;
 
 	return (
 		<div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50'>
@@ -200,12 +216,12 @@ export const EditMenuModal: React.FC<EditMenuModalProps> = ({
 								<option value=''>None (Top Level)</option>
 								{flatParentOptions.map(({ menu: m, depth }) => (
 									<option key={m.id} value={m.id}>
-										{'—'.repeat(depth)} {m.name} (ID: {m.id})
+										{'—'.repeat(depth)} {m.name}
 									</option>
 								))}
 							</select>
 							<p className='text-xs text-foreground-muted'>
-								Current: {menu.parent_id !== null ? `ID ${menu.parent_id}` : 'Top Level'}
+								Current: {currentParent ? currentParent.name : 'Top Level'}
 							</p>
 						</div>
 						<div className='space-y-1'>
@@ -247,9 +263,41 @@ export const EditMenuModal: React.FC<EditMenuModalProps> = ({
 						<p className='text-xs text-foreground-muted'>Optional, max {MAX_BADGE_LENGTH} characters</p>
 					</div>
 
-					<div className='bg-background-secondary/30 rounded p-3 text-xs text-foreground-muted'>
-						<span className='font-medium'>Menu ID:</span> {menu.id} | <span className='font-medium'>Level:</span> {menu.level} (auto-calculated from parent)
-					</div>
+					{/* Children & Grandchildren display */}
+					{hasChildren && (
+						<div className='space-y-2'>
+							<label className='text-sm font-medium text-foreground'>Children & Grandchildren</label>
+							<div className='rounded border border-border bg-background-secondary/20 p-3 space-y-1'>
+								{menu.children!.map(child => (
+									<div key={child.id}>
+										<div className='flex items-center gap-2 py-1.5 px-2 rounded hover:bg-background-secondary/50'>
+											<ChevronRight className='w-3.5 h-3.5 text-foreground-muted flex-shrink-0' />
+											<span className='text-sm text-foreground'>{child.name}</span>
+											<span className='text-xs text-foreground-muted'>({child.slug})</span>
+											<span className={`text-xs ml-auto ${child.status === 1 ? 'text-green-600' : 'text-red-500'}`}>
+												{child.status === 1 ? 'Active' : 'Inactive'}
+											</span>
+										</div>
+										{child.children && child.children.length > 0 && (
+											<div className='ml-6 border-l border-border pl-3 space-y-0.5'>
+												{child.children.map(gc => (
+													<div key={gc.id} className='flex items-center gap-2 py-1 px-2 rounded hover:bg-background-secondary/50'>
+														<ChevronRight className='w-3 h-3 text-foreground-muted flex-shrink-0' />
+														<span className='text-sm text-foreground'>{gc.name}</span>
+														<span className='text-xs text-foreground-muted'>({gc.slug})</span>
+														<span className={`text-xs ml-auto ${gc.status === 1 ? 'text-green-600' : 'text-red-500'}`}>
+															{gc.status === 1 ? 'Active' : 'Inactive'}
+														</span>
+													</div>
+												))}
+											</div>
+										)}
+									</div>
+								))}
+							</div>
+							<p className='text-xs text-foreground-muted'>To edit children, click the edit icon on them directly in the menu list.</p>
+						</div>
+					)}
 				</div>
 
 				{formError && (

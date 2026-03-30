@@ -93,35 +93,56 @@ export const MenuManagement: React.FC = () => {
 			setMenuActionMessage(null);
 
 			try {
-				// If parent is existing, avoid backend 409 conflicts by skipping children that already exist under it.
-				let payloadToSend: CreateMenuHierarchyPayload = payload;
-				if (typeof payload.parent.id === 'number') {
-					const parentId = payload.parent.id;
-					const menusResponse = await withRetry(() => MenuManagementApiService.getMenus(), 2);
-					const flatMenus = menusResponse.data.menus;
-					const existingChildSlugs = new Set(
-						flatMenus.filter(m => m.parent_id === parentId).map(m => m.slug)
-					);
+				const hasNewChildren = payload.children.length > 0;
+				const hasExistingChildGrandchildren = payload.existingChildGrandchildren && payload.existingChildGrandchildren.length > 0;
 
-					const childrenToCreate = payload.children.filter(c => !existingChildSlugs.has(c.slug));
-					if (childrenToCreate.length === 0) {
-						setMenuActionMessage({
-							type: 'error',
-							text: 'All selected submenu slugs already exist under this parent.',
-						});
-						return;
+				// Create new children under parent (if any)
+				if (hasNewChildren) {
+					let payloadToSend = payload;
+					if (typeof payload.parent.id === 'number') {
+						const parentId = payload.parent.id;
+						const menusResponse = await withRetry(() => MenuManagementApiService.getMenus(), 2);
+						const flatMenus = menusResponse.data.menus;
+						const existingChildSlugs = new Set(
+							flatMenus.filter(m => m.parent_id === parentId).map(m => m.slug)
+						);
+						const childrenToCreate = payload.children.filter(c => !existingChildSlugs.has(c.slug));
+						if (childrenToCreate.length > 0) {
+							payloadToSend = { ...payload, children: childrenToCreate };
+							await withRetry(
+								() => MenuManagementApiService.createMenuHierarchy({
+									parent: payloadToSend.parent,
+									children: payloadToSend.children,
+								}),
+								2
+							);
+						}
+					} else {
+						await withRetry(
+							() => MenuManagementApiService.createMenuHierarchy({
+								parent: payload.parent,
+								children: payload.children,
+							}),
+							2
+						);
 					}
-
-					payloadToSend = {
-						...payload,
-						children: childrenToCreate,
-					};
 				}
 
-				await withRetry(
-					() => MenuManagementApiService.createMenuHierarchy(payloadToSend),
-					2
-				);
+				// Add new grandchildren to existing children (separate API call per existing child)
+				if (hasExistingChildGrandchildren) {
+					for (const entry of payload.existingChildGrandchildren!) {
+						await withRetry(
+							() => MenuManagementApiService.createMenuHierarchy({
+								parent: { id: entry.existingChildId },
+								children: entry.grandchildren.map(gc => ({
+									...gc,
+									parent_id: null,
+								})),
+							}),
+							2
+						);
+					}
+				}
 
 				await refreshUserMenuPermissionsFromApi();
 				await loadMenus();
@@ -142,91 +163,6 @@ export const MenuManagement: React.FC = () => {
 		},
 		[loadMenus, refreshUserMenuPermissionsFromApi, withRetry]
 	);
-
-	const handleAddSalesSubmenus = async () => {
-		try {
-			setLoading(true);
-			
-			// Find Sales menu ID
-			const response = await MenuManagementApiService.getMenus();
-			if (response.status_code !== 200) {
-				console.error('Failed to fetch menus');
-				return;
-			}
-
-			const salesMenu = response.data.menus.find((menu: Menu) => menu.slug === 'sales');
-			if (!salesMenu) {
-				console.error('Sales menu not found');
-				alert('Sales menu not found. Please ensure the Sales menu exists.');
-				return;
-			}
-
-			const intendedChildren = [
-				{
-					name: 'My Leads',
-					slug: 'my-leads',
-					parent_id: null,
-					sort_order: 2,
-					level: 1,
-					badge: null,
-					status: 1,
-				},
-				{
-					name: "Today's Callbacks",
-					slug: 'callbacks',
-					parent_id: null,
-					sort_order: 3,
-					level: 1,
-					badge: null,
-					status: 1,
-				},
-				{
-					name: 'Reports',
-					slug: 'lead-reports',
-					parent_id: null,
-					sort_order: 4,
-					level: 1,
-					badge: null,
-					status: 1,
-				},
-			];
-
-			const existingChildSlugs = new Set(
-				response.data.menus
-					.filter((m: Menu) => m.parent_id === salesMenu.id)
-					.map((m: Menu) => m.slug)
-			);
-
-			const childrenToCreate = intendedChildren.filter(c => !existingChildSlugs.has(c.slug));
-			if (childrenToCreate.length === 0) {
-				setMenuActionMessage({
-					type: 'error',
-					text: 'Sales submenus already exist, nothing to add.',
-				});
-				return;
-			}
-
-			await MenuManagementApiService.createMenuHierarchy({
-				parent: { id: salesMenu.id },
-				children: childrenToCreate,
-			});
-
-			await refreshUserMenuPermissionsFromApi();
-			await loadMenus();
-
-			setMenuActionMessage({
-				type: 'success',
-				text: 'Sales submenus added successfully.',
-			});
-		} catch (error: any) {
-			setMenuActionMessage({
-				type: 'error',
-				text: error?.message || 'Failed to add Sales submenus.',
-			});
-		} finally {
-			setLoading(false);
-		}
-	};
 
 	const handleManagePermissions = async (menu: Menu) => {
 		setSelectedMenu(menu);
@@ -753,15 +689,6 @@ export const MenuManagement: React.FC = () => {
 					<p className='text-sm text-foreground-muted'>Manage application menus and permissions</p>
 				</div>
 				<div className='flex items-center space-x-2'>
-					<Button
-						onClick={handleAddSalesSubmenus}
-							data-testid='add-sales-submenus-btn'
-						className='flex items-center space-x-2 bg-orange-600 hover:bg-orange-700'
-						disabled={loading}
-					>
-						<Plus className='w-4 h-4' />
-						<span>Add Sales Submenus</span>
-					</Button>
 					<Button
 						onClick={handleCreateMenu}
 							data-testid='add-menu-btn'

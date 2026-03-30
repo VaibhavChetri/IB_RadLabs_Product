@@ -9,6 +9,7 @@ export type GrandchildForm = {
 	sortOrder: string;
 	badge: string;
 	status: 1 | 0;
+	isExisting?: boolean;
 };
 
 export type ChildForm = {
@@ -18,6 +19,8 @@ export type ChildForm = {
 	badge: string;
 	status: 1 | 0;
 	grandchildren: GrandchildForm[];
+	isExisting?: boolean;
+	existingId?: number;
 };
 
 export type CreateMenuHierarchyPayload = {
@@ -43,6 +46,19 @@ export type CreateMenuHierarchyPayload = {
 			name: string;
 			slug: string;
 			parent_id?: number | null;
+			sort_order: number;
+			level: number;
+			badge?: string | null;
+			status?: number;
+		}>;
+	}>;
+	// New grandchildren to add under existing children (each entry is a separate API call)
+	existingChildGrandchildren?: Array<{
+		existingChildSlug: string;
+		existingChildId: number;
+		grandchildren: Array<{
+			name: string;
+			slug: string;
 			sort_order: number;
 			level: number;
 			badge?: string | null;
@@ -143,20 +159,59 @@ export const CreateMenuHierarchyModal: React.FC<CreateMenuHierarchyModalProps> =
 		}
 	}, [isOpen]);
 
-	// Flatten existing menus for parent dropdown
-	const flatParentOptions = useMemo(() => {
-		const result: { menu: Menu; depth: number }[] = [];
-		const flatten = (menus: Menu[], depth: number) => {
-			menus.forEach(m => {
-				result.push({ menu: m, depth });
-				if (m.children && m.children.length > 0) {
-					flatten(m.children, depth + 1);
-				}
-			});
-		};
-		flatten(existingMenus, 0);
-		return result;
+	// Only show top-level (parent) menus in dropdown
+	const parentOptions = useMemo(() => {
+		return existingMenus.filter(m => m.parent_id === null);
 	}, [existingMenus]);
+
+	// When parent selection changes, populate existing children
+	const handleParentSelect = (selectedId: string) => {
+		setParentId(selectedId);
+		resetError();
+
+		if (!selectedId) {
+			setChildren([{ name: '', slug: '', sortOrder: '1', badge: '', status: 1, grandchildren: [], isExisting: false }]);
+			setAutoSlugChildren({ 0: true });
+			setAutoSlugGrandchildren({});
+			return;
+		}
+
+		const findMenu = (menus: Menu[]): Menu | null => {
+			for (const m of menus) {
+				if (m.id === Number(selectedId)) return m;
+				if (m.children) {
+					const found = findMenu(m.children);
+					if (found) return found;
+				}
+			}
+			return null;
+		};
+
+		const parent = findMenu(existingMenus);
+		const existingChildren: ChildForm[] = (parent?.children || []).map(child => ({
+			name: child.name,
+			slug: child.slug,
+			sortOrder: String(child.sort_order),
+			badge: child.badge || '',
+			status: (child.status === 1 ? 1 : 0) as 1 | 0,
+			isExisting: true,
+			existingId: child.id,
+			grandchildren: (child.children || []).map(gc => ({
+				name: gc.name,
+				slug: gc.slug,
+				sortOrder: String(gc.sort_order),
+				badge: gc.badge || '',
+				status: (gc.status === 1 ? 1 : 0) as 1 | 0,
+				isExisting: true,
+			})),
+		}));
+
+		const newChildIdx = existingChildren.length;
+		const newChild: ChildForm = { name: '', slug: '', sortOrder: String(newChildIdx + 1), badge: '', status: 1, grandchildren: [], isExisting: false };
+		setChildren([...existingChildren, newChild]);
+		setAutoSlugChildren({ [newChildIdx]: true });
+		setAutoSlugGrandchildren({});
+	};
 
 	// Collect all slugs in the form for duplicate detection
 	const allSlugs = useMemo(() => {
@@ -189,8 +244,11 @@ export const CreateMenuHierarchyModal: React.FC<CreateMenuHierarchyModalProps> =
 			if (validateSlug(parentSlug) || validateName(parentName) || validateSortOrder(parentSortOrder)) return false;
 		}
 
-		const hasValidChild = children.some(c => c.name.trim() && c.slug.trim() && !validateSlug(c.slug) && !validateSortOrder(c.sortOrder));
-		return hasValidChild;
+		// Allow submit if there's a valid new child OR a new grandchild under an existing child
+		const newChildren = children.filter(c => !c.isExisting);
+		const hasValidNewChild = newChildren.some(c => c.name.trim() && c.slug.trim() && !validateSlug(c.slug) && !validateSortOrder(c.sortOrder));
+		const hasNewGrandchildUnderExisting = children.some(c => c.isExisting && c.grandchildren.some(gc => !gc.isExisting && gc.name.trim() && gc.slug.trim()));
+		return hasValidNewChild || hasNewGrandchildUnderExisting;
 	}, [children, loading, parentId, parentName, parentSlug, parentSortOrder, useExistingParent]);
 
 	if (!isOpen) return null;
@@ -325,37 +383,57 @@ export const CreateMenuHierarchyModal: React.FC<CreateMenuHierarchyModalProps> =
 			if (isDuplicateSlug(parentSlug)) errors.push(`Parent Slug "${parentSlug}" is duplicated in the form.`);
 		}
 
-		if (children.length === 0) {
-			errors.push('Add at least one child menu.');
+		// Validate new children
+		const newChildren = children.filter(c => !c.isExisting);
+		const newGrandchildrenUnderExisting = children.filter(c => c.isExisting && c.grandchildren.some(gc => !gc.isExisting && gc.name.trim() && gc.slug.trim()));
+
+		if (newChildren.length === 0 && newGrandchildrenUnderExisting.length === 0) {
+			errors.push('Add at least one new child or grandchild.');
 		}
 
-		const validChildren = children.filter(c => c.name.trim() || c.slug.trim());
-		if (validChildren.length === 0) {
-			errors.push('Please provide at least one valid child (name + slug).');
+		// Check new children have valid entries (skip if only adding grandchildren to existing)
+		const validNewChildren = newChildren.filter(c => c.name.trim() || c.slug.trim());
+		if (newChildren.length > 0 && validNewChildren.length === 0 && newGrandchildrenUnderExisting.length === 0) {
+			errors.push('Please provide at least one valid new child (name + slug).');
 		}
 
-		children.forEach((c, idx) => {
-			if (!c.name.trim() && !c.slug.trim()) return; // skip empty rows
+		newChildren.forEach((c, idx) => {
+			if (!c.name.trim() && !c.slug.trim()) return;
 			const nameErr = validateName(c.name);
 			const slugErr = validateSlug(c.slug);
 			const sortErr = validateSortOrder(c.sortOrder);
 			const badgeErr = validateBadge(c.badge);
-			if (nameErr) errors.push(`Child ${idx + 1} Name: ${nameErr}`);
-			if (slugErr) errors.push(`Child ${idx + 1} Slug: ${slugErr}`);
-			if (sortErr) errors.push(`Child ${idx + 1} Sort Order: ${sortErr}`);
-			if (badgeErr) errors.push(`Child ${idx + 1} Badge: ${badgeErr}`);
-			if (isDuplicateSlug(c.slug)) errors.push(`Child ${idx + 1} Slug "${c.slug}" is duplicated in the form.`);
+			if (nameErr) errors.push(`New Child ${idx + 1} Name: ${nameErr}`);
+			if (slugErr) errors.push(`New Child ${idx + 1} Slug: ${slugErr}`);
+			if (sortErr) errors.push(`New Child ${idx + 1} Sort Order: ${sortErr}`);
+			if (badgeErr) errors.push(`New Child ${idx + 1} Badge: ${badgeErr}`);
+			if (isDuplicateSlug(c.slug)) errors.push(`New Child ${idx + 1} Slug "${c.slug}" is duplicated in the form.`);
 
 			c.grandchildren.forEach((gc, gcIdx) => {
-				if (!gc.name.trim() && !gc.slug.trim()) return;
+				if (gc.isExisting || (!gc.name.trim() && !gc.slug.trim())) return;
 				const gcNameErr = validateName(gc.name);
 				const gcSlugErr = validateSlug(gc.slug);
 				const gcSortErr = validateSortOrder(gc.sortOrder);
 				const gcBadgeErr = validateBadge(gc.badge);
-				if (gcNameErr) errors.push(`Child ${idx + 1} > Grandchild ${gcIdx + 1} Name: ${gcNameErr}`);
-				if (gcSlugErr) errors.push(`Child ${idx + 1} > Grandchild ${gcIdx + 1} Slug: ${gcSlugErr}`);
-				if (gcSortErr) errors.push(`Child ${idx + 1} > Grandchild ${gcIdx + 1} Sort Order: ${gcSortErr}`);
-				if (gcBadgeErr) errors.push(`Child ${idx + 1} > Grandchild ${gcIdx + 1} Badge: ${gcBadgeErr}`);
+				if (gcNameErr) errors.push(`New Child ${idx + 1} > Grandchild ${gcIdx + 1} Name: ${gcNameErr}`);
+				if (gcSlugErr) errors.push(`New Child ${idx + 1} > Grandchild ${gcIdx + 1} Slug: ${gcSlugErr}`);
+				if (gcSortErr) errors.push(`New Child ${idx + 1} > Grandchild ${gcIdx + 1} Sort Order: ${gcSortErr}`);
+				if (gcBadgeErr) errors.push(`New Child ${idx + 1} > Grandchild ${gcIdx + 1} Badge: ${gcBadgeErr}`);
+				if (isDuplicateSlug(gc.slug)) errors.push(`Grandchild Slug "${gc.slug}" is duplicated in the form.`);
+			});
+		});
+
+		// Validate new grandchildren under existing children
+		newGrandchildrenUnderExisting.forEach(c => {
+			c.grandchildren.filter(gc => !gc.isExisting && (gc.name.trim() || gc.slug.trim())).forEach((gc, gcIdx) => {
+				const gcNameErr = validateName(gc.name);
+				const gcSlugErr = validateSlug(gc.slug);
+				const gcSortErr = validateSortOrder(gc.sortOrder);
+				const gcBadgeErr = validateBadge(gc.badge);
+				if (gcNameErr) errors.push(`"${c.name}" > New Grandchild ${gcIdx + 1} Name: ${gcNameErr}`);
+				if (gcSlugErr) errors.push(`"${c.name}" > New Grandchild ${gcIdx + 1} Slug: ${gcSlugErr}`);
+				if (gcSortErr) errors.push(`"${c.name}" > New Grandchild ${gcIdx + 1} Sort Order: ${gcSortErr}`);
+				if (gcBadgeErr) errors.push(`"${c.name}" > New Grandchild ${gcIdx + 1} Badge: ${gcBadgeErr}`);
 				if (isDuplicateSlug(gc.slug)) errors.push(`Grandchild Slug "${gc.slug}" is duplicated in the form.`);
 			});
 		});
@@ -366,7 +444,7 @@ export const CreateMenuHierarchyModal: React.FC<CreateMenuHierarchyModalProps> =
 		}
 
 		const buildGrandchildren = (gcs: GrandchildForm[]) =>
-			gcs.filter(g => g.name.trim() && g.slug.trim()).map(g => ({
+			gcs.filter(g => !g.isExisting && g.name.trim() && g.slug.trim()).map(g => ({
 				name: g.name.trim(),
 				slug: g.slug.trim(),
 				parent_id: null as null,
@@ -377,7 +455,7 @@ export const CreateMenuHierarchyModal: React.FC<CreateMenuHierarchyModalProps> =
 			}));
 
 		const childrenPayload = children
-			.filter(c => c.name.trim() && c.slug.trim())
+			.filter(c => !c.isExisting && c.name.trim() && c.slug.trim())
 			.map(c => {
 				const grandchildrenPayload = buildGrandchildren(c.grandchildren);
 				return {
@@ -392,8 +470,22 @@ export const CreateMenuHierarchyModal: React.FC<CreateMenuHierarchyModalProps> =
 				};
 			});
 
+		// Build grandchildren for existing children
+		const existingChildGrandchildren = children
+			.filter(c => c.isExisting && c.existingId)
+			.map(c => ({
+				existingChildSlug: c.slug,
+				existingChildId: c.existingId!,
+				grandchildren: buildGrandchildren(c.grandchildren),
+			}))
+			.filter(e => e.grandchildren.length > 0);
+
 		if (useExistingParent) {
-			return { parent: { id: Number(parentId) }, children: childrenPayload };
+			return {
+				parent: { id: Number(parentId) },
+				children: childrenPayload,
+				existingChildGrandchildren: existingChildGrandchildren.length > 0 ? existingChildGrandchildren : undefined,
+			};
 		}
 
 		return {
@@ -447,29 +539,32 @@ export const CreateMenuHierarchyModal: React.FC<CreateMenuHierarchyModalProps> =
 				</div>
 
 				{useExistingParent ? (
-					<div className='grid grid-cols-1 md:grid-cols-3 gap-4 mb-5'>
-						<div className='space-y-1'>
-							<label className='text-sm text-foreground-muted'>Parent Menu <span className='text-red-500'>*</span></label>
-							<select
-								value={parentId}
-								onChange={e => { setParentId(e.target.value); resetError(); }}
-								className={inputClass(touched && !parentId)}
-								data-testid='parent-id'
-							>
-								<option value=''>Select a parent menu...</option>
-								{flatParentOptions.map(({ menu: m, depth }) => (
-									<option key={m.id} value={m.id}>
-										{'—'.repeat(depth)} {m.name} (ID: {m.id}, Level: {m.level})
-									</option>
-								))}
-							</select>
-							{touched && !parentId && (
-								<FieldError error='Please select a parent menu' />
-							)}
+					<>
+						<div className='grid grid-cols-1 md:grid-cols-3 gap-4 mb-5'>
+							<div className='space-y-1'>
+								<label className='text-sm text-foreground-muted'>Parent Menu <span className='text-red-500'>*</span></label>
+								<select
+									value={parentId}
+									onChange={e => handleParentSelect(e.target.value)}
+									className={inputClass(touched && !parentId)}
+									data-testid='parent-id'
+								>
+									<option value=''>Select a parent menu...</option>
+									{parentOptions.map(m => (
+										<option key={m.id} value={m.id}>
+											{m.name}
+										</option>
+									))}
+								</select>
+								{touched && !parentId && (
+									<FieldError error='Please select a parent menu' />
+								)}
+							</div>
+							<div />
+							<div />
 						</div>
-						<div />
-						<div />
-					</div>
+
+					</>
 				) : (
 					<div className='grid grid-cols-1 md:grid-cols-4 gap-4 mb-5'>
 						<div className='space-y-1'>
@@ -532,20 +627,24 @@ export const CreateMenuHierarchyModal: React.FC<CreateMenuHierarchyModalProps> =
 					<h4 className='text-lg font-semibold text-foreground mb-3'>Children (Level 1)</h4>
 					<div className='space-y-4'>
 						{children.map((child, idx) => {
-							const childNameErr = touched ? validateName(child.name) : null;
-							const childSlugErr = touched ? validateSlug(child.slug) : null;
-							const childSortErr = touched ? validateSortOrder(child.sortOrder) : null;
-							const childSlugDup = touched && !childSlugErr && isDuplicateSlug(child.slug);
+							const isExisting = !!child.isExisting;
+							const childNameErr = !isExisting && touched ? validateName(child.name) : null;
+							const childSlugErr = !isExisting && touched ? validateSlug(child.slug) : null;
+							const childSortErr = !isExisting && touched ? validateSortOrder(child.sortOrder) : null;
+							const childSlugDup = !isExisting && touched && !childSlugErr && isDuplicateSlug(child.slug);
 
 							return (
 								<div
 									key={idx}
-									className='rounded-lg border border-border bg-background-secondary/20 p-4'
+									className={`rounded-lg border p-4 ${isExisting ? 'border-border/50 bg-background-secondary/40 opacity-75' : 'border-border bg-background-secondary/20'}`}
 									data-testid={`child-card-${idx}`}
 								>
 									<div className='flex items-center justify-between mb-3'>
-										<span className='text-sm font-medium text-foreground-muted'>Child {idx + 1}</span>
-										{children.length > 1 && (
+										<span className='text-sm font-medium text-foreground-muted'>
+											{isExisting ? `Existing Child ${idx + 1}` : `New Child`}
+											{isExisting && <span className='ml-2 text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded'>existing</span>}
+										</span>
+										{!isExisting && children.filter(c => !c.isExisting).length > 1 && (
 											<button
 												type='button'
 												onClick={() => handleRemoveChild(idx)}
@@ -558,31 +657,33 @@ export const CreateMenuHierarchyModal: React.FC<CreateMenuHierarchyModalProps> =
 									</div>
 									<div className='grid grid-cols-1 md:grid-cols-4 gap-4 mb-3'>
 										<div className='space-y-1'>
-											<label className='text-sm text-foreground-muted'>Name <span className='text-red-500'>*</span></label>
+											<label className='text-sm text-foreground-muted'>Name {!isExisting && <span className='text-red-500'>*</span>}</label>
 											<input
 												value={child.name}
 												onChange={e => handleChildNameChange(idx, e.target.value)}
 												maxLength={MAX_NAME_LENGTH}
 												className={inputClass(!!childNameErr)}
 												placeholder='e.g. General'
+												disabled={isExisting}
 												data-testid={`child-name-${idx}`}
 											/>
 											<FieldError error={childNameErr} />
 										</div>
 										<div className='space-y-1'>
-											<label className='text-sm text-foreground-muted'>Slug <span className='text-red-500'>*</span></label>
+											<label className='text-sm text-foreground-muted'>Slug {!isExisting && <span className='text-red-500'>*</span>}</label>
 											<input
 												value={child.slug}
 												onChange={e => handleChildSlugChange(idx, e.target.value)}
 												className={inputClass(!!childSlugErr || childSlugDup)}
 												placeholder='e.g. settings-general'
+												disabled={isExisting}
 												data-testid={`child-slug-${idx}`}
 											/>
 											<FieldError error={childSlugErr} />
 											{childSlugDup && <FieldError error='Duplicate slug in form' />}
 										</div>
 										<div className='space-y-1'>
-											<label className='text-sm text-foreground-muted'>Sort Order <span className='text-red-500'>*</span></label>
+											<label className='text-sm text-foreground-muted'>Sort Order {!isExisting && <span className='text-red-500'>*</span>}</label>
 											<input
 												type='number'
 												min={MIN_SORT_ORDER}
@@ -597,6 +698,7 @@ export const CreateMenuHierarchyModal: React.FC<CreateMenuHierarchyModalProps> =
 													});
 												}}
 												className={inputClass(!!childSortErr)}
+												disabled={isExisting}
 												data-testid={`child-sort-order-${idx}`}
 											/>
 											<FieldError error={childSortErr} />
@@ -614,6 +716,7 @@ export const CreateMenuHierarchyModal: React.FC<CreateMenuHierarchyModalProps> =
 													});
 												}}
 												className='w-full rounded border border-border bg-background px-3 py-2 text-sm'
+												disabled={isExisting}
 												data-testid={`child-status-${idx}`}
 											>
 												<option value={1}>Active</option>
@@ -637,51 +740,59 @@ export const CreateMenuHierarchyModal: React.FC<CreateMenuHierarchyModalProps> =
 									{child.grandchildren.length > 0 && (
 										<div className='space-y-3'>
 											{child.grandchildren.map((gc, gcIdx) => {
-												const gcNameErr = touched ? validateName(gc.name) : null;
-												const gcSlugErr = touched ? validateSlug(gc.slug) : null;
-												const gcSortErr = touched ? validateSortOrder(gc.sortOrder) : null;
-												const gcSlugDup = touched && !gcSlugErr && isDuplicateSlug(gc.slug);
+												const gcIsExisting = !!gc.isExisting;
+												const gcNameErr = !gcIsExisting && touched ? validateName(gc.name) : null;
+												const gcSlugErr = !gcIsExisting && touched ? validateSlug(gc.slug) : null;
+												const gcSortErr = !gcIsExisting && touched ? validateSortOrder(gc.sortOrder) : null;
+												const gcSlugDup = !gcIsExisting && touched && !gcSlugErr && isDuplicateSlug(gc.slug);
 
 												return (
-													<div key={gcIdx} className='rounded border border-border bg-background p-3'>
+													<div key={gcIdx} className={`rounded border p-3 ${gcIsExisting ? 'border-border/50 bg-background-secondary/30 opacity-75' : 'border-border bg-background'}`}>
 														<div className='flex items-center justify-between mb-2'>
-															<span className='text-xs font-medium text-foreground-muted'>Grandchild {gcIdx + 1}</span>
-															<button
-																type='button'
-																onClick={() => handleRemoveGrandchild(idx, gcIdx)}
-																className='p-1 text-red-500 hover:bg-red-50 rounded transition-colors'
-																title='Remove grandchild'
-															>
-																<Trash2 className='w-3 h-3' />
-															</button>
+															<span className='text-xs font-medium text-foreground-muted'>
+																{gcIsExisting ? `Existing Grandchild ${gcIdx + 1}` : `New Grandchild`}
+																{gcIsExisting && <span className='ml-2 text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded'>existing</span>}
+															</span>
+															{!gcIsExisting && (
+																<button
+																	type='button'
+																	onClick={() => handleRemoveGrandchild(idx, gcIdx)}
+																	className='p-1 text-red-500 hover:bg-red-50 rounded transition-colors'
+																	title='Remove grandchild'
+																>
+																	<Trash2 className='w-3 h-3' />
+																</button>
+															)}
 														</div>
 														<div className='grid grid-cols-1 md:grid-cols-4 gap-3'>
 															<div className='space-y-1'>
-																<label className='text-sm text-foreground-muted'>Name <span className='text-red-500'>*</span></label>
+																<label className='text-sm text-foreground-muted'>Name {!gcIsExisting && <span className='text-red-500'>*</span>}</label>
 																<input
 																	value={gc.name}
 																	onChange={e => handleGrandchildNameChange(idx, gcIdx, e.target.value)}
 																	maxLength={MAX_NAME_LENGTH}
 																	className={inputClass(!!gcNameErr)}
 																	placeholder='e.g. Notifications'
+																	disabled={gcIsExisting}
 																	data-testid={`grandchild-name-${idx}-${gcIdx}`}
 																/>
 																<FieldError error={gcNameErr} />
 															</div>
 															<div className='space-y-1'>
-																<label className='text-sm text-foreground-muted'>Slug <span className='text-red-500'>*</span></label>
+																<label className='text-sm text-foreground-muted'>Slug {!gcIsExisting && <span className='text-red-500'>*</span>}</label>
 																<input
 																	value={gc.slug}
 																	onChange={e => handleGrandchildSlugChange(idx, gcIdx, e.target.value)}
 																	className={inputClass(!!gcSlugErr || gcSlugDup)}
 																	placeholder='e.g. settings-notifications'
+																	disabled={gcIsExisting}
 																	data-testid={`grandchild-slug-${idx}-${gcIdx}`}
 																/>
 																<FieldError error={gcSlugErr} />
 																{gcSlugDup && <FieldError error='Duplicate slug in form' />}
 															</div>
 															<div className='space-y-1'>
-																<label className='text-sm text-foreground-muted'>Sort Order <span className='text-red-500'>*</span></label>
+																<label className='text-sm text-foreground-muted'>Sort Order {!gcIsExisting && <span className='text-red-500'>*</span>}</label>
 																<input
 																	type='number'
 																	min={MIN_SORT_ORDER}
@@ -699,6 +810,7 @@ export const CreateMenuHierarchyModal: React.FC<CreateMenuHierarchyModalProps> =
 																		});
 																	}}
 																	className={inputClass(!!gcSortErr)}
+																	disabled={gcIsExisting}
 																	data-testid={`grandchild-sort-order-${idx}-${gcIdx}`}
 																/>
 																<FieldError error={gcSortErr} />
@@ -719,6 +831,7 @@ export const CreateMenuHierarchyModal: React.FC<CreateMenuHierarchyModalProps> =
 																		});
 																	}}
 																	className='w-full rounded border border-border bg-background px-3 py-2 text-sm'
+																	disabled={gcIsExisting}
 																	data-testid={`grandchild-status-${idx}-${gcIdx}`}
 																>
 																	<option value={1}>Active</option>

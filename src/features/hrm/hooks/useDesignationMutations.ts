@@ -40,6 +40,7 @@ export const useCreateDesignation = () => {
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['hrm', 'designations'] });
+			queryClient.invalidateQueries({ queryKey: ['hrm', 'designations', 'options'] });
 		},
 	});
 };
@@ -53,6 +54,7 @@ export const useUpdateDesignation = () => {
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['hrm', 'designations'] });
+			queryClient.invalidateQueries({ queryKey: ['hrm', 'designations', 'options'] });
 		},
 	});
 };
@@ -66,6 +68,7 @@ export const useDeleteDesignation = () => {
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['hrm', 'designations'] });
+			queryClient.invalidateQueries({ queryKey: ['hrm', 'designations', 'options'] });
 		},
 	});
 };

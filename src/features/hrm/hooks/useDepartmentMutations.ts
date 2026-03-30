@@ -39,6 +39,7 @@ export const useCreateDepartment = () => {
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['hrm', 'departments'] });
+			queryClient.invalidateQueries({ queryKey: ['hrm', 'departments', 'options'] });
 		},
 	});
 };
@@ -52,6 +53,7 @@ export const useUpdateDepartment = () => {
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['hrm', 'departments'] });
+			queryClient.invalidateQueries({ queryKey: ['hrm', 'departments', 'options'] });
 		},
 	});
 };
@@ -65,6 +67,7 @@ export const useDeleteDepartment = () => {
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['hrm', 'departments'] });
+			queryClient.invalidateQueries({ queryKey: ['hrm', 'departments', 'options'] });
 		},
 	});
 };

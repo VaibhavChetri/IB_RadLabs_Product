@@ -204,11 +204,11 @@ export const AddEmployee: React.FC = () => {
 				gender: formData.gender,
 				email: formData.email.trim(),
 				phone: formData.phone.trim(),
-				whatsapp_opt_in: formData.whatsapp_opt_in,
+				whatsapp_opt_in: Boolean(formData.whatsapp_opt_in),
 				date_of_joining: formData.date_of_joining,
 				employment_type: formData.employment_type,
 				status: formData.status,
-				is_active: formData.is_active,
+				is_active: Boolean(formData.is_active),
 			};
 
 			if (formData.date_of_birth) payload.date_of_birth = formData.date_of_birth;

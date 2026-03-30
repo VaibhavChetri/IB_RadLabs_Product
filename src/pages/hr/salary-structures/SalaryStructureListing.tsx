@@ -178,11 +178,20 @@ export const SalaryStructureListing: React.FC = () => {
 		setFormErrors([]);
 		setFormLoading(true);
 		try {
+			const payload = {
+				...formData,
+				is_pf_applicable: Boolean(formData.is_pf_applicable),
+				is_esi_applicable: Boolean(formData.is_esi_applicable),
+				is_pt_applicable: Boolean(formData.is_pt_applicable),
+				is_tds_applicable: Boolean(formData.is_tds_applicable),
+				nps_enabled: Boolean(formData.nps_enabled),
+				lwf_enabled: Boolean(formData.lwf_enabled),
+			};
 			if (editingItem) {
-				await updateMutation.mutateAsync({ id: editingItem.id, data: formData });
+				await updateMutation.mutateAsync({ id: editingItem.id, data: payload });
 				setSnackbar({ open: true, message: 'Salary structure updated', type: 'success' });
 			} else {
-				await createMutation.mutateAsync(formData as CreateSalaryStructureRequest);
+				await createMutation.mutateAsync(payload as CreateSalaryStructureRequest);
 				setSnackbar({ open: true, message: 'Salary structure created', type: 'success' });
 			}
 			setShowModal(false);

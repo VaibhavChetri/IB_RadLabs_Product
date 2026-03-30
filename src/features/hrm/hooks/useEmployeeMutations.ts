@@ -18,6 +18,7 @@ export const useCreateEmployee = () => {
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['hrm', 'employees'] });
+			queryClient.invalidateQueries({ queryKey: ['hrm', 'employees', 'manager-options'] });
 		},
 	});
 };
@@ -31,6 +32,7 @@ export const useUpdateEmployee = () => {
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['hrm', 'employees'] });
+			queryClient.invalidateQueries({ queryKey: ['hrm', 'employees', 'manager-options'] });
 		},
 	});
 };
@@ -44,6 +46,7 @@ export const useDeleteEmployee = () => {
 		},
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ['hrm', 'employees'] });
+			queryClient.invalidateQueries({ queryKey: ['hrm', 'employees', 'manager-options'] });
 		},
 	});
 };

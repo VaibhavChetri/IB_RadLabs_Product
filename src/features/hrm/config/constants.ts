@@ -18,7 +18,7 @@ export const EMPLOYEE_STATUS_OPTIONS = [
 	{ value: '', label: 'All Status' },
 	{ value: 'active', label: 'Active' },
 	{ value: 'probation', label: 'Probation' },
-	{ value: 'notice_period', label: 'Notice Period' },
+	{ value: 'on_notice', label: 'Notice Period' },
 	{ value: 'exited', label: 'Exited' },
 ];
 
@@ -56,7 +56,7 @@ export const getStatusColor = (status: string): string => {
 			return 'text-green-600 bg-green-50';
 		case 'probation':
 			return 'text-yellow-600 bg-yellow-50';
-		case 'notice_period':
+		case 'on_notice':
 			return 'text-orange-600 bg-orange-50';
 		case 'exited':
 			return 'text-red-600 bg-red-50';

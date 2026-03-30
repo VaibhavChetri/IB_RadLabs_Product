@@ -20,6 +20,22 @@ const YEAR_OPTIONS = [
 	{ value: String(currentYear + 1), label: String(currentYear + 1) },
 ];
 
+const normalizeDateForInput = (value?: string) => {
+	if (!value) return '';
+	const trimmed = value.trim();
+	if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+	const parsed = new Date(trimmed);
+	if (!Number.isNaN(parsed.getTime())) {
+		const year = parsed.getFullYear();
+		const month = String(parsed.getMonth() + 1).padStart(2, '0');
+		const day = String(parsed.getDate()).padStart(2, '0');
+		return `${year}-${month}-${day}`;
+	}
+	const matchedDate = trimmed.match(/\d{4}-\d{2}-\d{2}/);
+	if (matchedDate) return matchedDate[0];
+	return '';
+};
+
 export const HolidayMaster: React.FC = () => {
 	const [yearFilter, setYearFilter] = useState(String(currentYear));
 	const [typeFilter, setTypeFilter] = useState('');
@@ -73,7 +89,12 @@ export const HolidayMaster: React.FC = () => {
 
 	const handleEdit = useCallback((item: HrmHoliday) => {
 		setEditingItem(item);
-		setFormData({ name: item.name, date: item.date, type: item.type, year: item.year });
+		setFormData({
+			name: item.name,
+			date: normalizeDateForInput(item.date),
+			type: item.type,
+			year: item.year,
+		});
 		setShowModal(true);
 	}, []);
 

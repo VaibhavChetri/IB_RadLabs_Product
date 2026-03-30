@@ -4,6 +4,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { HrmApiService, HrmEmployeeFilters } from '../../../services/hrmApi';
+import { UserApiService } from '../../../services/userApi';
 import { HRM_LIST_MAX_LIMIT } from '../config/constants';
 
 /** Parse one HRM list response page (handles wrapped shapes from ApiService). */
@@ -118,6 +119,20 @@ export const useDesignationOptions = () => {
 				page++;
 			} while (page <= totalPages && page <= 50);
 			return { data: merged };
+		},
+		staleTime: 5 * 60 * 1000,
+		refetchOnWindowFocus: false,
+	});
+};
+
+/** Admin/user accounts for linking an employee to a system user. */
+export const useUserOptions = () => {
+	return useQuery({
+		queryKey: ['users', 'options'],
+		queryFn: async () => {
+			const response = await UserApiService.getUsers({ limit: 500 });
+			const users = (response as any)?.data || [];
+			return Array.isArray(users) ? users : [];
 		},
 		staleTime: 5 * 60 * 1000,
 		refetchOnWindowFocus: false,

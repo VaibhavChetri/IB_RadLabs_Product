@@ -43,10 +43,11 @@ export const MyChoices: React.FC = () => {
 
 	const choicesRaw = choicesData as any;
 	const myChoices = choicesRaw?.data || choicesRaw || {};
+	const activeChoices = (myChoices.choices || []).filter((c: any) => c.status === 'chosen');
 	const quota = myChoices.quota || 0;
-	const chosenCount = myChoices.chosen_count || 0;
-	const remaining = myChoices.remaining ?? (quota - chosenCount);
-	const choices = myChoices.choices || [];
+	const chosenCount = myChoices.chosen_count ?? activeChoices.length;
+	const remaining = myChoices.remaining ?? Math.max(quota - chosenCount, 0);
+	const choices = activeChoices;
 	const chosenHolidayIds = new Set(choices.map((c: any) => c.holiday_id));
 	const choiceMap = new Map(choices.map((c: any) => [c.holiday_id, c]));
 
@@ -115,28 +116,31 @@ export const MyChoices: React.FC = () => {
 								<div className='text-sm text-gray-500 bg-gray-50 rounded-lg p-4'>No holidays chosen yet</div>
 							) : (
 								<div className='space-y-2'>
-									{choices.map((c: any) => {
-										const isPast = new Date(c.holiday_date) < new Date(new Date().toDateString());
-										return (
-											<div key={c.id} className='flex items-center justify-between p-3 rounded-lg border border-green-200 bg-green-50'>
-												<div>
-													<div className='font-medium text-gray-900'>{c.holiday_name}</div>
-													<div className='text-sm text-gray-500'>
-														{new Date(c.holiday_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', weekday: 'short' })}
+										{choices.map((c: any) => {
+											const isPast = new Date(c.holiday_date) < new Date(new Date().toDateString());
+											return (
+												<div key={c.id} className='flex items-center justify-between p-3 rounded-lg border border-emerald-200 bg-emerald-50'>
+													<div>
+														<div className='font-medium text-gray-900'>{c.holiday_name}</div>
+														<div className='text-sm text-gray-500'>
+															{new Date(c.holiday_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', weekday: 'short' })}
+														</div>
+													</div>
+													<div className='flex items-center gap-3'>
+														<span className='text-xs font-medium text-emerald-700 bg-emerald-100 border border-emerald-200 px-2 py-1 rounded-md'>Chosen</span>
+														{!isPast && (
+															<button
+																onClick={() => handleCancel(c.holiday_id)}
+																className='px-2.5 py-1 text-sm font-medium text-red-600 bg-white border border-red-200 rounded-md hover:bg-red-50 hover:text-red-700 transition-colors'
+																disabled={cancelMutation.isPending}
+															>
+																Cancel
+															</button>
+														)}
 													</div>
 												</div>
-												{!isPast && (
-													<button
-														onClick={() => handleCancel(c.holiday_id)}
-														className='text-sm text-red-500 hover:text-red-700 hover:underline'
-														disabled={cancelMutation.isPending}
-													>
-														Cancel
-													</button>
-												)}
-											</div>
-										);
-									})}
+											);
+										})}
 								</div>
 							)}
 						</div>

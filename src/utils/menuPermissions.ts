@@ -14,12 +14,9 @@ export const filterMenusByPermissions = (
 	permissions: Record<string, MenuPermission>
 ): MenuItem[] => {
 	const filtered = menus
-		.filter(menu => {
-			const permission = permissions[menu.id];
-			return permission?.access === true;
-		})
 		.map(menu => {
 			const permission = permissions[menu.id];
+			const isGroupingContainer = !menu.href && !!menu.children && !permission;
 			
 			// If menu has children, recursively filter them
 			if (menu.children) {
@@ -36,6 +33,16 @@ export const filterMenusByPermissions = (
 						...menu,
 						children: filteredChildren.length > 0 ? filteredChildren : undefined,
 					};
+				} else if (isGroupingContainer) {
+					// Synthetic grouping containers exist only in frontend config and have no direct ACL node.
+					// Reuse the current permission level so children can still be filtered normally.
+					const filteredChildren = filterMenusByPermissions(menu.children, permissions);
+					if (filteredChildren.length > 0) {
+						return {
+							...menu,
+							children: filteredChildren,
+						};
+					}
 				} else if (permission?.access === true) {
 					// If parent has access but no children permissions defined,
 					// show all children (cascading permissions)
@@ -46,9 +53,10 @@ export const filterMenusByPermissions = (
 				}
 			}
 			
-			return menu;
+			return permission?.access === true ? menu : null;
 		})
-		.filter(menu => {
+		.filter((menu): menu is MenuItem => {
+			if (!menu) return false;
 			// Remove parent menus that have no accessible children
 			if (menu.children && menu.children.length === 0) {
 				return false;

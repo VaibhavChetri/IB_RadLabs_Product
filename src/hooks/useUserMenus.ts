@@ -99,6 +99,23 @@ export const useUserMenus = (): UseUserMenusReturn => {
 		};
 	}
 
+	// Normalize HR: ensure new HRM sub-menus inherit access from parent 'hr' permission
+	// until they are registered in the backend menu system
+	const hrPerm = normalizedPermissions['hr'];
+	if (hrPerm?.access === true) {
+		const hrChildren = (hrPerm.children && typeof hrPerm.children === 'object')
+			? { ...hrPerm.children } as Record<string, MenuPermission>
+			: {} as Record<string, MenuPermission>;
+		const hrmSubMenus = ['employees', 'departments', 'designations', 'salary-structures'];
+		const defaultChildPerm: MenuPermission = { access: true, children: {} };
+		hrmSubMenus.forEach(id => {
+			if (!hrChildren[id]) {
+				hrChildren[id] = defaultChildPerm;
+			}
+		});
+		normalizedPermissions['hr'] = { ...hrPerm, children: hrChildren };
+	}
+
 	// Update accessible menu IDs when permissions change
 	useEffect(() => {
 		if (permissions && Object.keys(permissions).length > 0) {

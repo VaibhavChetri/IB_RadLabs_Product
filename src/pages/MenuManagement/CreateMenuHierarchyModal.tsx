@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { X, Plus, Trash2 } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
+import { Dropdown } from '../../components/ui/Dropdown';
 import { Menu } from '../../services/menuManagementApi';
 
 export type GrandchildForm = {
@@ -540,28 +541,18 @@ export const CreateMenuHierarchyModal: React.FC<CreateMenuHierarchyModalProps> =
 
 				{useExistingParent ? (
 					<>
-						<div className='grid grid-cols-1 md:grid-cols-3 gap-4 mb-5'>
-							<div className='space-y-1'>
-								<label className='text-sm text-foreground-muted'>Parent Menu <span className='text-red-500'>*</span></label>
-								<select
-									value={parentId}
-									onChange={e => handleParentSelect(e.target.value)}
-									className={inputClass(touched && !parentId)}
-									data-testid='parent-id'
-								>
-									<option value=''>Select a parent menu...</option>
-									{parentOptions.map(m => (
-										<option key={m.id} value={m.id}>
-											{m.name}
-										</option>
-									))}
-								</select>
-								{touched && !parentId && (
-									<FieldError error='Please select a parent menu' />
-								)}
-							</div>
-							<div />
-							<div />
+						<div className='mb-5' style={{ maxWidth: '320px' }}>
+							<Dropdown
+								label='Parent Menu'
+								required
+								options={parentOptions.map(m => ({ value: String(m.id), label: m.name }))}
+								value={parentId}
+								onChange={val => handleParentSelect(val)}
+								placeholder='Select a parent menu...'
+								searchable
+								error={touched && !parentId}
+								errorMessage={touched && !parentId ? 'Please select a parent menu' : undefined}
+							/>
 						</div>
 
 					</>

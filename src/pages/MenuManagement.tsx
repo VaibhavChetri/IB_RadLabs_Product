@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Eye, EyeOff, Settings, ChevronRight, ChevronDown, X } from 'lucide-react';
+import { Plus, Eye, EyeOff, Settings, ChevronRight, ChevronDown, X, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { MenuManagementApiService, Menu } from '../services/menuManagementApi';
 import { useUserMenus } from '../hooks/useUserMenus';
 import { MenuApiService } from '../services/menuApi';
+import { CreateMenuHierarchyModal, CreateMenuHierarchyPayload } from './MenuManagement/CreateMenuHierarchyModal';
+import { EditMenuModal } from './MenuManagement/EditMenuModal';
 
 export const MenuManagement: React.FC = () => {
 	const { refreshPermissions } = useUserMenus();
@@ -15,6 +17,14 @@ export const MenuManagement: React.FC = () => {
 	const [permissionLoading, setPermissionLoading] = useState(false);
 
 	const [loading, setLoading] = useState(false);
+	const [showCreateMenuModal, setShowCreateMenuModal] = useState(false);
+	const [createMenuLoading, setCreateMenuLoading] = useState(false);
+	const [menuActionMessage, setMenuActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+	// Edit menu state
+	const [showEditMenuModal, setShowEditMenuModal] = useState(false);
+	const [editingMenu, setEditingMenu] = useState<Menu | null>(null);
+	const [editMenuLoading, setEditMenuLoading] = useState(false);
 
 	// API hooks
 
@@ -50,95 +60,109 @@ export const MenuManagement: React.FC = () => {
 	};
 
 	const handleCreateMenu = () => {
-		console.log('Create menu clicked');
+		setMenuActionMessage(null);
+		setShowCreateMenuModal(true);
 	};
 
-	const handleAddSalesSubmenus = async () => {
-		try {
-			setLoading(true);
-			
-			// Find Sales menu ID
-			const response = await MenuManagementApiService.getMenus();
-			if (response.status_code !== 200) {
-				console.error('Failed to fetch menus');
-				return;
-			}
+	const refreshUserMenuPermissionsFromApi = useCallback(async () => {
+		const permissionResponse = await MenuApiService.getUserMenuPermissions();
+		const freshPermissions = permissionResponse.data?.menu_permissions || {};
+		await refreshPermissions(freshPermissions);
+		const TokenManager = (await import('../utils/tokenManager')).default;
+		TokenManager.setMenuPermissions(freshPermissions);
+	}, [refreshPermissions]);
 
-			const salesMenu = response.data.menus.find((menu: Menu) => menu.slug === 'sales');
-			if (!salesMenu) {
-				console.error('Sales menu not found');
-				alert('Sales menu not found. Please ensure the Sales menu exists.');
-				return;
-			}
-
-			console.log(`Found Sales menu with ID: ${salesMenu.id}`);
-
-			// Add the 3 missing submenus
-			const hierarchyResponse = await MenuManagementApiService.createMenuHierarchy({
-				parent: {
-					id: salesMenu.id,
-				},
-				children: [
-					{
-						name: 'My Leads',
-						slug: 'my-leads',
-						parent_id: null,
-						sort_order: 2,
-						level: 1,
-						badge: null,
-						status: 1,
-					},
-					{
-						name: "Today's Callbacks",
-						slug: 'callbacks',
-						parent_id: null,
-						sort_order: 3,
-						level: 1,
-						badge: null,
-						status: 1,
-					},
-					{
-						name: 'Reports',
-						slug: 'lead-reports',
-						parent_id: null,
-						sort_order: 4,
-						level: 1,
-						badge: null,
-						status: 1,
-					},
-				],
-			});
-
-			if (hierarchyResponse.status_code === 200 || hierarchyResponse.status_code === 201) {
-				console.log('✅ Successfully added Sales submenus');
-				
-				// Refresh menu permissions
+	const withRetry = useCallback(
+		async <T,>(fn: () => Promise<T>, retries: number): Promise<T> => {
+			let lastError: unknown = null;
+			for (let attempt = 0; attempt < retries; attempt++) {
 				try {
-					const permissionResponse = await MenuApiService.getUserMenuPermissions();
-					const freshPermissions = permissionResponse.data?.menu_permissions || {};
-					await refreshPermissions(freshPermissions);
-					
-					const TokenManager = (await import('../utils/tokenManager')).default;
-					TokenManager.setMenuPermissions(freshPermissions);
+					return await fn();
 				} catch (error) {
-					console.error('Failed to refresh permissions:', error);
+					lastError = error;
+				}
+			}
+			throw lastError;
+		},
+		[]
+	);
+
+	const handleSubmitCreateHierarchy = useCallback(
+		async (payload: CreateMenuHierarchyPayload) => {
+			setCreateMenuLoading(true);
+			setMenuActionMessage(null);
+
+			try {
+				const hasNewChildren = payload.children.length > 0;
+				const hasExistingChildGrandchildren = payload.existingChildGrandchildren && payload.existingChildGrandchildren.length > 0;
+
+				// Create new children under parent (if any)
+				if (hasNewChildren) {
+					let payloadToSend = payload;
+					if (typeof payload.parent.id === 'number') {
+						const parentId = payload.parent.id;
+						const menusResponse = await withRetry(() => MenuManagementApiService.getMenus(), 2);
+						const flatMenus = menusResponse.data.menus;
+						const existingChildSlugs = new Set(
+							flatMenus.filter(m => m.parent_id === parentId).map(m => m.slug)
+						);
+						const childrenToCreate = payload.children.filter(c => !existingChildSlugs.has(c.slug));
+						if (childrenToCreate.length > 0) {
+							payloadToSend = { ...payload, children: childrenToCreate };
+							await withRetry(
+								() => MenuManagementApiService.createMenuHierarchy({
+									parent: payloadToSend.parent,
+									children: payloadToSend.children,
+								}),
+								2
+							);
+						}
+					} else {
+						await withRetry(
+							() => MenuManagementApiService.createMenuHierarchy({
+								parent: payload.parent,
+								children: payload.children,
+							}),
+							2
+						);
+					}
 				}
 
-				// Reload menus
+				// Add new grandchildren to existing children (separate API call per existing child)
+				if (hasExistingChildGrandchildren) {
+					for (const entry of payload.existingChildGrandchildren!) {
+						await withRetry(
+							() => MenuManagementApiService.createMenuHierarchy({
+								parent: { id: entry.existingChildId },
+								children: entry.grandchildren.map(gc => ({
+									...gc,
+									parent_id: null,
+								})),
+							}),
+							2
+						);
+					}
+				}
+
+				await refreshUserMenuPermissionsFromApi();
 				await loadMenus();
-				
-				alert('✅ Successfully added Sales submenus: My Leads, Today\'s Callbacks, and Reports');
-			} else {
-				console.error('Failed to add submenus:', hierarchyResponse.message);
-				alert(`Failed to add submenus: ${hierarchyResponse.message}`);
+
+				setShowCreateMenuModal(false);
+				setMenuActionMessage({
+					type: 'success',
+					text: 'Menu hierarchy created successfully.',
+				});
+			} catch (error: any) {
+				setMenuActionMessage({
+					type: 'error',
+					text: error?.message || 'Failed to create menu hierarchy.',
+				});
+			} finally {
+				setCreateMenuLoading(false);
 			}
-		} catch (error: any) {
-			console.error('Error adding Sales submenus:', error);
-			alert(`Error: ${error.message || 'Failed to add Sales submenus'}`);
-		} finally {
-			setLoading(false);
-		}
-	};
+		},
+		[loadMenus, refreshUserMenuPermissionsFromApi, withRetry]
+	);
 
 	const handleManagePermissions = async (menu: Menu) => {
 		setSelectedMenu(menu);
@@ -520,6 +544,46 @@ export const MenuManagement: React.FC = () => {
 		}
 	};
 
+	const handleEditMenu = (menu: Menu) => {
+		setMenuActionMessage(null);
+		setEditingMenu(menu);
+		setShowEditMenuModal(true);
+	};
+
+	const handleSubmitEditMenu = async (id: number, data: { name?: string; slug?: string; parent_id?: number | null; sort_order?: number; badge?: string | null; status?: number }) => {
+		setEditMenuLoading(true);
+		setMenuActionMessage(null);
+		try {
+			await MenuManagementApiService.updateMenu(id, data);
+			await refreshUserMenuPermissionsFromApi();
+			await loadMenus();
+			setShowEditMenuModal(false);
+			setEditingMenu(null);
+			setMenuActionMessage({ type: 'success', text: 'Menu updated successfully.' });
+		} catch (error: any) {
+			setMenuActionMessage({ type: 'error', text: error?.message || 'Failed to update menu.' });
+		} finally {
+			setEditMenuLoading(false);
+		}
+	};
+
+	const handleDeleteMenu = async (menu: Menu) => {
+		const hasChildren = menu.children && menu.children.length > 0;
+		if (hasChildren) {
+			setMenuActionMessage({ type: 'error', text: `Cannot delete "${menu.name}" — it has active children. Remove children first.` });
+			return;
+		}
+		if (!window.confirm(`Are you sure you want to delete "${menu.name}"?`)) return;
+		try {
+			await MenuManagementApiService.deleteMenu(menu.id);
+			await refreshUserMenuPermissionsFromApi();
+			await loadMenus();
+			setMenuActionMessage({ type: 'success', text: `"${menu.name}" deleted successfully.` });
+		} catch (error: any) {
+			setMenuActionMessage({ type: 'error', text: error?.message || 'Failed to delete menu.' });
+		}
+	};
+
 	const renderMenuRow = (menu: Menu, level: number = 0) => {
 		const hasChildren = menu.children && menu.children.length > 0;
 		const isExpanded = expandedMenus.has(menu.id);
@@ -579,13 +643,27 @@ export const MenuManagement: React.FC = () => {
 						</button>
 					</td>
 					<td className='px-4 py-3'>
-						<div className='flex items-center space-x-2'>
+						<div className='flex items-center space-x-1'>
+							<button
+								onClick={() => handleEditMenu(menu)}
+								className='p-1 hover:bg-blue-50 rounded transition-colors text-foreground-muted hover:text-blue-600'
+								title='Edit Menu'
+							>
+								<Pencil className='w-4 h-4' />
+							</button>
 							<button
 								onClick={() => handleManagePermissions(menu)}
 								className='p-1 hover:bg-background-secondary rounded transition-colors'
 								title='Manage Permissions'
 							>
 								<Settings className='w-4 h-4' />
+							</button>
+							<button
+								onClick={() => handleDeleteMenu(menu)}
+								className='p-1 hover:bg-red-50 rounded transition-colors text-foreground-muted hover:text-red-600'
+								title='Delete Menu'
+							>
+								<Trash2 className='w-4 h-4' />
 							</button>
 						</div>
 					</td>
@@ -612,15 +690,8 @@ export const MenuManagement: React.FC = () => {
 				</div>
 				<div className='flex items-center space-x-2'>
 					<Button
-						onClick={handleAddSalesSubmenus}
-						className='flex items-center space-x-2 bg-orange-600 hover:bg-orange-700'
-						disabled={loading}
-					>
-						<Plus className='w-4 h-4' />
-						<span>Add Sales Submenus</span>
-					</Button>
-					<Button
 						onClick={handleCreateMenu}
+							data-testid='add-menu-btn'
 						className='flex items-center space-x-2 bg-primary hover:bg-primary/90'
 					>
 						<Plus className='w-4 h-4' />
@@ -628,6 +699,17 @@ export const MenuManagement: React.FC = () => {
 					</Button>
 				</div>
 			</div>
+
+				{menuActionMessage && (
+					<div
+						className={`mb-4 text-sm ${
+							menuActionMessage.type === 'success' ? 'text-success' : 'text-error'
+						}`}
+						data-testid='menu-action-message'
+					>
+						{menuActionMessage.text}
+					</div>
+				)}
 
 			{/* Compact Table */}
 			<div className='bg-background rounded-lg border border-border shadow-sm overflow-hidden'>
@@ -742,6 +824,23 @@ export const MenuManagement: React.FC = () => {
 					</div>
 				</div>
 			)}
+
+			<CreateMenuHierarchyModal
+				isOpen={showCreateMenuModal}
+				onClose={() => setShowCreateMenuModal(false)}
+				onSubmit={handleSubmitCreateHierarchy}
+				loading={createMenuLoading}
+				existingMenus={menus}
+			/>
+
+			<EditMenuModal
+				isOpen={showEditMenuModal}
+				menu={editingMenu}
+				allMenus={menus}
+				onClose={() => { setShowEditMenuModal(false); setEditingMenu(null); }}
+				onSubmit={handleSubmitEditMenu}
+				loading={editMenuLoading}
+			/>
 		</div>
 	);
 };

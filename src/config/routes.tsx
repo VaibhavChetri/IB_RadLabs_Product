@@ -73,6 +73,12 @@ import { ReportsDashboard } from '../pages/leads/ReportsDashboard';
 // HR - Job Posting
 import { AddJobPosting } from '../pages/hr/job-posting/AddJobPosting';
 import { JobPostingListing } from '../pages/hr/job-posting/JobPostingListing';
+// HR - HRM
+import { EmployeeListing } from '../pages/hr/employees/EmployeeListing';
+import { AddEmployee } from '../pages/hr/employees/AddEmployee';
+import { DepartmentListing } from '../pages/hr/departments/DepartmentListing';
+import { DesignationListing } from '../pages/hr/designations/DesignationListing';
+import { SalaryStructureListing } from '../pages/hr/salary-structures/SalaryStructureListing';
 // Billing - Invoice
 import InvoiceList from '../pages/billing/InvoiceList';
 import BillingDetails from '../pages/billing/BillingDetails';
@@ -163,6 +169,13 @@ export const routes: RouteConfig[] = [
 	{ path: '/hr/job-posting', component: JobPostingListing },
 	{ path: '/hr/job-posting/add', component: AddJobPosting },
 	{ path: '/hr/job-posting/edit/:id', component: AddJobPosting },
+	// HR - HRM
+	{ path: '/hr/employees', component: EmployeeListing },
+	{ path: '/hr/employees/add', component: AddEmployee },
+	{ path: '/hr/employees/edit/:id', component: AddEmployee },
+	{ path: '/hr/departments', component: DepartmentListing },
+	{ path: '/hr/designations', component: DesignationListing },
+	{ path: '/hr/salary-structures', component: SalaryStructureListing },
 	// Billing - Invoice
 	{ path: '/billing/invoice', component: InvoiceList },
 	{ path: '/billing/details', component: BillingDetails },

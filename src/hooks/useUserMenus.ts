@@ -99,6 +99,7 @@ export const useUserMenus = (): UseUserMenusReturn => {
 		};
 	}
 
+
 	// Update accessible menu IDs when permissions change
 	useEffect(() => {
 		if (permissions && Object.keys(permissions).length > 0) {

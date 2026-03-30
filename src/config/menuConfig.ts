@@ -33,6 +33,10 @@ import {
 	Box,
 	Receipt,
 	DollarSign,
+	UserCog,
+	Building,
+	BadgeDollarSign,
+	Award,
 	// ArrowLeft, // Deprecated - Received section commented out
 } from 'lucide-react';
 
@@ -538,6 +542,30 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 				name: 'Job Posting',
 				icon: Briefcase,
 				href: '/hr/job-posting',
+			},
+			{
+				id: 'employees',
+				name: 'Employees',
+				icon: UserCog,
+				href: '/hr/employees',
+			},
+			{
+				id: 'departments',
+				name: 'Departments',
+				icon: Building,
+				href: '/hr/departments',
+			},
+			{
+				id: 'designations',
+				name: 'Designations',
+				icon: Award,
+				href: '/hr/designations',
+			},
+			{
+				id: 'salary-structures',
+				name: 'Salary Structures',
+				icon: BadgeDollarSign,
+				href: '/hr/salary-structures',
 			},
 		],
 	},

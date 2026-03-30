@@ -37,6 +37,7 @@ import {
 	Building,
 	BadgeDollarSign,
 	Award,
+	Calendar,
 	// ArrowLeft, // Deprecated - Received section commented out
 } from 'lucide-react';
 
@@ -566,6 +567,42 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 				name: 'Salary Structures',
 				icon: BadgeDollarSign,
 				href: '/hr/salary-structures',
+			},
+			{
+				id: 'my-holidays',
+				name: 'My Holidays',
+				icon: Calendar,
+				href: '/hr/holidays',
+			},
+			{
+				id: 'my-choices',
+				name: 'My Choices',
+				icon: ClipboardList,
+				href: '/hr/holidays/my-choices',
+			},
+			{
+				id: 'team-choices',
+				name: 'Team Choices',
+				icon: Users,
+				href: '/hr/holidays/team-choices',
+			},
+			{
+				id: 'holiday-master',
+				name: 'Holiday Master',
+				icon: Database,
+				href: '/hr/holidays/master',
+			},
+			{
+				id: 'choices-summary',
+				name: 'Choices Summary',
+				icon: BarChart,
+				href: '/hr/holidays/summary',
+			},
+			{
+				id: 'holiday-config',
+				name: 'System Config',
+				icon: UserCog,
+				href: '/hr/holidays/config',
 			},
 		],
 	},

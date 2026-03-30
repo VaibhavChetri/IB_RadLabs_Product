@@ -18,5 +18,13 @@ export { getEmployeeColumns } from './config/employeeColumns';
 export { getDepartmentColumns } from './config/departmentColumns';
 export { getDesignationColumns } from './config/designationColumns';
 
+// Holiday Hooks
+export { useHolidayData, useCreateHoliday, useUpdateHoliday, useDeleteHoliday } from './hooks/useHolidayData';
+export { useMyHolidayChoices, useCreateHolidayChoice, useDeleteHolidayChoice, useTeamHolidayChoices, useHolidayChoicesSummary } from './hooks/useHolidayChoiceData';
+export { useHolidayConfig, useUpdateHolidayConfig } from './hooks/useHolidayConfigData';
+
+// Holiday Columns
+export { getHolidayColumns } from './config/holidayColumns';
+
 // Constants
 export * from './config/constants';

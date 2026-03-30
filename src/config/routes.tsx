@@ -79,6 +79,13 @@ import { AddEmployee } from '../pages/hr/employees/AddEmployee';
 import { DepartmentListing } from '../pages/hr/departments/DepartmentListing';
 import { DesignationListing } from '../pages/hr/designations/DesignationListing';
 import { SalaryStructureListing } from '../pages/hr/salary-structures/SalaryStructureListing';
+// HR - Holidays
+import { MyHolidays } from '../pages/hr/holidays/MyHolidays';
+import { MyChoices } from '../pages/hr/holidays/MyChoices';
+import { TeamHolidayChoices } from '../pages/hr/holidays/TeamHolidayChoices';
+import { HolidayMaster } from '../pages/hr/holidays/HolidayMaster';
+import { HolidayChoicesSummary } from '../pages/hr/holidays/HolidayChoicesSummary';
+import { HolidayConfig } from '../pages/hr/holidays/HolidayConfig';
 // Billing - Invoice
 import InvoiceList from '../pages/billing/InvoiceList';
 import BillingDetails from '../pages/billing/BillingDetails';
@@ -176,6 +183,13 @@ export const routes: RouteConfig[] = [
 	{ path: '/hr/departments', component: DepartmentListing },
 	{ path: '/hr/designations', component: DesignationListing },
 	{ path: '/hr/salary-structures', component: SalaryStructureListing },
+	// HR - Holidays
+	{ path: '/hr/holidays', component: MyHolidays },
+	{ path: '/hr/holidays/my-choices', component: MyChoices },
+	{ path: '/hr/holidays/team-choices', component: TeamHolidayChoices },
+	{ path: '/hr/holidays/master', component: HolidayMaster },
+	{ path: '/hr/holidays/summary', component: HolidayChoicesSummary },
+	{ path: '/hr/holidays/config', component: HolidayConfig },
 	// Billing - Invoice
 	{ path: '/billing/invoice', component: InvoiceList },
 	{ path: '/billing/details', component: BillingDetails },

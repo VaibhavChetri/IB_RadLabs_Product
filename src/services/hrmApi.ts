@@ -287,6 +287,85 @@ export interface CreateHierarchyRequest {
 
 export interface UpdateHierarchyRequest extends Partial<CreateHierarchyRequest> {}
 
+// ─── Holiday Types ──────────────────────────────────────────────────────────
+
+export interface HrmHoliday {
+	id: number;
+	name: string;
+	date: string;
+	type: 'national' | 'company' | 'restricted';
+	year: number;
+	is_optional: boolean;
+	created_at?: string;
+	updated_at?: string;
+}
+
+export interface HrmHolidayFilters {
+	year?: number;
+	type?: string;
+	page?: number;
+	limit?: number;
+}
+
+export interface CreateHolidayRequest {
+	name: string;
+	date: string;
+	type: 'national' | 'company' | 'restricted';
+	year: number;
+}
+
+export interface UpdateHolidayRequest extends Partial<CreateHolidayRequest> {}
+
+export interface HrmHolidayChoice {
+	id: number;
+	holiday_id: number;
+	holiday_name?: string;
+	holiday_date?: string;
+	status: string;
+	chosen_at?: string;
+}
+
+export interface HrmMyChoicesResponse {
+	year: number;
+	quota: number;
+	chosen_count: number;
+	remaining: number;
+	choices: HrmHolidayChoice[];
+}
+
+export interface HrmTeamChoice {
+	id: number;
+	employee_id: number;
+	employee_name: string;
+	employee_code: string;
+	holiday_id: number;
+	holiday_name: string;
+	holiday_date: string;
+	status: string;
+}
+
+export interface HrmTeamChoiceFilters {
+	year?: number;
+	employee_id?: number;
+	holiday_id?: number;
+	status?: string;
+	page?: number;
+	limit?: number;
+}
+
+export interface HrmChoiceSummary {
+	holiday_id: number;
+	holiday_name: string;
+	date: string;
+	total_chosen: number;
+}
+
+export interface HrmConfig {
+	config_key: string;
+	config_value: string;
+	description: string;
+}
+
 // ─── API Service ─────────────────────────────────────────────────────────────
 
 export class HrmApiService {
@@ -460,5 +539,71 @@ export class HrmApiService {
 
 	static async deleteHierarchy(id: number): Promise<ApiResponse<any>> {
 		return api.delete(`${BASE_PATH}/hierarchies/${id}`);
+	}
+
+	// ── Holiday APIs ──────────────────────────────────────────────────────
+
+	static async getHolidays(filters?: HrmHolidayFilters): Promise<ApiResponse<any>> {
+		const params: Record<string, string> = {};
+		if (filters?.year) params.year = filters.year.toString();
+		if (filters?.type) params.type = filters.type;
+		if (filters?.page) params.page = filters.page.toString();
+		if (filters?.limit !== undefined) params.limit = clampHrmListLimit(filters.limit).toString();
+		return api.get(`${BASE_PATH}/holidays`, { params });
+	}
+
+	static async createHoliday(data: CreateHolidayRequest): Promise<ApiResponse<HrmHoliday>> {
+		return api.post(`${BASE_PATH}/holidays`, data);
+	}
+
+	static async updateHoliday(id: number, data: UpdateHolidayRequest): Promise<ApiResponse<HrmHoliday>> {
+		return api.patch(`${BASE_PATH}/holidays/${id}`, data);
+	}
+
+	static async deleteHoliday(id: number): Promise<ApiResponse<any>> {
+		return api.delete(`${BASE_PATH}/holidays/${id}`);
+	}
+
+	// ── Holiday Choice APIs ───────────────────────────────────────────────
+
+	static async getMyHolidayChoices(year?: number): Promise<ApiResponse<any>> {
+		const params: Record<string, string> = {};
+		if (year) params.year = year.toString();
+		return api.get(`${BASE_PATH}/holidays/choices/my`, { params });
+	}
+
+	static async createHolidayChoice(data: { holiday_id: number; year: number }): Promise<ApiResponse<any>> {
+		return api.post(`${BASE_PATH}/holidays/choices`, data);
+	}
+
+	static async deleteHolidayChoice(choiceId: number): Promise<ApiResponse<any>> {
+		return api.delete(`${BASE_PATH}/holidays/choices/${choiceId}`);
+	}
+
+	static async getTeamHolidayChoices(filters?: HrmTeamChoiceFilters): Promise<ApiResponse<any>> {
+		const params: Record<string, string> = {};
+		if (filters?.year) params.year = filters.year.toString();
+		if (filters?.employee_id) params.employee_id = filters.employee_id.toString();
+		if (filters?.holiday_id) params.holiday_id = filters.holiday_id.toString();
+		if (filters?.status) params.status = filters.status;
+		if (filters?.page) params.page = filters.page.toString();
+		if (filters?.limit !== undefined) params.limit = clampHrmListLimit(filters.limit).toString();
+		return api.get(`${BASE_PATH}/holidays/choices/team`, { params });
+	}
+
+	static async getHolidayChoicesSummary(year?: number): Promise<ApiResponse<any>> {
+		const params: Record<string, string> = {};
+		if (year) params.year = year.toString();
+		return api.get(`${BASE_PATH}/holidays/choices/summary`, { params });
+	}
+
+	// ── HRM Config APIs ───────────────────────────────────────────────────
+
+	static async getConfig(): Promise<ApiResponse<any>> {
+		return api.get(`${BASE_PATH}/config`);
+	}
+
+	static async updateConfig(key: string, value: string): Promise<ApiResponse<any>> {
+		return api.patch(`${BASE_PATH}/config/${key}`, { value });
 	}
 }

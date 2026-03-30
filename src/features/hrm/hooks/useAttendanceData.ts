@@ -44,12 +44,14 @@ export const useAttendanceSummary = (params?: { employee_id: number; month: numb
 		retry: 1,
 	});
 
-export const useMarkAttendance = () => {
+export const useMarkAttendance = (options?: { invalidateOnSuccess?: boolean }) => {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: async (data: MarkAttendanceRequest) => HrmApiService.markAttendance(data),
 		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ['hrm', 'attendance'] });
+			if (options?.invalidateOnSuccess ?? true) {
+				queryClient.invalidateQueries({ queryKey: ['hrm', 'attendance'] });
+			}
 		},
 	});
 };

@@ -92,6 +92,18 @@ Track API verification, mock-data checks, UI validation outcomes, and known fail
   - impact: frontend can only show a generic failure toast; backend should return a clean 4xx business error
 - `POST /leave-balances/:employee_id/initialize` accepts nonexistent employee IDs and returns success with empty balances
   - impact: HR could think initialization worked when no employee exists; backend should return `404`
+- `POST /attendance/mark` can return success, but `GET /attendance/team` may still not reflect the updated `present` status for the same employee/date
+  - verification on March 30, 2026:
+  - request: `POST /attendance/mark` with `employee_ids: [159]`, `from_date: 2026-03-30`, `to_date: 2026-03-30`, `status: present`
+  - response: `{ "success": "Attendance marked", "data": { "created": 0, "updated": 1, "total_dates": 1, "total_employees": 1 } }`
+  - follow-up read: `GET /attendance/team?month=3&year=2026&employee_id=159`
+  - observed result: returned March records still show `present: 0`, `absent: 21`, and no visible `2026-03-30` present row
+  - impact: after refresh, the UI may appear to "lose" a saved present mark even though the write endpoint reported success
+- `GET /attendance/team` appears to classify some Friday/Saturday dates as `weekend`
+  - example from live response:
+  - `2026-03-06` returned as `weekend`, but March 6, 2026 is Friday
+  - `2026-03-07` returned as `weekend`, but March 7, 2026 is Saturday
+  - impact: yellow weekend styling in the UI is reflecting backend data that already looks date-shifted or weekend-mapped incorrectly
 - `POST /menus` is not mounted, while `POST /menus/hierarchy` is the working create route
   - impact: backend menu write contract is easy to target incorrectly unless documented
 - most live endpoints currently return empty datasets for `ch-mumbai`

@@ -37,6 +37,7 @@ import {
 	Building,
 	BadgeDollarSign,
 	Award,
+	Calendar,
 	// ArrowLeft, // Deprecated - Received section commented out
 } from 'lucide-react';
 
@@ -538,34 +539,184 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 		icon: Users,
 		children: [
 			{
-				id: 'job-posting',
-				name: 'Job Posting',
+				id: 'hr-organization',
+				name: 'Organization',
+				icon: Building2,
+				children: [
+					{
+						id: 'employees',
+						name: 'Employees',
+						icon: UserCog,
+						href: '/hr/employees',
+					},
+					{
+						id: 'departments',
+						name: 'Departments',
+						icon: Building,
+						href: '/hr/departments',
+					},
+					{
+						id: 'designations',
+						name: 'Designations',
+						icon: Award,
+						href: '/hr/designations',
+					},
+					{
+						id: 'salary-structures',
+						name: 'Salary Structures',
+						icon: BadgeDollarSign,
+						href: '/hr/salary-structures',
+					},
+				],
+			},
+			{
+				id: 'hr-recruitment',
+				name: 'Recruitment',
 				icon: Briefcase,
-				href: '/hr/job-posting',
+				children: [
+					{
+						id: 'job-posting',
+						name: 'Job Posting',
+						icon: Briefcase,
+						href: '/hr/job-posting',
+					},
+				],
 			},
 			{
-				id: 'employees',
-				name: 'Employees',
-				icon: UserCog,
-				href: '/hr/employees',
+				id: 'hr-self-service',
+				name: 'My HR',
+				icon: Calendar,
+				children: [
+					{
+						id: 'my-holidays',
+						name: 'My Holidays',
+						icon: Calendar,
+						href: '/hr/holidays',
+					},
+					{
+						id: 'my-choices',
+						name: 'My Choices',
+						icon: ClipboardList,
+						href: '/hr/holidays/my-choices',
+					},
+					{
+						id: 'my-leaves',
+						name: 'My Leaves',
+						icon: FileText,
+						href: '/hr/leaves',
+					},
+					{
+						id: 'my-comp-off',
+						name: 'My Comp-Off',
+						icon: Calendar,
+						href: '/hr/comp-off',
+					},
+					{
+						id: 'my-attendance',
+						name: 'My Attendance',
+						icon: Activity,
+						href: '/hr/attendance',
+					},
+					{
+						id: 'attendance-regularize',
+						name: 'Regularize',
+						icon: ClipboardList,
+						href: '/hr/attendance/regularize',
+					},
+				],
 			},
 			{
-				id: 'departments',
-				name: 'Departments',
-				icon: Building,
-				href: '/hr/departments',
-			},
-			{
-				id: 'designations',
-				name: 'Designations',
-				icon: Award,
-				href: '/hr/designations',
-			},
-			{
-				id: 'salary-structures',
-				name: 'Salary Structures',
-				icon: BadgeDollarSign,
-				href: '/hr/salary-structures',
+				id: 'hr-holiday-admin',
+				name: 'HR Operations',
+				icon: Database,
+				children: [
+					{
+						id: 'team-hr',
+						name: 'Team HR',
+						icon: Users,
+						children: [
+							{
+								id: 'team-choices',
+								name: 'Team Choices',
+								icon: Users,
+								href: '/hr/holidays/team-choices',
+							},
+							{
+								id: 'leave-requests',
+								name: 'Leave Requests',
+								icon: ClipboardList,
+								href: '/hr/leave-requests',
+							},
+							{
+								id: 'team-comp-off',
+								name: 'Team Comp-Off',
+								icon: Calendar,
+								href: '/hr/team-comp-off',
+							},
+							{
+								id: 'mark-attendance',
+								name: 'Mark Attendance',
+								icon: Activity,
+								href: '/hr/attendance/mark',
+							},
+							{
+								id: 'team-attendance',
+								name: 'Team Attendance',
+								icon: Users,
+								href: '/hr/attendance/team',
+							},
+							{
+								id: 'attendance-summary',
+								name: 'Attendance Summary',
+								icon: BarChart3,
+								href: '/hr/attendance/summary',
+							},
+							{
+								id: 'regularization-requests',
+								name: 'Regularization Requests',
+								icon: ClipboardList,
+								href: '/hr/attendance/regularization-requests',
+							},
+						],
+					},
+					{
+						id: 'hr-settings',
+						name: 'HR Settings',
+						icon: Database,
+						children: [
+							{
+								id: 'holiday-master',
+								name: 'Holiday Master',
+								icon: Database,
+								href: '/hr/holidays/master',
+							},
+							{
+								id: 'choices-summary',
+								name: 'Choices Summary',
+								icon: BarChart,
+								href: '/hr/holidays/summary',
+							},
+							{
+								id: 'holiday-config',
+								name: 'System Config',
+								icon: UserCog,
+								href: '/hr/holidays/config',
+							},
+							{
+								id: 'leave-types',
+								name: 'Leave Types',
+								icon: FileText,
+								href: '/hr/leave-types',
+							},
+							{
+								id: 'leave-balances',
+								name: 'Leave Balances',
+								icon: BadgeDollarSign,
+								href: '/hr/leave-balances',
+							},
+						],
+					},
+				],
 			},
 		],
 	},

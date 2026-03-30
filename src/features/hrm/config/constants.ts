@@ -72,3 +72,45 @@ export const formatCurrency = (amount: number): string => {
 		maximumFractionDigits: 0,
 	}).format(amount);
 };
+
+export const HOLIDAY_TYPE_OPTIONS = [
+	{ value: '', label: 'All Types' },
+	{ value: 'national', label: 'National' },
+	{ value: 'company', label: 'Company' },
+	{ value: 'restricted', label: 'Restricted' },
+];
+
+export const HOLIDAY_CHOICE_STATUS_OPTIONS = [
+	{ value: '', label: 'All Status' },
+	{ value: 'chosen', label: 'Chosen' },
+	{ value: 'cancelled', label: 'Cancelled' },
+];
+
+export const getHolidayTypeColor = (type: string): string => {
+	switch (type) {
+		case 'national':
+			return 'text-blue-600 bg-blue-50';
+		case 'company':
+			return 'text-purple-600 bg-purple-50';
+		case 'restricted':
+			return 'text-amber-600 bg-amber-50';
+		default:
+			return 'text-gray-600 bg-gray-50';
+	}
+};
+
+export const getHolidayTypeLabel = (type: string): string => {
+	const option = HOLIDAY_TYPE_OPTIONS.find(o => o.value === type);
+	return option?.label || type;
+};
+
+export const HOLIDAY_CONFIG_LABELS: Record<string, { label: string; inputType: string }> = {
+	restricted_holiday_quota: { label: 'Restricted Holiday Quota (per year)', inputType: 'number' },
+	comp_off_expiry_days: { label: 'Comp-off Expiry (days)', inputType: 'number' },
+	standard_work_hours: { label: 'Standard Work Hours / Day', inputType: 'number' },
+	pt_state: { label: 'Professional Tax State', inputType: 'text' },
+	financial_year_start_month: { label: 'Financial Year Start Month', inputType: 'number' },
+	leave_year_start_month: { label: 'Leave Year Start Month', inputType: 'number' },
+	pf_basic_cap: { label: 'PF Basic Salary Cap (\u20B9)', inputType: 'number' },
+	esi_gross_threshold: { label: 'ESI Gross Threshold (\u20B9)', inputType: 'number' },
+};

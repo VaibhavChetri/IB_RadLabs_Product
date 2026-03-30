@@ -19,6 +19,7 @@ import {
 	useDepartmentOptions,
 	useDesignationOptions,
 	useEmployeeManagerOptions,
+	useUserOptions,
 	GENDER_OPTIONS,
 	EMPLOYMENT_TYPE_OPTIONS,
 	EMPLOYEE_STATUS_OPTIONS,
@@ -37,6 +38,7 @@ interface FormData {
 	department_id: string;
 	designation_id: string;
 	primary_manager_id: string;
+	admin_id: string;
 	employment_type: string;
 	status: string;
 	pan_number: string;
@@ -60,6 +62,7 @@ const initialFormData: FormData = {
 	department_id: '',
 	designation_id: '',
 	primary_manager_id: '',
+	admin_id: '',
 	employment_type: 'full_time',
 	status: 'active',
 	pan_number: '',
@@ -93,6 +96,7 @@ export const AddEmployee: React.FC = () => {
 	const { data: deptData } = useDepartmentOptions();
 	const { data: desigData } = useDesignationOptions();
 	const { data: managerRaw, isLoading: managerOptionsLoading } = useEmployeeManagerOptions();
+	const { data: usersRaw, isLoading: userOptionsLoading } = useUserOptions();
 
 	const departmentOptions = React.useMemo(() => {
 		const raw = deptData as any;
@@ -107,6 +111,17 @@ export const AddEmployee: React.FC = () => {
 		const items = Array.isArray(desigs) ? desigs : [];
 		return items.map((d: any) => ({ value: String(d.id), label: d.title }));
 	}, [desigData]);
+
+	const userOptions = React.useMemo(() => {
+		const list = Array.isArray(usersRaw) ? usersRaw : [];
+		return [
+			{ value: '', label: 'No linked account' },
+			...list.map((u: any) => ({
+				value: String(u.id),
+				label: `${u.firstName || ''} ${u.lastName || ''}`.trim() + ` (${u.username})`,
+			})),
+		];
+	}, [usersRaw]);
 
 	const managerOptions = React.useMemo(() => {
 		const raw = managerRaw as any;
@@ -146,6 +161,7 @@ export const AddEmployee: React.FC = () => {
 				department_id: emp.department_id ? String(emp.department_id) : '',
 				designation_id: emp.designation_id ? String(emp.designation_id) : '',
 				primary_manager_id: emp.primary_manager_id ? String(emp.primary_manager_id) : '',
+				admin_id: emp.admin_id ? String(emp.admin_id) : '',
 				employment_type: emp.employment_type || 'full_time',
 				status: emp.status || 'active',
 				pan_number: (emp as any).pan_number || '',
@@ -217,6 +233,7 @@ export const AddEmployee: React.FC = () => {
 			payload.primary_manager_id = formData.primary_manager_id
 				? parseInt(formData.primary_manager_id, 10)
 				: null;
+			payload.admin_id = formData.admin_id ? parseInt(formData.admin_id, 10) : null;
 			if (formData.pan_number) payload.pan_number = formData.pan_number.trim();
 			if (formData.aadhaar_number) payload.aadhaar_number = formData.aadhaar_number.trim();
 			if (formData.uan_number) payload.uan_number = formData.uan_number.trim();
@@ -371,6 +388,15 @@ export const AddEmployee: React.FC = () => {
 							onChange={(value: string) => handleChange('primary_manager_id', value)}
 							placeholder='Select manager'
 							loading={managerOptionsLoading}
+						/>
+						<FloatingDropdown
+							label='Linked System User'
+							options={userOptions}
+							value={formData.admin_id}
+							onChange={(value: string) => handleChange('admin_id', value)}
+							placeholder='Select system user'
+							loading={userOptionsLoading}
+							searchable
 						/>
 						<FloatingDropdown
 							label='Employment Type'

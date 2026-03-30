@@ -79,6 +79,27 @@ import { AddEmployee } from '../pages/hr/employees/AddEmployee';
 import { DepartmentListing } from '../pages/hr/departments/DepartmentListing';
 import { DesignationListing } from '../pages/hr/designations/DesignationListing';
 import { SalaryStructureListing } from '../pages/hr/salary-structures/SalaryStructureListing';
+// HR - Holidays
+import { MyHolidays } from '../pages/hr/holidays/MyHolidays';
+import { MyChoices } from '../pages/hr/holidays/MyChoices';
+import { TeamHolidayChoices } from '../pages/hr/holidays/TeamHolidayChoices';
+import { HolidayMaster } from '../pages/hr/holidays/HolidayMaster';
+import { HolidayChoicesSummary } from '../pages/hr/holidays/HolidayChoicesSummary';
+import { HolidayConfig } from '../pages/hr/holidays/HolidayConfig';
+// HR - Leaves
+import { MyLeaves } from '../pages/hr/leaves/MyLeaves';
+import { MyCompOff } from '../pages/hr/leaves/MyCompOff';
+import { LeaveRequests } from '../pages/hr/leaves/LeaveRequests';
+import { TeamCompOff } from '../pages/hr/leaves/TeamCompOff';
+import { LeaveTypes } from '../pages/hr/leaves/LeaveTypes';
+import { LeaveBalances } from '../pages/hr/leaves/LeaveBalances';
+// HR - Attendance
+import { MyAttendance } from '../pages/hr/attendance/MyAttendance';
+import { RegularizeAttendance } from '../pages/hr/attendance/RegularizeAttendance';
+import { MarkAttendance } from '../pages/hr/attendance/MarkAttendance';
+import { TeamAttendance } from '../pages/hr/attendance/TeamAttendance';
+import { AttendanceSummary } from '../pages/hr/attendance/AttendanceSummary';
+import { RegularizationRequests } from '../pages/hr/attendance/RegularizationRequests';
 // Billing - Invoice
 import InvoiceList from '../pages/billing/InvoiceList';
 import BillingDetails from '../pages/billing/BillingDetails';
@@ -176,6 +197,27 @@ export const routes: RouteConfig[] = [
 	{ path: '/hr/departments', component: DepartmentListing },
 	{ path: '/hr/designations', component: DesignationListing },
 	{ path: '/hr/salary-structures', component: SalaryStructureListing },
+	// HR - Holidays
+	{ path: '/hr/holidays', component: MyHolidays },
+	{ path: '/hr/holidays/my-choices', component: MyChoices },
+	{ path: '/hr/holidays/team-choices', component: TeamHolidayChoices },
+	{ path: '/hr/holidays/master', component: HolidayMaster },
+	{ path: '/hr/holidays/summary', component: HolidayChoicesSummary },
+	{ path: '/hr/holidays/config', component: HolidayConfig },
+	// HR - Leaves
+	{ path: '/hr/leaves', component: MyLeaves },
+	{ path: '/hr/comp-off', component: MyCompOff },
+	{ path: '/hr/leave-requests', component: LeaveRequests },
+	{ path: '/hr/team-comp-off', component: TeamCompOff },
+	{ path: '/hr/leave-types', component: LeaveTypes },
+	{ path: '/hr/leave-balances', component: LeaveBalances },
+	// HR - Attendance
+	{ path: '/hr/attendance', component: MyAttendance },
+	{ path: '/hr/attendance/regularize', component: RegularizeAttendance },
+	{ path: '/hr/attendance/mark', component: MarkAttendance },
+	{ path: '/hr/attendance/team', component: TeamAttendance },
+	{ path: '/hr/attendance/summary', component: AttendanceSummary },
+	{ path: '/hr/attendance/regularization-requests', component: RegularizationRequests },
 	// Billing - Invoice
 	{ path: '/billing/invoice', component: InvoiceList },
 	{ path: '/billing/details', component: BillingDetails },

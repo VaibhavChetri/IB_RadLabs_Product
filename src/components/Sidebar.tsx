@@ -41,6 +41,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
 	const isActiveRoute = (href?: string) => {
 		if (!href) return false;
+		if (href === '/hr/holidays') {
+			return location.pathname === href;
+		}
 		// For dynamic routes, check if current path starts with the href
 		// e.g., /transit-plan/master-plan/edit matches /transit-plan/master-plan/edit/123
 		return location.pathname === href || location.pathname.startsWith(href + '/');
@@ -90,7 +93,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 					<button
 						onClick={() => toggleMenu(item.id)}
 						className={cn(baseClasses, activeClasses, 'w-full justify-between')}
-						style={{ paddingRight: level === 1 ? '2.5rem' : '0.75rem' }}
+						style={{ paddingRight: level >= 1 ? '2.5rem' : '0.75rem' }}
 					>
 						<div className='flex items-center'>
 							<item.icon
@@ -108,9 +111,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 							)}
 						</div>
 						{isExpanded ? (
-							<ChevronDown className='h-4 w-4 text-foreground-muted' />
+							<ChevronDown className='h-4 w-4 text-foreground-muted flex-shrink-0 ml-2' />
 						) : (
-							<ChevronRight className='h-4 w-4 text-foreground-muted' />
+							<ChevronRight className='h-4 w-4 text-foreground-muted flex-shrink-0 ml-2' />
 						)}
 					</button>
 				) : (

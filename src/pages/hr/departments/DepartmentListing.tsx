@@ -5,7 +5,7 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
 import { Plus } from 'lucide-react';
-import { PageHeader, Button, Snackbar, Table, FloatingInput, Pagination } from '../../../components/ui';
+import { PageHeader, Button, Snackbar, Table, FloatingInput, FloatingDropdown, Pagination } from '../../../components/ui';
 import { TableSkeleton } from '../../../components/ui/Skeleton';
 import {
 	useDepartmentData,
@@ -13,12 +13,15 @@ import {
 	useUpdateDepartment,
 	useDeleteDepartment,
 	getDepartmentColumns,
+	ACTIVE_STATUS_OPTIONS,
 } from '../../../features/hrm';
+import { Switch } from '../../../components/ui/Form';
 import { useDebounce } from '../../../hooks/useDebounce';
 import type { HrmDepartment, CreateDepartmentRequest } from '../../../services/hrmApi';
 
 export const DepartmentListing: React.FC = () => {
 	const [search, setSearch] = useState('');
+	const [statusFilter, setStatusFilter] = useState('');
 	const [page, setPage] = useState(1);
 	const [limit] = useState(20);
 	const [showModal, setShowModal] = useState(false);
@@ -39,9 +42,14 @@ export const DepartmentListing: React.FC = () => {
 		error: listingError,
 	} = useDepartmentData({
 		q: debouncedSearch || undefined,
+		is_active: statusFilter === '' ? undefined : statusFilter === 'true',
 		page,
 		limit,
 	});
+
+	React.useEffect(() => {
+		setPage(1);
+	}, [debouncedSearch, statusFilter]);
 
 	const createMutation = useCreateDepartment();
 	const updateMutation = useUpdateDepartment();
@@ -127,13 +135,22 @@ export const DepartmentListing: React.FC = () => {
 				</div>
 
 				<div className='mb-6 flex w-full'>
-					<div className='bg-gradient-to-r from-gray-50 to-white border border-gray-100 rounded-lg p-4 flex w-full gap-3'>
+					<div className='bg-gradient-to-r from-gray-50 to-white border border-gray-100 rounded-lg p-4 flex w-full gap-3 flex-wrap'>
 						<FloatingInput
 							label='Search'
 							value={search}
 							onChange={setSearch}
 							placeholder='Search departments...'
 							className='w-64'
+						/>
+						<FloatingDropdown
+							label='Status'
+							options={ACTIVE_STATUS_OPTIONS}
+							value={statusFilter}
+							onChange={(value: string) => setStatusFilter(value)}
+							placeholder='All'
+							className='w-44'
+							searchable={false}
 						/>
 					</div>
 				</div>
@@ -177,6 +194,15 @@ export const DepartmentListing: React.FC = () => {
 									onChange={(value: string) => setFormData(prev => ({ ...prev, code: value.toUpperCase() }))}
 									placeholder='e.g. OPS'
 								/>
+								<div className='flex items-center gap-3 pt-1'>
+									<Switch
+										checked={formData.is_active ?? true}
+										onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+											setFormData(prev => ({ ...prev, is_active: e.target.checked }))
+										}
+									/>
+									<span className='text-sm text-gray-700'>Active</span>
+								</div>
 							</div>
 							<div className='flex justify-end gap-3 mt-6'>
 								<Button variant='secondary' onClick={() => setShowModal(false)}>

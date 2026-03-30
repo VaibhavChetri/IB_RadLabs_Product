@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, Edit, Eye, Trash2, Search } from 'lucide-react';
 import { PageHeader, Button, Snackbar, Table, FloatingInput, FloatingDropdown, Pagination, TableSkeleton } from '../../../components/ui';
 import { TableColumn } from '../../../components/ui/DataDisplay';
+import { HrIconTooltip } from '../../../features/hrm/components/HrIconTooltip';
 import { CareerApiService, JobListing, JobListingFilters } from '../../../services/careerApi';
 import { Category } from '../../../services/careerApi';
 
@@ -179,27 +180,33 @@ export const JobPostingListing: React.FC = () => {
 					const row = record as unknown as JobListing;
 					return (
 						<div className='flex items-center justify-center gap-2'>
-							<button
-								onClick={() => handleView(row)}
-								className='p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors'
-								title='View'
-							>
-								<Eye className='w-4 h-4' />
-							</button>
-							<button
-								onClick={() => handleEdit(row)}
-								className='p-2 text-green-600 hover:bg-green-50 rounded transition-colors'
-								title='Edit'
-							>
-								<Edit className='w-4 h-4' />
-							</button>
-							<button
-								onClick={() => handleDelete(row)}
-								className='p-2 text-red-600 hover:bg-red-50 rounded transition-colors'
-								title='Delete'
-							>
-								<Trash2 className='w-4 h-4' />
-							</button>
+							<HrIconTooltip label='View'>
+								<button
+									type='button'
+									onClick={() => handleView(row)}
+									className='p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors'
+								>
+									<Eye className='w-4 h-4' />
+								</button>
+							</HrIconTooltip>
+							<HrIconTooltip label='Edit'>
+								<button
+									type='button'
+									onClick={() => handleEdit(row)}
+									className='p-2 text-green-600 hover:bg-green-50 rounded transition-colors'
+								>
+									<Edit className='w-4 h-4' />
+								</button>
+							</HrIconTooltip>
+							<HrIconTooltip label='Delete'>
+								<button
+									type='button'
+									onClick={() => handleDelete(row)}
+									className='p-2 text-red-600 hover:bg-red-50 rounded transition-colors'
+								>
+									<Trash2 className='w-4 h-4' />
+								</button>
+							</HrIconTooltip>
 						</div>
 					);
 				},

@@ -1,7 +1,12 @@
 // HRM Feature Module - Barrel Exports
 
 // Hooks
-export { useEmployeeData, useDepartmentOptions, useDesignationOptions } from './hooks/useEmployeeData';
+export {
+	useEmployeeData,
+	useDepartmentOptions,
+	useDesignationOptions,
+	useEmployeeManagerOptions,
+} from './hooks/useEmployeeData';
 export { useCreateEmployee, useUpdateEmployee, useDeleteEmployee } from './hooks/useEmployeeMutations';
 export { useDepartmentData, useCreateDepartment, useUpdateDepartment, useDeleteDepartment } from './hooks/useDepartmentMutations';
 export { useDesignationData, useCreateDesignation, useUpdateDesignation, useDeleteDesignation } from './hooks/useDesignationMutations';

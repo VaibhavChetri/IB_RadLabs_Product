@@ -15,7 +15,14 @@ import {
 	CreateEmployeeRequest,
 	HrmEmployee,
 } from '../../../services/hrmApi';
-import { useDepartmentOptions, useDesignationOptions, GENDER_OPTIONS, EMPLOYMENT_TYPE_OPTIONS, EMPLOYEE_STATUS_OPTIONS } from '../../../features/hrm';
+import {
+	useDepartmentOptions,
+	useDesignationOptions,
+	useEmployeeManagerOptions,
+	GENDER_OPTIONS,
+	EMPLOYMENT_TYPE_OPTIONS,
+	EMPLOYEE_STATUS_OPTIONS,
+} from '../../../features/hrm';
 
 interface FormData {
 	employee_code: string;
@@ -29,6 +36,7 @@ interface FormData {
 	date_of_birth: string;
 	department_id: string;
 	designation_id: string;
+	primary_manager_id: string;
 	employment_type: string;
 	status: string;
 	pan_number: string;
@@ -51,6 +59,7 @@ const initialFormData: FormData = {
 	date_of_birth: '',
 	department_id: '',
 	designation_id: '',
+	primary_manager_id: '',
 	employment_type: 'full_time',
 	status: 'active',
 	pan_number: '',
@@ -83,6 +92,7 @@ export const AddEmployee: React.FC = () => {
 	// Fetch dropdown options
 	const { data: deptData } = useDepartmentOptions();
 	const { data: desigData } = useDesignationOptions();
+	const { data: managerRaw, isLoading: managerOptionsLoading } = useEmployeeManagerOptions();
 
 	const departmentOptions = React.useMemo(() => {
 		const raw = deptData as any;
@@ -97,6 +107,20 @@ export const AddEmployee: React.FC = () => {
 		const items = Array.isArray(desigs) ? desigs : [];
 		return items.map((d: any) => ({ value: String(d.id), label: d.title }));
 	}, [desigData]);
+
+	const managerOptions = React.useMemo(() => {
+		const raw = managerRaw as any;
+		const list = raw?.data?.data || raw?.data || raw || [];
+		const items = Array.isArray(list) ? list : [];
+		const selfId = id ? parseInt(id, 10) : NaN;
+		const mapped = items
+			.filter((e: { id?: number }) => e?.id != null && Number(e.id) !== selfId)
+			.map((e: HrmEmployee & { employee_code?: string }) => ({
+				value: String(e.id),
+				label: `${e.full_name || `${e.first_name || ''} ${e.last_name || ''}`.trim()} (${e.employee_code ?? e.id})`,
+			}));
+		return [{ value: '', label: 'No manager' }, ...mapped];
+	}, [managerRaw, id]);
 
 	// Filter out empty-value options for form dropdowns
 	const employmentTypeFormOptions = EMPLOYMENT_TYPE_OPTIONS.filter(o => o.value !== '');
@@ -121,6 +145,7 @@ export const AddEmployee: React.FC = () => {
 				date_of_birth: emp.date_of_birth ? emp.date_of_birth.split('T')[0] : '',
 				department_id: emp.department_id ? String(emp.department_id) : '',
 				designation_id: emp.designation_id ? String(emp.designation_id) : '',
+				primary_manager_id: emp.primary_manager_id ? String(emp.primary_manager_id) : '',
 				employment_type: emp.employment_type || 'full_time',
 				status: emp.status || 'active',
 				pan_number: (emp as any).pan_number || '',
@@ -189,6 +214,9 @@ export const AddEmployee: React.FC = () => {
 			if (formData.date_of_birth) payload.date_of_birth = formData.date_of_birth;
 			if (formData.department_id) payload.department_id = parseInt(formData.department_id, 10);
 			if (formData.designation_id) payload.designation_id = parseInt(formData.designation_id, 10);
+			payload.primary_manager_id = formData.primary_manager_id
+				? parseInt(formData.primary_manager_id, 10)
+				: null;
 			if (formData.pan_number) payload.pan_number = formData.pan_number.trim();
 			if (formData.aadhaar_number) payload.aadhaar_number = formData.aadhaar_number.trim();
 			if (formData.uan_number) payload.uan_number = formData.uan_number.trim();
@@ -335,6 +363,14 @@ export const AddEmployee: React.FC = () => {
 							value={formData.designation_id}
 							onChange={(value: string) => handleChange('designation_id', value)}
 							placeholder='Select designation'
+						/>
+						<FloatingDropdown
+							label='Manager'
+							options={managerOptions}
+							value={formData.primary_manager_id}
+							onChange={(value: string) => handleChange('primary_manager_id', value)}
+							placeholder='Select manager'
+							loading={managerOptionsLoading}
 						/>
 						<FloatingDropdown
 							label='Employment Type'

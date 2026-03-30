@@ -125,9 +125,46 @@ export const FloatingDropdown = forwardRef<HTMLDivElement, FloatingDropdownProps
 				</label>
 
 				<div className='relative'>
-					{searchable && isOpen ? (
+					{/* Trigger hidden only when searchable mode is open (replaced by search field) */}
+					{!(isOpen && searchable) && (
+						<button
+							type='button'
+							onClick={() => !disabled && setIsOpen(prev => !prev)}
+							onKeyDown={handleKeyDown}
+							onFocus={() => setIsFocused(true)}
+							onBlur={() => setIsFocused(false)}
+							disabled={disabled || loading}
+							className={cn(
+								'relative w-full px-4 py-4 text-left bg-white border border-gray-300 rounded-md transition-all duration-200',
+								error && 'border-red-500 focus:border-red-500',
+								disabled
+									? 'opacity-50 cursor-not-allowed bg-gray-50'
+									: 'cursor-pointer hover:border-gray-400',
+								shouldFloat && 'border-green-400 ring-1 ring-green-200',
+								isOpen && !searchable && 'rounded-b-none border-b-0'
+							)}
+						>
+							<div className='flex items-center justify-between'>
+								<span
+									className={cn(
+										'block truncate text-sm font-medium',
+										selectedOption?.label ? 'text-gray-900' : 'text-gray-400'
+									)}
+								>
+									{loading ? 'Loading...' : selectedOption?.label || (shouldFloat ? placeholder : '') || ''}
+								</span>
+								<ChevronDown
+									className={cn(
+										'h-4 w-4 text-gray-400 transition-transform duration-200',
+										isOpen && 'rotate-180'
+									)}
+								/>
+							</div>
+						</button>
+					)}
+
+					{isOpen && searchable && (
 						<div className='space-y-0 relative'>
-							{/* Search box */}
 							<div className='relative'>
 								<Search className='absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400' />
 								<input
@@ -154,7 +191,6 @@ export const FloatingDropdown = forwardRef<HTMLDivElement, FloatingDropdownProps
 								</button>
 							</div>
 
-							{/* Options */}
 							<div className='absolute z-[9999] w-full bg-white border border-gray-200 border-t-0 rounded-b-md shadow-md max-h-[180px] overflow-hidden'>
 								<div className='max-h-[180px] overflow-y-auto'>
 									{filteredOptions.length === 0 ? (
@@ -162,9 +198,9 @@ export const FloatingDropdown = forwardRef<HTMLDivElement, FloatingDropdownProps
 											{searchTerm ? 'No options found' : 'No options available'}
 										</div>
 									) : (
-										filteredOptions.map(option => (
+										filteredOptions.map((option, idx) => (
 											<button
-												key={option.value}
+												key={`${option.label}-${idx}-${option.value}`}
 												type='button'
 												onClick={() => handleOptionClick(option.value)}
 												disabled={option.disabled}
@@ -184,38 +220,35 @@ export const FloatingDropdown = forwardRef<HTMLDivElement, FloatingDropdownProps
 								</div>
 							</div>
 						</div>
-					) : (
-						<button
-							type='button'
-							onClick={() => !disabled && setIsOpen(prev => !prev)}
-							onKeyDown={handleKeyDown}
-							onFocus={() => setIsFocused(true)}
-							onBlur={() => setIsFocused(false)}
-							disabled={disabled || loading}
-							className={cn(
-								'relative w-full px-4 py-4 text-left bg-white border border-gray-300 rounded-md transition-all duration-200',
-								error && 'border-red-500 focus:border-red-500',
-								disabled
-									? 'opacity-50 cursor-not-allowed bg-gray-50'
-									: 'cursor-pointer hover:border-gray-400',
-								shouldFloat && 'border-green-400 ring-1 ring-green-200'
-							)}
-						>
-							<div className='flex items-center justify-between'>
-								<span className={cn(
-									'block truncate text-sm font-medium',
-									selectedOption?.label ? 'text-gray-900' : 'text-gray-400'
-								)}>
-									{loading ? 'Loading...' : selectedOption?.label || (shouldFloat ? placeholder : '') || ''}
-								</span>
-								<ChevronDown
-									className={cn(
-										'h-4 w-4 text-gray-400 transition-transform duration-200',
-										isOpen && 'rotate-180'
-									)}
-								/>
+					)}
+
+					{isOpen && !searchable && (
+						<div className='absolute left-0 right-0 top-full z-[9999] -mt-px bg-white border border-gray-300 border-t-0 rounded-b-md shadow-md max-h-[220px] overflow-hidden'>
+							<div className='max-h-[220px] overflow-y-auto'>
+								{filteredOptions.length === 0 ? (
+									<div className='px-4 py-6 text-center text-sm text-gray-500'>No options available</div>
+								) : (
+									filteredOptions.map((option, idx) => (
+										<button
+											key={`${option.label}-${idx}-${option.value}`}
+											type='button'
+											onClick={() => handleOptionClick(option.value)}
+											disabled={option.disabled}
+											className={cn(
+												'w-full px-4 py-3 text-left text-sm flex items-center justify-between transition-colors',
+												option.disabled
+													? 'opacity-50 cursor-not-allowed text-gray-400'
+													: 'cursor-pointer hover:bg-gray-50 text-gray-900',
+												option.value === value && 'bg-green-50 text-green-600 font-medium'
+											)}
+										>
+											<span className='truncate'>{option.label}</span>
+											{option.value === value && <Check className='h-4 w-4 text-green-600' />}
+										</button>
+									))
+								)}
 							</div>
-						</button>
+						</div>
 					)}
 				</div>
 

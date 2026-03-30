@@ -9,6 +9,13 @@ import { ApiService, ApiResponse } from './api';
 const api = ApiService.getInstance();
 const BASE_PATH = '/hrm';
 
+/** HRM list endpoints reject `limit` above this value. */
+const HRM_LIST_LIMIT_MAX = 100;
+
+function clampHrmListLimit(limit: number): number {
+	return Math.min(Math.max(1, limit), HRM_LIST_LIMIT_MAX);
+}
+
 // ─── Shared Types ────────────────────────────────────────────────────────────
 
 export interface HrmPagination {
@@ -80,6 +87,8 @@ export interface CreateEmployeeRequest {
 	date_of_birth?: string;
 	department_id?: number;
 	designation_id?: number;
+	/** Reporting manager; omit or set null to clear */
+	primary_manager_id?: number | null;
 	employment_type: string;
 	status?: string;
 	pan_number?: string;
@@ -286,7 +295,7 @@ export class HrmApiService {
 	static async getEmployees(filters?: HrmEmployeeFilters): Promise<ApiResponse<any>> {
 		const params: Record<string, string> = {};
 		if (filters?.page) params.page = filters.page.toString();
-		if (filters?.limit) params.limit = filters.limit.toString();
+		if (filters?.limit !== undefined) params.limit = clampHrmListLimit(filters.limit).toString();
 		if (filters?.q) params.q = filters.q;
 		if (filters?.department_id) params.department_id = filters.department_id.toString();
 		if (filters?.designation_id) params.designation_id = filters.designation_id.toString();
@@ -318,7 +327,7 @@ export class HrmApiService {
 	static async getDepartments(filters?: HrmDepartmentFilters): Promise<ApiResponse<any>> {
 		const params: Record<string, string> = {};
 		if (filters?.page) params.page = filters.page.toString();
-		if (filters?.limit) params.limit = filters.limit.toString();
+		if (filters?.limit !== undefined) params.limit = clampHrmListLimit(filters.limit).toString();
 		if (filters?.q) params.q = filters.q;
 		if (filters?.parent_department_id) params.parent_department_id = filters.parent_department_id.toString();
 		if (filters?.is_active !== undefined) params.is_active = filters.is_active.toString();
@@ -346,7 +355,7 @@ export class HrmApiService {
 	static async getDesignations(filters?: HrmDesignationFilters): Promise<ApiResponse<any>> {
 		const params: Record<string, string> = {};
 		if (filters?.page) params.page = filters.page.toString();
-		if (filters?.limit) params.limit = filters.limit.toString();
+		if (filters?.limit !== undefined) params.limit = clampHrmListLimit(filters.limit).toString();
 		if (filters?.q) params.q = filters.q;
 		if (filters?.level !== undefined) params.level = filters.level.toString();
 		if (filters?.is_active !== undefined) params.is_active = filters.is_active.toString();
@@ -374,7 +383,7 @@ export class HrmApiService {
 	static async getSalaryStructures(filters?: HrmSalaryStructureFilters): Promise<ApiResponse<any>> {
 		const params: Record<string, string> = {};
 		if (filters?.page) params.page = filters.page.toString();
-		if (filters?.limit) params.limit = filters.limit.toString();
+		if (filters?.limit !== undefined) params.limit = clampHrmListLimit(filters.limit).toString();
 		if (filters?.employee_id) params.employee_id = filters.employee_id.toString();
 		if (filters?.current_only !== undefined) params.current_only = filters.current_only.toString();
 		return api.get(`${BASE_PATH}/salary-structures`, { params });
@@ -401,7 +410,7 @@ export class HrmApiService {
 	static async getTaxDeclarations(filters?: HrmTaxDeclarationFilters): Promise<ApiResponse<any>> {
 		const params: Record<string, string> = {};
 		if (filters?.page) params.page = filters.page.toString();
-		if (filters?.limit) params.limit = filters.limit.toString();
+		if (filters?.limit !== undefined) params.limit = clampHrmListLimit(filters.limit).toString();
 		if (filters?.employee_id) params.employee_id = filters.employee_id.toString();
 		if (filters?.financial_year) params.financial_year = filters.financial_year;
 		if (filters?.status) params.status = filters.status;
@@ -429,7 +438,7 @@ export class HrmApiService {
 	static async getHierarchies(filters?: HrmHierarchyFilters): Promise<ApiResponse<any>> {
 		const params: Record<string, string> = {};
 		if (filters?.page) params.page = filters.page.toString();
-		if (filters?.limit) params.limit = filters.limit.toString();
+		if (filters?.limit !== undefined) params.limit = clampHrmListLimit(filters.limit).toString();
 		if (filters?.employee_id) params.employee_id = filters.employee_id.toString();
 		if (filters?.manager_id) params.manager_id = filters.manager_id.toString();
 		if (filters?.department_id) params.department_id = filters.department_id.toString();

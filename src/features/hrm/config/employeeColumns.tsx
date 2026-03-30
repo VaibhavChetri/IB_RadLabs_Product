@@ -5,6 +5,7 @@
 import { Edit, Trash2, Eye } from 'lucide-react';
 import type { TableColumn } from '../../../components/ui/DataDisplay';
 import type { HrmEmployee } from '../../../services/hrmApi';
+import { HrIconTooltip } from '../components/HrIconTooltip';
 import { getStatusColor, getStatusLabel, getEmploymentTypeLabel } from './constants';
 
 interface ColumnProps {
@@ -30,27 +31,33 @@ export const getEmployeeColumns = ({
 		render: (_value: unknown, row: Record<string, unknown>) => {
 			return (
 				<div className='flex items-center justify-center gap-1'>
-					<button
-						onClick={() => onView(row as unknown as HrmEmployee)}
-						className='p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors'
-						title='View'
-					>
-						<Eye className='w-4 h-4' />
-					</button>
-					<button
-						onClick={() => onEdit(row as unknown as HrmEmployee)}
-						className='p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors'
-						title='Edit'
-					>
-						<Edit className='w-4 h-4' />
-					</button>
-					<button
-						onClick={() => onDelete(row as unknown as HrmEmployee)}
-						className='p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors'
-						title='Deactivate'
-					>
-						<Trash2 className='w-4 h-4' />
-					</button>
+					<HrIconTooltip label='View'>
+						<button
+							type='button'
+							onClick={() => onView(row as unknown as HrmEmployee)}
+							className='p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors'
+						>
+							<Eye className='w-4 h-4' />
+						</button>
+					</HrIconTooltip>
+					<HrIconTooltip label='Edit'>
+						<button
+							type='button'
+							onClick={() => onEdit(row as unknown as HrmEmployee)}
+							className='p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors'
+						>
+							<Edit className='w-4 h-4' />
+						</button>
+					</HrIconTooltip>
+					<HrIconTooltip label='Deactivate'>
+						<button
+							type='button'
+							onClick={() => onDelete(row as unknown as HrmEmployee)}
+							className='p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors'
+						>
+							<Trash2 className='w-4 h-4' />
+						</button>
+					</HrIconTooltip>
 				</div>
 			);
 		},
@@ -133,9 +140,12 @@ export const getEmployeeColumns = ({
 		title: 'Manager',
 		sortable: true,
 		align: 'center',
-		render: (value: unknown) => (
-			<div className='text-gray-700 text-center'>{String(value || 'N/A')}</div>
-		),
+		render: (value: unknown, row: Record<string, unknown>) => {
+			const name = (value as string | null | undefined) ?? (row.primary_manager_name as string | undefined);
+			return (
+				<div className='text-gray-700 text-center'>{name && String(name).trim() ? String(name) : 'N/A'}</div>
+			);
+		},
 	},
 	{
 		key: 'status',

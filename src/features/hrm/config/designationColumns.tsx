@@ -5,6 +5,7 @@
 import { Edit, Trash2 } from 'lucide-react';
 import type { TableColumn } from '../../../components/ui/DataDisplay';
 import type { HrmDesignation } from '../../../services/hrmApi';
+import { HrIconTooltip } from '../components/HrIconTooltip';
 
 interface ColumnProps {
 	onEdit: (item: HrmDesignation) => void;
@@ -27,20 +28,24 @@ export const getDesignationColumns = ({
 		render: (_value: unknown, row: Record<string, unknown>) => {
 			return (
 				<div className='flex items-center justify-center gap-1'>
-					<button
-						onClick={() => onEdit(row as unknown as HrmDesignation)}
-						className='p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors'
-						title='Edit'
-					>
-						<Edit className='w-4 h-4' />
-					</button>
-					<button
-						onClick={() => onDelete(row as unknown as HrmDesignation)}
-						className='p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors'
-						title='Delete'
-					>
-						<Trash2 className='w-4 h-4' />
-					</button>
+					<HrIconTooltip label='Edit'>
+						<button
+							type='button'
+							onClick={() => onEdit(row as unknown as HrmDesignation)}
+							className='p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors'
+						>
+							<Edit className='w-4 h-4' />
+						</button>
+					</HrIconTooltip>
+					<HrIconTooltip label='Delete'>
+						<button
+							type='button'
+							onClick={() => onDelete(row as unknown as HrmDesignation)}
+							className='p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors'
+						>
+							<Trash2 className='w-4 h-4' />
+						</button>
+					</HrIconTooltip>
 				</div>
 			);
 		},

@@ -4,6 +4,28 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { HrmApiService, HrmEmployeeFilters } from '../../../services/hrmApi';
+import { HRM_LIST_MAX_LIMIT } from '../config/constants';
+
+/** Parse one HRM list response page (handles wrapped shapes from ApiService). */
+function parseHrmListPage(response: unknown): { items: unknown[]; totalPages: number } {
+	const body = response as {
+		data?: { data?: unknown[]; pagination?: { totalPages?: number } };
+		pagination?: { totalPages?: number };
+	};
+	if (body?.data && Array.isArray(body.data.data)) {
+		return {
+			items: body.data.data,
+			totalPages: Number(body.data.pagination?.totalPages ?? 1),
+		};
+	}
+	if (body?.data && Array.isArray(body.data)) {
+		return {
+			items: body.data,
+			totalPages: Number(body.pagination?.totalPages ?? 1),
+		};
+	}
+	return { items: [], totalPages: 1 };
+}
 
 export const useEmployeeData = (params?: HrmEmployeeFilters) => {
 	return useQuery({
@@ -56,8 +78,21 @@ export const useDepartmentOptions = () => {
 	return useQuery({
 		queryKey: ['hrm', 'departments', 'options'],
 		queryFn: async () => {
-			const response = await HrmApiService.getDepartments({ is_active: true, limit: 200 });
-			return response.data;
+			const merged: unknown[] = [];
+			let page = 1;
+			let totalPages = 1;
+			do {
+				const response = await HrmApiService.getDepartments({
+					is_active: true,
+					page,
+					limit: HRM_LIST_MAX_LIMIT,
+				});
+				const { items, totalPages: tp } = parseHrmListPage(response);
+				merged.push(...items);
+				totalPages = tp;
+				page++;
+			} while (page <= totalPages && page <= 50);
+			return { data: merged };
 		},
 		staleTime: 5 * 60 * 1000, // 5 minutes
 		refetchOnWindowFocus: false,
@@ -68,8 +103,47 @@ export const useDesignationOptions = () => {
 	return useQuery({
 		queryKey: ['hrm', 'designations', 'options'],
 		queryFn: async () => {
-			const response = await HrmApiService.getDesignations({ is_active: true, limit: 200 });
-			return response.data;
+			const merged: unknown[] = [];
+			let page = 1;
+			let totalPages = 1;
+			do {
+				const response = await HrmApiService.getDesignations({
+					is_active: true,
+					page,
+					limit: HRM_LIST_MAX_LIMIT,
+				});
+				const { items, totalPages: tp } = parseHrmListPage(response);
+				merged.push(...items);
+				totalPages = tp;
+				page++;
+			} while (page <= totalPages && page <= 50);
+			return { data: merged };
+		},
+		staleTime: 5 * 60 * 1000,
+		refetchOnWindowFocus: false,
+	});
+};
+
+/** Active employees for manager dropdown (add/edit employee). */
+export const useEmployeeManagerOptions = () => {
+	return useQuery({
+		queryKey: ['hrm', 'employees', 'manager-options'],
+		queryFn: async () => {
+			const merged: unknown[] = [];
+			let page = 1;
+			let totalPages = 1;
+			do {
+				const response = await HrmApiService.getEmployees({
+					is_active: true,
+					page,
+					limit: HRM_LIST_MAX_LIMIT,
+				});
+				const { items, totalPages: tp } = parseHrmListPage(response);
+				merged.push(...items);
+				totalPages = tp;
+				page++;
+			} while (page <= totalPages && page <= 50);
+			return { data: merged };
 		},
 		staleTime: 5 * 60 * 1000,
 		refetchOnWindowFocus: false,

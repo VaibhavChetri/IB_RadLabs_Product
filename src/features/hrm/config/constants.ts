@@ -2,6 +2,9 @@
  * HRM Module Constants
  */
 
+/** HRM list APIs reject `limit` above this value (e.g. stage returns 400). */
+export const HRM_LIST_MAX_LIMIT = 100;
+
 export const EMPLOYMENT_TYPE_OPTIONS = [
 	{ value: '', label: 'All Types' },
 	{ value: 'full_time', label: 'Full Time' },

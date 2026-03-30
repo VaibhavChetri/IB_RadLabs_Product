@@ -86,23 +86,34 @@ export const Tooltip: React.FC<TooltipProps> = ({
 	className,
 }) => {
 	const [isVisible, setIsVisible] = React.useState(false);
-	const [timeoutId, setTimeoutId] = React.useState<NodeJS.Timeout | null>(null);
+	const showDelayRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 	const tooltipRef = React.useRef<HTMLDivElement>(null);
 
-	const showTooltip = () => {
-		if (timeoutId) {
-			clearTimeout(timeoutId);
+	const clearShowDelay = () => {
+		if (showDelayRef.current !== null) {
+			clearTimeout(showDelayRef.current);
+			showDelayRef.current = null;
 		}
-		const id = setTimeout(() => setIsVisible(true), delay);
-		setTimeoutId(id);
+	};
+
+	const showTooltip = () => {
+		clearShowDelay();
+		if (delay <= 0) {
+			setIsVisible(true);
+			return;
+		}
+		showDelayRef.current = setTimeout(() => {
+			setIsVisible(true);
+			showDelayRef.current = null;
+		}, delay);
 	};
 
 	const hideTooltip = () => {
-		if (timeoutId) {
-			clearTimeout(timeoutId);
-		}
+		clearShowDelay();
 		setIsVisible(false);
 	};
+
+	React.useEffect(() => () => clearShowDelay(), []);
 
 	const handleMouseEnter = () => {
 		if (trigger === 'hover') showTooltip();

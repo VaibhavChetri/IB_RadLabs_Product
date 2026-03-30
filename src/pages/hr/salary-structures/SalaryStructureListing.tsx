@@ -13,9 +13,10 @@ import {
 	useCreateSalaryStructure,
 	useUpdateSalaryStructure,
 	useDeleteSalaryStructure,
-	useEmployeeData,
+	useEmployeeManagerOptions,
 	formatCurrency,
 } from '../../../features/hrm';
+import { HrIconTooltip } from '../../../features/hrm/components/HrIconTooltip';
 import type { TableColumn } from '../../../components/ui/DataDisplay';
 import type { HrmSalaryStructure, CreateSalaryStructureRequest } from '../../../services/hrmApi';
 
@@ -60,8 +61,8 @@ export const SalaryStructureListing: React.FC = () => {
 		limit,
 	});
 
-	// Fetch employees for name lookup and dropdown
-	const { data: employeeListData } = useEmployeeData({ limit: 500 });
+	// Fetch employees for name lookup and dropdown (paginated, respects HRM max limit)
+	const { data: employeeListData } = useEmployeeManagerOptions();
 	const employeeRaw = employeeListData as any;
 	const employeeList = employeeRaw?.data?.data || employeeRaw?.data || employeeRaw || [];
 	const employees = Array.isArray(employeeList) ? employeeList : [];
@@ -201,9 +202,33 @@ export const SalaryStructureListing: React.FC = () => {
 				align: 'center' as const,
 				render: (_value: unknown, row: Record<string, unknown>) => (
 					<div className='flex items-center justify-center gap-1'>
-						<button onClick={() => handleView(row as unknown as HrmSalaryStructure)} className='p-1.5 text-blue-600 hover:bg-blue-50 rounded'><Eye className='w-4 h-4' /></button>
-						<button onClick={() => handleEdit(row as unknown as HrmSalaryStructure)} className='p-1.5 text-green-600 hover:bg-green-50 rounded'><Edit className='w-4 h-4' /></button>
-						<button onClick={() => handleDelete(row as unknown as HrmSalaryStructure)} className='p-1.5 text-red-600 hover:bg-red-50 rounded'><Trash2 className='w-4 h-4' /></button>
+						<HrIconTooltip label='View'>
+							<button
+								type='button'
+								onClick={() => handleView(row as unknown as HrmSalaryStructure)}
+								className='p-1.5 text-blue-600 hover:bg-blue-50 rounded'
+							>
+								<Eye className='w-4 h-4' />
+							</button>
+						</HrIconTooltip>
+						<HrIconTooltip label='Edit'>
+							<button
+								type='button'
+								onClick={() => handleEdit(row as unknown as HrmSalaryStructure)}
+								className='p-1.5 text-green-600 hover:bg-green-50 rounded'
+							>
+								<Edit className='w-4 h-4' />
+							</button>
+						</HrIconTooltip>
+						<HrIconTooltip label='Delete'>
+							<button
+								type='button'
+								onClick={() => handleDelete(row as unknown as HrmSalaryStructure)}
+								className='p-1.5 text-red-600 hover:bg-red-50 rounded'
+							>
+								<Trash2 className='w-4 h-4' />
+							</button>
+						</HrIconTooltip>
 					</div>
 				),
 			},

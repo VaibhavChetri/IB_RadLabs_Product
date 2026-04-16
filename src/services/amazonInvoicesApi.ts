@@ -18,18 +18,59 @@ export interface AmazonInvoiceListItem {
 
 export interface AmazonInvoiceDetail {
 	invoice: {
+		id?: number;
 		invoice_number: string;
+		invoice_date?: string;
 		order_id?: string;
-		grand_total: number;
-		igst_amount?: number;
-		shipping_charges?: number;
+		order_date?: string;
+		document_type?: string;
+		// Seller / Ship-from
+		sold_by?: string;
+		sold_by_gstin?: string;
+		ship_from_address?: string;
+		pan_number?: string;
+		seller_name?: string;
+		seller_gstin?: string;
+		seller_pan?: string;
+		// Billing (receiver)
+		billing_name?: string;
+		billing_address?: string;
+		billing_gstin?: string;
+		// Shipping (delivery)
+		shipping_name?: string;
+		shipping_address?: string;
+		// Financials
+		subtotal?: number | string | null;
+		grand_total: number | string;
+		shipping_charges?: number | string | null;
+		total_discount?: number | string | null;
+		// Tax
+		igst_rate?: number | string | null;
+		igst_amount?: number | string | null;
+		cgst_rate?: number | string | null;
+		cgst_amount?: number | string | null;
+		sgst_rate?: number | string | null;
+		sgst_amount?: number | string | null;
+		// Misc
+		irn?: string | null;
+		payment_method?: string | null;
+		extraction_confidence?: number | string | null;
+		parsing_warnings?: string | any[];
 	};
 	line_items: Array<{
 		id: number;
+		invoice_number?: string;
 		description: string;
+		asin?: string | null;
+		hsn_code?: string | null;
+		seller_sku?: string | null;
 		quantity: number;
-		unit_price: number;
-		total_amount: number;
+		unit_price: number | string;
+		discount?: number | string | null;
+		net_amount?: number | string | null;
+		tax_rate?: number | string | null;
+		tax_amount?: number | string | null;
+		total_amount: number | string;
 	}>;
 }
 

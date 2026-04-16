@@ -14,6 +14,7 @@ export interface User {
 	state_id?: number; // NEW: User's state ID
 	state_name?: string; // NEW: User's state name
 	menuPermissions?: Record<string, MenuPermission>; // NEW: Menu permissions
+	isApprover?: boolean; // Whether this admin is a configured vendor invoice approver
 }
 
 export interface AuthState {

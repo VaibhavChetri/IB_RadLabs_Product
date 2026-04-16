@@ -218,15 +218,45 @@ const AmazonInvoiceList: React.FC = () => {
 			const exportColumns = [
 				{ key: 'id', title: 'ID' },
 				{ key: 'invoice_number', title: 'Invoice #' },
+				{ key: 'invoice_date', title: 'Invoice Date' },
 				{ key: 'order_id', title: 'Order ID' },
-				{ key: 'invoice_date', title: 'Date' },
-				{ key: 'sold_by', title: 'Sold By' },
-				{ key: 'document_type', title: 'Type' },
-				{ key: 'item_count', title: 'Items' },
+				{ key: 'order_date', title: 'Order Date' },
+				{ key: 'document_type', title: 'Document Type' },
+				// Seller
+				{ key: 'sold_by', title: 'Seller Name' },
+				{ key: 'sold_by_gstin', title: 'Seller GSTIN' },
+				{ key: 'pan_number', title: 'Seller PAN' },
+				{ key: 'ship_from_address', title: 'Ship From Address' },
+				// Billing
+				{ key: 'billing_name', title: 'Billing Name' },
+				{ key: 'billing_gstin', title: 'Billing GSTIN' },
+				{ key: 'billing_address', title: 'Billing Address' },
+				// Shipping
+				{ key: 'shipping_name', title: 'Shipping Name' },
+				{ key: 'shipping_address', title: 'Shipping Address' },
+				// Financials
+				{ key: 'subtotal', title: 'Subtotal (₹)' },
+				{ key: 'total_discount', title: 'Discount (₹)' },
+				{ key: 'shipping_charges', title: 'Shipping (₹)' },
+				{ key: 'igst_rate', title: 'IGST Rate (%)' },
+				{ key: 'igst_amount', title: 'IGST (₹)' },
+				{ key: 'cgst_rate', title: 'CGST Rate (%)' },
+				{ key: 'cgst_amount', title: 'CGST (₹)' },
+				{ key: 'sgst_rate', title: 'SGST Rate (%)' },
+				{ key: 'sgst_amount', title: 'SGST (₹)' },
 				{ key: 'grand_total', title: 'Grand Total (₹)' },
-				{ key: 'description', title: 'Description' },
+				{ key: 'payment_method', title: 'Payment Method' },
+				{ key: 'irn', title: 'IRN' },
+				// Line item
+				{ key: 'description', title: 'Item Description' },
+				{ key: 'asin', title: 'ASIN' },
+				{ key: 'hsn_code', title: 'HSN Code' },
+				{ key: 'seller_sku', title: 'Seller SKU' },
 				{ key: 'qty', title: 'Qty' },
 				{ key: 'unit_price', title: 'Unit Price (₹)' },
+				{ key: 'net_amount', title: 'Net Amount (₹)' },
+				{ key: 'tax_rate', title: 'Tax Rate (%)' },
+				{ key: 'tax_amount', title: 'Tax Amount (₹)' },
 				{ key: 'line_total', title: 'Line Total (₹)' },
 			];
 
@@ -234,41 +264,67 @@ const AmazonInvoiceList: React.FC = () => {
 			const exportData: Record<string, string | number>[] = [];
 
 			for (const { invoice, detail } of details) {
-				const orderId = detail?.invoice?.order_id ?? '';
+				const inv = detail?.invoice;
 				const lineItems = detail?.line_items ?? [];
-				const invoiceDate = formatInvoiceDate(invoice.invoice_date);
-				const grandTotal = Number(invoice.grand_total ?? 0);
-				const itemCount = invoice.item_count ?? '';
+
+				const invoiceBase = {
+					invoice_number: invoice.invoice_number ?? '',
+					invoice_date: formatInvoiceDate(inv?.invoice_date ?? invoice.invoice_date),
+					order_id: inv?.order_id ?? '',
+					order_date: inv?.order_date ? formatInvoiceDate(inv.order_date) : '',
+					document_type: inv?.document_type ?? invoice.document_type ?? '',
+					sold_by: inv?.sold_by ?? invoice.sold_by ?? '',
+					sold_by_gstin: inv?.sold_by_gstin ?? '',
+					pan_number: inv?.pan_number ?? '',
+					ship_from_address: inv?.ship_from_address ?? '',
+					billing_name: inv?.billing_name ?? '',
+					billing_gstin: inv?.billing_gstin ?? '',
+					billing_address: inv?.billing_address ?? '',
+					shipping_name: inv?.shipping_name ?? '',
+					shipping_address: inv?.shipping_address ?? '',
+					subtotal: inv?.subtotal != null ? Number(inv.subtotal) : '',
+					total_discount: inv?.total_discount != null ? Number(inv.total_discount) : '',
+					shipping_charges: inv?.shipping_charges != null ? Number(inv.shipping_charges) : '',
+					igst_rate: inv?.igst_rate != null ? Number(inv.igst_rate) : '',
+					igst_amount: inv?.igst_amount != null ? Number(inv.igst_amount) : '',
+					cgst_rate: inv?.cgst_rate != null ? Number(inv.cgst_rate) : '',
+					cgst_amount: inv?.cgst_amount != null ? Number(inv.cgst_amount) : '',
+					sgst_rate: inv?.sgst_rate != null ? Number(inv.sgst_rate) : '',
+					sgst_amount: inv?.sgst_amount != null ? Number(inv.sgst_amount) : '',
+					grand_total: Number(invoice.grand_total ?? 0),
+					payment_method: inv?.payment_method ?? '',
+					irn: inv?.irn ?? '',
+				};
 
 				if (lineItems.length === 0) {
 					exportData.push({
 						id: ++rowId,
-						invoice_number: invoice.invoice_number ?? '',
-						order_id: orderId,
-						invoice_date: invoiceDate,
-						sold_by: invoice.sold_by ?? '',
-						document_type: invoice.document_type ?? '',
-						item_count: itemCount,
-						grand_total: grandTotal,
+						...invoiceBase,
 						description: '',
+						asin: '',
+						hsn_code: '',
+						seller_sku: '',
 						qty: '',
 						unit_price: '',
+						net_amount: '',
+						tax_rate: '',
+						tax_amount: '',
 						line_total: '',
 					});
 				} else {
 					for (const item of lineItems) {
 						exportData.push({
 							id: ++rowId,
-							invoice_number: invoice.invoice_number ?? '',
-							order_id: orderId,
-							invoice_date: invoiceDate,
-							sold_by: invoice.sold_by ?? '',
-							document_type: invoice.document_type ?? '',
-							item_count: itemCount,
-							grand_total: grandTotal,
+							...invoiceBase,
 							description: item.description ?? '',
+							asin: item.asin ?? '',
+							hsn_code: item.hsn_code ?? '',
+							seller_sku: item.seller_sku ?? '',
 							qty: Number(item.quantity ?? 0),
 							unit_price: Number(item.unit_price ?? 0),
+							net_amount: item.net_amount != null ? Number(item.net_amount) : '',
+							tax_rate: item.tax_rate != null ? Number(item.tax_rate) : '',
+							tax_amount: item.tax_amount != null ? Number(item.tax_amount) : '',
 							line_total: Number(item.total_amount ?? 0),
 						});
 					}
@@ -412,6 +468,9 @@ const AmazonInvoiceList: React.FC = () => {
 							<thead>
 								<tr className="border-b border-gray-200 bg-gray-50">
 									<th className="w-10 px-3 py-2.5 text-left text-xs font-semibold text-gray-600" />
+									<th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-600 w-[80px]">
+										SL No.
+									</th>
 									<th
 										className="px-3 py-2.5 text-left text-xs font-semibold text-gray-600 cursor-pointer hover:text-gray-900 w-[140px]"
 										onClick={() => handleSort('invoice_number', sortBy === 'invoice_number' && sortOrder === 'asc' ? 'desc' : 'asc')}
@@ -445,10 +504,11 @@ const AmazonInvoiceList: React.FC = () => {
 								</tr>
 							</thead>
 							<tbody>
-								{invoices.map((row) => {
+								{invoices.map((row, index) => {
 									const isOpen = openAccordion === row.invoice_number;
 									const detail = detailCache[row.invoice_number];
 									const isLoadingDetail = detailLoading === row.invoice_number;
+									const serialNumber = (page - 1) * pageSize + index + 1;
 									return (
 										<React.Fragment key={row.id ?? row.invoice_number}>
 											<tr
@@ -464,6 +524,7 @@ const AmazonInvoiceList: React.FC = () => {
 														className={cn('h-5 w-5 text-gray-400 transition-transform', isOpen && 'rotate-180')}
 													/>
 												</td>
+												<td className="px-3 py-2 text-sm text-gray-700">{serialNumber}</td>
 												<td className="px-3 py-2 text-sm font-medium text-gray-900">{row.invoice_number}</td>
 												<td className="px-3 py-2 text-sm text-gray-700">{formatInvoiceDate(row.invoice_date)}</td>
 												<td className="px-3 py-2 text-sm text-gray-700">{row.sold_by || '—'}</td>
@@ -475,7 +536,7 @@ const AmazonInvoiceList: React.FC = () => {
 											</tr>
 											{isOpen && (
 												<tr className="bg-gray-50/50">
-													<td colSpan={7} className="px-0 py-0 align-top">
+													<td colSpan={8} className="px-0 py-0 align-top">
 														<div className="px-6 pb-4 pt-2">
 															{isLoadingDetail ? (
 																<div className="flex items-center justify-center py-8 text-gray-500">
@@ -484,32 +545,43 @@ const AmazonInvoiceList: React.FC = () => {
 																</div>
 															) : detail?.invoice ? (
 																<>
+																	{/* Parties */}
+																	<div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+																		<div className="bg-white rounded-lg border border-gray-200 p-3">
+																			<p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Seller / Ship From</p>
+																			<p className="text-sm font-medium text-gray-900">{detail.invoice.sold_by || detail.invoice.seller_name || '—'}</p>
+																			{detail.invoice.sold_by_gstin && <p className="text-xs text-gray-500 mt-0.5">GSTIN: {detail.invoice.sold_by_gstin}</p>}
+																			{detail.invoice.pan_number && <p className="text-xs text-gray-500">PAN: {detail.invoice.pan_number}</p>}
+																			{detail.invoice.ship_from_address && <p className="text-xs text-gray-400 mt-1">{detail.invoice.ship_from_address}</p>}
+																		</div>
+																		<div className="bg-white rounded-lg border border-gray-200 p-3">
+																			<p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Billed To</p>
+																			<p className="text-sm font-medium text-gray-900">{detail.invoice.billing_name || '—'}</p>
+																			{detail.invoice.billing_gstin && <p className="text-xs text-gray-500 mt-0.5">GSTIN: {detail.invoice.billing_gstin}</p>}
+																			{detail.invoice.billing_address && <p className="text-xs text-gray-400 mt-1">{detail.invoice.billing_address}</p>}
+																		</div>
+																		<div className="bg-white rounded-lg border border-gray-200 p-3">
+																			<p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Shipped To</p>
+																			<p className="text-sm font-medium text-gray-900">{detail.invoice.shipping_name || '—'}</p>
+																			{detail.invoice.shipping_address && <p className="text-xs text-gray-400 mt-1">{detail.invoice.shipping_address}</p>}
+																		</div>
+																	</div>
 																	{/* Invoice summary */}
-																	<div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
+																	<div className="bg-white rounded-lg border border-gray-200 p-4 mb-3">
 																		<h4 className="text-sm font-semibold text-gray-800 mb-3">Invoice summary</h4>
 																		<dl className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-2 text-sm">
 																			<dt className="text-gray-500">Order ID</dt>
 																			<dd className="font-medium text-gray-900">{detail.invoice.order_id ?? '—'}</dd>
 																			<dt className="text-gray-500">Grand Total</dt>
-																			<dd className="font-medium text-gray-900">
-																				₹{Number(detail.invoice.grand_total ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-																			</dd>
-																			{detail.invoice.igst_amount != null && (
-																				<>
-																					<dt className="text-gray-500">IGST</dt>
-																					<dd className="font-medium text-gray-900">
-																						₹{Number(detail.invoice.igst_amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-																					</dd>
-																				</>
-																			)}
-																			{detail.invoice.shipping_charges != null && (
-																				<>
-																					<dt className="text-gray-500">Shipping</dt>
-																					<dd className="font-medium text-gray-900">
-																						₹{Number(detail.invoice.shipping_charges).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-																					</dd>
-																				</>
-																			)}
+																			<dd className="font-medium text-gray-900">₹{Number(detail.invoice.grand_total ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</dd>
+																			{detail.invoice.subtotal != null && (<><dt className="text-gray-500">Subtotal</dt><dd className="font-medium text-gray-900">₹{Number(detail.invoice.subtotal).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</dd></>)}
+																			{detail.invoice.total_discount != null && (<><dt className="text-gray-500">Discount</dt><dd className="font-medium text-gray-900">₹{Number(detail.invoice.total_discount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</dd></>)}
+																			{detail.invoice.shipping_charges != null && (<><dt className="text-gray-500">Shipping</dt><dd className="font-medium text-gray-900">₹{Number(detail.invoice.shipping_charges).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</dd></>)}
+																			{detail.invoice.igst_amount != null && (<><dt className="text-gray-500">IGST{detail.invoice.igst_rate != null ? ` (${detail.invoice.igst_rate}%)` : ''}</dt><dd className="font-medium text-gray-900">₹{Number(detail.invoice.igst_amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</dd></>)}
+																			{detail.invoice.cgst_amount != null && (<><dt className="text-gray-500">CGST{detail.invoice.cgst_rate != null ? ` (${detail.invoice.cgst_rate}%)` : ''}</dt><dd className="font-medium text-gray-900">₹{Number(detail.invoice.cgst_amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</dd></>)}
+																			{detail.invoice.sgst_amount != null && (<><dt className="text-gray-500">SGST{detail.invoice.sgst_rate != null ? ` (${detail.invoice.sgst_rate}%)` : ''}</dt><dd className="font-medium text-gray-900">₹{Number(detail.invoice.sgst_amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</dd></>)}
+																			{detail.invoice.payment_method && (<><dt className="text-gray-500">Payment</dt><dd className="font-medium text-gray-900">{detail.invoice.payment_method}</dd></>)}
+																			{detail.invoice.irn && (<><dt className="text-gray-500">IRN</dt><dd className="font-medium text-gray-900 break-all text-xs">{detail.invoice.irn}</dd></>)}
 																		</dl>
 																	</div>
 																	{/* Line items */}
@@ -519,22 +591,25 @@ const AmazonInvoiceList: React.FC = () => {
 																			<thead>
 																				<tr className="bg-gray-50 border-b border-gray-200">
 																					<th className="px-4 py-2 text-left font-semibold text-gray-600">Description</th>
-																					<th className="px-4 py-2 text-right font-semibold text-gray-600 w-20">Qty</th>
-																					<th className="px-4 py-2 text-right font-semibold text-gray-600 w-32">Unit Price (₹)</th>
-																					<th className="px-4 py-2 text-right font-semibold text-gray-600 w-32">Total (₹)</th>
+																					<th className="px-4 py-2 text-left font-semibold text-gray-600 w-28">ASIN / HSN</th>
+																					<th className="px-4 py-2 text-right font-semibold text-gray-600 w-16">Qty</th>
+																					<th className="px-4 py-2 text-right font-semibold text-gray-600 w-28">Unit Price (₹)</th>
+																					<th className="px-4 py-2 text-right font-semibold text-gray-600 w-20">Tax</th>
+																					<th className="px-4 py-2 text-right font-semibold text-gray-600 w-28">Total (₹)</th>
 																				</tr>
 																			</thead>
 																			<tbody>
 																				{(detail.line_items ?? []).map((item) => (
 																					<tr key={item.id} className="border-b border-gray-100 last:border-b-0">
 																						<td className="px-4 py-2 text-gray-900">{item.description || '—'}</td>
+																						<td className="px-4 py-2 text-gray-500 text-xs">
+																							{item.asin && <div>{item.asin}</div>}
+																							{item.hsn_code && <div>HSN: {item.hsn_code}</div>}
+																						</td>
 																						<td className="px-4 py-2 text-right text-gray-700">{Number(item.quantity ?? 0).toLocaleString('en-IN')}</td>
-																						<td className="px-4 py-2 text-right text-gray-700">
-																							₹{Number(item.unit_price ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-																						</td>
-																						<td className="px-4 py-2 text-right font-medium text-gray-900">
-																							₹{Number(item.total_amount ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-																						</td>
+																						<td className="px-4 py-2 text-right text-gray-700">₹{Number(item.unit_price ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+																						<td className="px-4 py-2 text-right text-gray-500 text-xs">{item.tax_rate != null ? `${item.tax_rate}%` : '—'}</td>
+																						<td className="px-4 py-2 text-right font-medium text-gray-900">₹{Number(item.total_amount ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
 																					</tr>
 																				))}
 																			</tbody>
@@ -560,7 +635,7 @@ const AmazonInvoiceList: React.FC = () => {
 				)}
 			</div>
 
-			{pagination && totalPages > 1 && (
+			{pagination && (
 				<Pagination
 					currentPage={page}
 					totalPages={totalPages}

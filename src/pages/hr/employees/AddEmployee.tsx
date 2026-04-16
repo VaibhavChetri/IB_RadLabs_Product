@@ -9,6 +9,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
 import { Card } from '../../../components/ui/Card';
 import { FloatingInput, FloatingDropdown, Snackbar } from '../../../components/ui';
+import { Textarea } from '../../../components/ui/Input';
 import { Switch } from '../../../components/ui/Form';
 import {
 	HrmApiService,
@@ -31,8 +32,12 @@ interface FormData {
 	last_name: string;
 	gender: string;
 	email: string;
+	personal_email: string;
 	phone: string;
 	whatsapp_opt_in: boolean;
+	city: string;
+	address: string;
+	team: string;
 	date_of_joining: string;
 	date_of_birth: string;
 	department_id: string;
@@ -41,6 +46,13 @@ interface FormData {
 	admin_id: string;
 	employment_type: string;
 	status: string;
+	annual_ctc: string;
+	monthly_salary: string;
+	bonus_variable_yearly: string;
+	joining_bonus: string;
+	emergency_contact_name: string;
+	emergency_contact_number: string;
+	emergency_contact_relation: string;
 	pan_number: string;
 	aadhaar_number: string;
 	uan_number: string;
@@ -55,8 +67,12 @@ const initialFormData: FormData = {
 	last_name: '',
 	gender: '',
 	email: '',
+	personal_email: '',
 	phone: '',
 	whatsapp_opt_in: true,
+	city: '',
+	address: '',
+	team: '',
 	date_of_joining: '',
 	date_of_birth: '',
 	department_id: '',
@@ -65,12 +81,41 @@ const initialFormData: FormData = {
 	admin_id: '',
 	employment_type: 'full_time',
 	status: 'active',
+	annual_ctc: '',
+	monthly_salary: '',
+	bonus_variable_yearly: '',
+	joining_bonus: '',
+	emergency_contact_name: '',
+	emergency_contact_number: '',
+	emergency_contact_relation: '',
 	pan_number: '',
 	aadhaar_number: '',
 	uan_number: '',
 	bank_account_number: '',
 	bank_ifsc: '',
 	is_active: true,
+};
+
+const EMERGENCY_CONTACT_RELATION_OPTIONS = [
+	{ value: '', label: 'Select relation' },
+	{ value: 'Spouse', label: 'Spouse' },
+	{ value: 'Parent', label: 'Parent' },
+	{ value: 'Sibling', label: 'Sibling' },
+	{ value: 'Child', label: 'Child' },
+	{ value: 'Friend', label: 'Friend' },
+	{ value: 'Relative', label: 'Relative' },
+	{ value: 'Other', label: 'Other' },
+];
+
+const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
+const isValidPhone = (value: string) => /^[+]?[0-9()\-\s]{7,20}$/.test(value);
+
+const parseOptionalDecimal = (value: string) => {
+	if (!value.trim()) return null;
+
+	const amount = Number(value);
+	return Number.isNaN(amount) ? null : amount;
 };
 
 export const AddEmployee: React.FC = () => {
@@ -154,8 +199,12 @@ export const AddEmployee: React.FC = () => {
 				last_name: emp.last_name || '',
 				gender: emp.gender || '',
 				email: emp.email || '',
+				personal_email: (emp as any).personal_email || '',
 				phone: emp.phone || '',
 				whatsapp_opt_in: emp.whatsapp_opt_in ?? true,
+				city: (emp as any).city || '',
+				address: (emp as any).address || '',
+				team: (emp as any).team || '',
 				date_of_joining: emp.date_of_joining ? emp.date_of_joining.split('T')[0] : '',
 				date_of_birth: emp.date_of_birth ? emp.date_of_birth.split('T')[0] : '',
 				department_id: emp.department_id ? String(emp.department_id) : '',
@@ -164,6 +213,14 @@ export const AddEmployee: React.FC = () => {
 				admin_id: emp.admin_id ? String(emp.admin_id) : '',
 				employment_type: emp.employment_type || 'full_time',
 				status: emp.status || 'active',
+				annual_ctc: (emp as any).annual_ctc != null ? String((emp as any).annual_ctc) : '',
+				monthly_salary: (emp as any).monthly_salary != null ? String((emp as any).monthly_salary) : '',
+				bonus_variable_yearly:
+					(emp as any).bonus_variable_yearly != null ? String((emp as any).bonus_variable_yearly) : '',
+				joining_bonus: (emp as any).joining_bonus != null ? String((emp as any).joining_bonus) : '',
+				emergency_contact_name: (emp as any).emergency_contact_name || '',
+				emergency_contact_number: (emp as any).emergency_contact_number || '',
+				emergency_contact_relation: (emp as any).emergency_contact_relation || '',
 				pan_number: (emp as any).pan_number || '',
 				aadhaar_number: (emp as any).aadhaar_number || '',
 				uan_number: (emp as any).uan_number || '',
@@ -201,9 +258,31 @@ export const AddEmployee: React.FC = () => {
 		if (!formData.first_name.trim()) newErrors.first_name = 'First name is required';
 		if (!formData.last_name.trim()) newErrors.last_name = 'Last name is required';
 		if (!formData.email.trim()) newErrors.email = 'Email is required';
+		else if (!isValidEmail(formData.email.trim())) newErrors.email = 'Enter a valid work email';
 		if (!formData.phone.trim()) newErrors.phone = 'Phone is required';
+		else if (!isValidPhone(formData.phone.trim())) newErrors.phone = 'Enter a valid phone number';
 		if (!formData.date_of_joining) newErrors.date_of_joining = 'Date of joining is required';
 		if (!formData.gender) newErrors.gender = 'Gender is required';
+		if (formData.personal_email.trim() && !isValidEmail(formData.personal_email.trim())) {
+			newErrors.personal_email = 'Enter a valid personal email';
+		}
+		if (
+			formData.emergency_contact_number.trim() &&
+			!isValidPhone(formData.emergency_contact_number.trim())
+		) {
+			newErrors.emergency_contact_number = 'Enter a valid emergency contact number';
+		}
+		(['annual_ctc', 'monthly_salary', 'bonus_variable_yearly', 'joining_bonus'] as const).forEach(
+			field => {
+				const value = formData[field];
+				if (!value.trim()) return;
+
+				const amount = Number(value);
+				if (Number.isNaN(amount) || amount <= 0) {
+					newErrors[field] = 'Enter a number greater than 0';
+				}
+			}
+		);
 		setErrors(newErrors);
 		return Object.keys(newErrors).length === 0;
 	};
@@ -219,11 +298,22 @@ export const AddEmployee: React.FC = () => {
 				last_name: formData.last_name.trim(),
 				gender: formData.gender,
 				email: formData.email.trim(),
+				personal_email: formData.personal_email.trim() || null,
 				phone: formData.phone.trim(),
 				whatsapp_opt_in: Boolean(formData.whatsapp_opt_in),
+				city: formData.city.trim() || null,
+				address: formData.address.trim() || null,
+				team: formData.team.trim() || null,
 				date_of_joining: formData.date_of_joining,
 				employment_type: formData.employment_type,
 				status: formData.status,
+				annual_ctc: parseOptionalDecimal(formData.annual_ctc),
+				monthly_salary: parseOptionalDecimal(formData.monthly_salary),
+				bonus_variable_yearly: parseOptionalDecimal(formData.bonus_variable_yearly),
+				joining_bonus: parseOptionalDecimal(formData.joining_bonus),
+				emergency_contact_name: formData.emergency_contact_name.trim() || null,
+				emergency_contact_number: formData.emergency_contact_number.trim() || null,
+				emergency_contact_relation: formData.emergency_contact_relation || null,
 				is_active: Boolean(formData.is_active),
 			};
 
@@ -330,12 +420,26 @@ export const AddEmployee: React.FC = () => {
 							errorMessage={errors.email}
 						/>
 						<FloatingInput
+							label='Personal Email'
+							value={formData.personal_email}
+							onChange={(value: string) => handleChange('personal_email', value)}
+							placeholder='personal@example.com'
+							error={!!errors.personal_email}
+							errorMessage={errors.personal_email}
+						/>
+						<FloatingInput
 							label='Phone *'
 							value={formData.phone}
 							onChange={(value: string) => handleChange('phone', value)}
-							placeholder='10-digit mobile'
+							placeholder='+91-9876543210'
 							error={!!errors.phone}
 							errorMessage={errors.phone}
+						/>
+						<FloatingInput
+							label='City'
+							value={formData.city}
+							onChange={(value: string) => handleChange('city', value)}
+							placeholder='City of residence'
 						/>
 						<FloatingInput
 							label='Date of Birth'
@@ -353,6 +457,12 @@ export const AddEmployee: React.FC = () => {
 							error={!!errors.date_of_joining}
 							errorMessage={errors.date_of_joining}
 						/>
+						<FloatingInput
+							label='Team'
+							value={formData.team}
+							onChange={(value: string) => handleChange('team', value)}
+							placeholder='Team / division name'
+						/>
 						<div className='flex items-center gap-3 pt-2'>
 							<Switch
 								checked={formData.whatsapp_opt_in}
@@ -360,6 +470,15 @@ export const AddEmployee: React.FC = () => {
 							/>
 							<span className='text-sm text-gray-700'>WhatsApp Opt-in</span>
 						</div>
+					</div>
+					<div className='mt-4'>
+						<Textarea
+							label='Address'
+							value={formData.address}
+							onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleChange('address', e.target.value)}
+							placeholder='Full residential address'
+							rows={4}
+						/>
 					</div>
 				</Card>
 
@@ -419,6 +538,77 @@ export const AddEmployee: React.FC = () => {
 							/>
 							<span className='text-sm text-gray-700'>Active</span>
 						</div>
+					</div>
+				</Card>
+
+				{/* Compensation */}
+				<Card className='p-6 mb-6'>
+					<h2 className='text-lg font-semibold text-gray-900 mb-4'>Compensation</h2>
+					<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
+						<FloatingInput
+							label='Annual CTC'
+							value={formData.annual_ctc}
+							onChange={(value: string) => handleChange('annual_ctc', value)}
+							placeholder='2500000'
+							type='number'
+							error={!!errors.annual_ctc}
+							errorMessage={errors.annual_ctc}
+						/>
+						<FloatingInput
+							label='Monthly Salary'
+							value={formData.monthly_salary}
+							onChange={(value: string) => handleChange('monthly_salary', value)}
+							placeholder='208333.33'
+							type='number'
+							error={!!errors.monthly_salary}
+							errorMessage={errors.monthly_salary}
+						/>
+						<FloatingInput
+							label='Yearly Bonus'
+							value={formData.bonus_variable_yearly}
+							onChange={(value: string) => handleChange('bonus_variable_yearly', value)}
+							placeholder='500000'
+							type='number'
+							error={!!errors.bonus_variable_yearly}
+							errorMessage={errors.bonus_variable_yearly}
+						/>
+						<FloatingInput
+							label='Joining Bonus'
+							value={formData.joining_bonus}
+							onChange={(value: string) => handleChange('joining_bonus', value)}
+							placeholder='100000'
+							type='number'
+							error={!!errors.joining_bonus}
+							errorMessage={errors.joining_bonus}
+						/>
+					</div>
+				</Card>
+
+				{/* Emergency Contact */}
+				<Card className='p-6 mb-6'>
+					<h2 className='text-lg font-semibold text-gray-900 mb-4'>Emergency Contact</h2>
+					<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+						<FloatingInput
+							label='Contact Name'
+							value={formData.emergency_contact_name}
+							onChange={(value: string) => handleChange('emergency_contact_name', value)}
+							placeholder='Emergency contact name'
+						/>
+						<FloatingDropdown
+							label='Relation'
+							options={EMERGENCY_CONTACT_RELATION_OPTIONS}
+							value={formData.emergency_contact_relation}
+							onChange={(value: string) => handleChange('emergency_contact_relation', value)}
+							placeholder='Select relation'
+						/>
+						<FloatingInput
+							label='Phone Number'
+							value={formData.emergency_contact_number}
+							onChange={(value: string) => handleChange('emergency_contact_number', value)}
+							placeholder='+91-9876543211'
+							error={!!errors.emergency_contact_number}
+							errorMessage={errors.emergency_contact_number}
+						/>
 					</div>
 				</Card>
 

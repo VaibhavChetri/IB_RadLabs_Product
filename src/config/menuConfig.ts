@@ -38,6 +38,7 @@ import {
 	BadgeDollarSign,
 	Award,
 	Calendar,
+	ShieldCheck,
 	// ArrowLeft, // Deprecated - Received section commented out
 } from 'lucide-react';
 
@@ -275,7 +276,20 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 				id: 'amazon-invoice',
 				name: 'Amazon Invoice',
 				icon: Receipt,
-				href: '/finances/amazon-invoice',
+				children: [
+					{
+						id: 'amazon-invoice-listing',
+						name: 'Amazon Invoice Listing',
+						icon: Receipt,
+						href: '/finances/amazon-invoice',
+					},
+					{
+						id: 'amazon-invoice-upload',
+						name: 'Amazon Invoice Upload',
+						icon: Receipt,
+						href: '/finances/amazon-invoice/upload',
+					},
+				],
 			},
 			{
 				id: 'zoho-payment-received',
@@ -717,6 +731,19 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 						],
 					},
 				],
+			},
+		],
+	},
+	{
+		id: 'approvals',
+		name: 'Approvals',
+		icon: ShieldCheck,
+		children: [
+			{
+				id: 'vendor-invoice-approvals',
+				name: 'Vendor Invoice Approvals',
+				icon: ShieldCheck,
+				href: '/approvals/vendor-invoices',
 			},
 		],
 	},

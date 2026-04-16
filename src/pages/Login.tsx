@@ -8,6 +8,8 @@ import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
 import { AuthApiService } from '../services/authApi';
 import { useFormApi } from '../hooks/useApi';
+import { apiService } from '../services/api';
+import TokenManager from '../utils/tokenManager';
 
 export const Login: React.FC = () => {
 	const dispatch = useDispatch<AppDispatch>();
@@ -32,21 +34,38 @@ export const Login: React.FC = () => {
 			// Handle successful login
 			if (result.status_code === 200 && result.data && result.data.access_token) {
 				// Dispatch login success with user data from the response
+				// Fetch approver status before navigating
+				let isApprover = false;
+				try {
+					const approverRes = await apiService.get('/procurement/me/is-approver');
+					isApprover = approverRes?.data?.isApprover ?? false;
+				} catch {
+					isApprover = false;
+				}
+
 				dispatch(
 					loginSuccess({
 						id: result.data.user.id.toString(),
 						name: `${result.data.user.first_name} ${result.data.user.last_name}`.trim(),
 						email: result.data.user.email,
-						role: result.data.user.user_type_name, // Use backend-provided user type name
+						role: result.data.user.user_type_name,
 						userTypeId: result.data.user.user_type_id,
-						userTypeName: result.data.user.user_type_name, // Use backend-provided user type name
+						userTypeName: result.data.user.user_type_name,
 						city_id: result.data.user.city_id,
-						city_name: result.data.user.city_name, // Use backend-provided city name
+						city_name: result.data.user.city_name,
 						state_id: result.data.user.state_id,
-						state_name: result.data.user.state_name, // Use backend-provided state name
+						state_name: result.data.user.state_name,
 						menuPermissions: result.data.menu_permissions || {},
+						isApprover,
 					})
 				);
+
+				// Persist isApprover so it survives page refresh
+				const storedUserData = TokenManager.getUserData();
+				if (storedUserData) {
+					TokenManager.setUserData({ ...storedUserData, isApprover });
+				}
+
 				navigate('/');
 			} else {
 				setError('Login failed: Invalid response from server');

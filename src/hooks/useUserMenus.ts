@@ -114,7 +114,12 @@ export const useUserMenus = (): UseUserMenusReturn => {
 	}, [permissions, isAuthenticated]);
 
 	// Filter menus based on permissions (use normalized so invoice/invoices/billing all work)
-	const menus = filterMenusByPermissions(ALL_MENU_ITEMS, normalizedPermissions);
+	let menus = filterMenusByPermissions(ALL_MENU_ITEMS, normalizedPermissions);
+
+	// Hide 'approvals' menu for non-approvers (flag comes from backend /procurement/me/is-approver)
+	if (!user?.isApprover) {
+		menus = menus.filter(m => m.id !== 'approvals');
+	}
 
 	// Check if user has access to a specific menu
 	const checkMenuAccess = useCallback(

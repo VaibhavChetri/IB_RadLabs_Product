@@ -7,6 +7,7 @@ import type { TableColumn } from '../../../components/ui/DataDisplay';
 import type { HrmEmployee } from '../../../services/hrmApi';
 import { HrIconTooltip } from '../components/HrIconTooltip';
 import { getStatusColor, getStatusLabel, getEmploymentTypeLabel } from './constants';
+import { formatEmployeeCurrency, getOptionalFieldLabel } from '../utils/employeeDisplay';
 
 interface ColumnProps {
 	onEdit: (item: HrmEmployee) => void;
@@ -88,23 +89,37 @@ export const getEmployeeColumns = ({
 		title: 'Name',
 		sortable: true,
 		align: 'left',
-		render: (_value: unknown, row: Record<string, unknown>) => (
-			<div>
-				<div className='font-semibold text-gray-900'>
-					{String(row.full_name || `${row.first_name || ''} ${row.last_name || ''}`.trim())}
+		render: (_value: unknown, row: Record<string, unknown>) => {
+			const personalEmail = String(row.personal_email || '').trim();
+
+			return (
+				<div>
+					<div className='font-semibold text-gray-900'>
+						{String(row.full_name || `${row.first_name || ''} ${row.last_name || ''}`.trim())}
+					</div>
+					<div className='text-xs text-gray-500'>{String(row.email || '')}</div>
+					{personalEmail && <div className='text-xs text-gray-400'>{personalEmail}</div>}
 				</div>
-				<div className='text-xs text-gray-500'>{String(row.email || '')}</div>
-			</div>
-		),
+			);
+		},
 	},
 	{
 		key: 'department_name',
 		title: 'Department',
 		sortable: true,
 		align: 'center',
-		render: (value: unknown) => (
-			<div className='text-gray-700 text-center'>{String(value || 'N/A')}</div>
-		),
+		render: (value: unknown, row: Record<string, unknown>) => {
+			const team = String(row.team || '').trim();
+			const city = String(row.city || '').trim();
+			const secondary = [team, city].filter(Boolean).join(' • ');
+
+			return (
+				<div className='text-center'>
+					<div className='text-gray-700'>{getOptionalFieldLabel(value)}</div>
+					<div className='text-xs text-gray-500'>{secondary || 'N/A'}</div>
+				</div>
+			);
+		},
 	},
 	{
 		key: 'designation_title',
@@ -131,8 +146,31 @@ export const getEmployeeColumns = ({
 		title: 'Phone',
 		sortable: false,
 		align: 'center',
-		render: (value: unknown) => (
-			<div className='text-gray-700 text-center'>{String(value || 'N/A')}</div>
+		render: (value: unknown, row: Record<string, unknown>) => {
+			const emergencyPhone = String(row.emergency_contact_number || '').trim();
+
+			return (
+				<div className='text-center'>
+					<div className='text-gray-700'>{getOptionalFieldLabel(value)}</div>
+					{emergencyPhone && (
+						<div className='text-xs text-gray-500'>Emergency: {emergencyPhone}</div>
+					)}
+				</div>
+			);
+		},
+	},
+	{
+		key: 'annual_ctc',
+		title: 'Compensation',
+		sortable: true,
+		align: 'center',
+		render: (value: unknown, row: Record<string, unknown>) => (
+			<div className='text-center'>
+				<div className='font-medium text-gray-900'>{formatEmployeeCurrency(value)}</div>
+				<div className='text-xs text-gray-500'>
+					Monthly: {formatEmployeeCurrency(row.monthly_salary)}
+				</div>
+			</div>
 		),
 	},
 	{

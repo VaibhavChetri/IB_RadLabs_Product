@@ -19,3 +19,22 @@ export const getEmployeeOptionLabel = (employee: Record<string, any> | null | un
 
 	return code ? `${name} (${code})` : name;
 };
+
+export const formatEmployeeCurrency = (value: unknown) => {
+	if (value === null || value === undefined || value === '') return 'N/A';
+
+	const amount = Number(value);
+	if (Number.isNaN(amount)) return 'N/A';
+
+	return `₹ ${amount.toLocaleString('en-IN', {
+		minimumFractionDigits: 2,
+		maximumFractionDigits: 2,
+	})}`;
+};
+
+export const getOptionalFieldLabel = (value: unknown, fallback = 'N/A') => {
+	if (value === null || value === undefined) return fallback;
+
+	const text = String(value).trim();
+	return text ? text : fallback;
+};

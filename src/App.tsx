@@ -43,6 +43,7 @@ function App() {
 					state_id: userData?.state_id || undefined,
 					state_name: userData?.state_name || undefined,
 					menuPermissions: menuPermissions || {},
+					isApprover: userData?.isApprover ?? false,
 				};
 				dispatch(restoreAuth(user));
 			} else {

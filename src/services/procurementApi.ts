@@ -84,6 +84,10 @@ export interface PendingApprovalVendor {
 	approvalsTotal: number;
 	approvalsDone: number;
 	approvalTrail: PendingApprovalTrailEntry[];
+	// Present on rejectedVendors entries
+	rejectedAt?: string | null;
+	rejectionReason?: string | null;
+	rejectedBy?: string | null;
 }
 
 export interface ClientPo {
@@ -98,6 +102,7 @@ export interface PendingApprovalLead {
 	city: string | null;
 	clientPos: ClientPo[];
 	vendors: PendingApprovalVendor[];
+	rejectedVendors: PendingApprovalVendor[];
 }
 
 // ─── Shared ───────────────────────────────────────────────────────────────────
@@ -125,6 +130,32 @@ export interface ApprovalDecisionPayload {
 // ─── Service ──────────────────────────────────────────────────────────────────
 
 const BASE = '/procurement';
+
+// Normalizes snake_case vendor payloads to the camelCase shape the UI expects
+function normalizePendingVendor(v: any): PendingApprovalVendor {
+	return {
+		...v,
+		vendorInvoiceId: v.vendorInvoiceId ?? v.id ?? v.vendor_invoice_id,
+		vendorName: v.vendorName ?? v.vendor_name ?? '',
+		invoiceAmount: v.invoiceAmount ?? v.invoice_amount ?? null,
+		invoiceFileUrl: v.invoiceFileUrl ?? v.invoice_file_url ?? null,
+		invoiceNumber: v.invoiceNumber ?? v.invoice_number ?? null,
+		invoiceDate: v.invoiceDate ?? v.invoice_date ?? null,
+		invoiceStatus: v.invoiceStatus ?? v.invoice_status ?? null,
+		invoiceRemarks: v.invoiceRemarks ?? v.invoice_remarks ?? null,
+		contactPerson: v.contactPerson ?? v.contact_person ?? null,
+		contactNumber: v.contactNumber ?? v.contact_number ?? null,
+		approvalStatus: v.approvalStatus ?? v.approval_status ?? 'draft',
+		approvalSubmittedAt: v.approvalSubmittedAt ?? v.approval_submitted_at ?? null,
+		myDecision: v.myDecision ?? v.my_decision ?? null,
+		approvalsTotal: v.approvalsTotal ?? v.approvals_total ?? 0,
+		approvalsDone: v.approvalsDone ?? v.approvals_done ?? 0,
+		approvalTrail: v.approvalTrail ?? v.approval_trail ?? [],
+		rejectedAt: v.rejectedAt ?? v.rejected_at ?? null,
+		rejectionReason: v.rejectionReason ?? v.rejection_reason ?? null,
+		rejectedBy: v.rejectedBy ?? v.rejected_by ?? null,
+	};
+}
 
 export class ProcurementApiService {
 	/**
@@ -167,29 +198,11 @@ export class ProcurementApiService {
 		pagination: PaginationMeta;
 	}> {
 		const res: any = await apiService.get(`${BASE}/vendor-invoices/pending-my-approval?page=${page}&perPage=${perPage}`);
-		// Normalize snake_case vendor fields that the backend may return
 		if (res?.data && Array.isArray(res.data)) {
 			res.data = res.data.map((lead: any) => ({
 				...lead,
-				vendors: (lead.vendors ?? []).map((v: any) => ({
-					...v,
-					invoiceFileUrl: v.invoiceFileUrl ?? v.invoice_file_url ?? null,
-					invoiceNumber: v.invoiceNumber ?? v.invoice_number ?? null,
-					invoiceDate: v.invoiceDate ?? v.invoice_date ?? null,
-					invoiceStatus: v.invoiceStatus ?? v.invoice_status ?? null,
-					invoiceRemarks: v.invoiceRemarks ?? v.invoice_remarks ?? null,
-					contactPerson: v.contactPerson ?? v.contact_person ?? null,
-					contactNumber: v.contactNumber ?? v.contact_number ?? null,
-					vendorName: v.vendorName ?? v.vendor_name ?? '',
-					invoiceAmount: v.invoiceAmount ?? v.invoice_amount ?? null,
-					vendorInvoiceId: v.vendorInvoiceId ?? v.id ?? v.vendor_invoice_id,
-					approvalStatus: v.approvalStatus ?? v.approval_status ?? 'draft',
-					approvalSubmittedAt: v.approvalSubmittedAt ?? v.approval_submitted_at ?? null,
-					myDecision: v.myDecision ?? v.my_decision ?? null,
-					approvalsTotal: v.approvalsTotal ?? v.approvals_total ?? 0,
-					approvalsDone: v.approvalsDone ?? v.approvals_done ?? 0,
-					approvalTrail: v.approvalTrail ?? v.approval_trail ?? [],
-				})),
+				vendors: (lead.vendors ?? []).map(normalizePendingVendor),
+				rejectedVendors: (lead.rejectedVendors ?? lead.rejected_vendors ?? []).map(normalizePendingVendor),
 			}));
 		}
 		return res;

@@ -48,6 +48,17 @@ function formatDate(value: string | null | undefined): string {
 	}
 }
 
+function formatShortDate(value: string | null | undefined): string {
+	if (!value) return '';
+	try {
+		const d = new Date(value);
+		if (Number.isNaN(d.getTime())) return value;
+		return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+	} catch {
+		return value;
+	}
+}
+
 function formatAmount(value: number | string | null | undefined): string {
 	if (value == null || value === '') return '—';
 	return `₹${Number(value).toLocaleString('en-IN', { minimumFractionDigits: 0 })}`;
@@ -692,6 +703,59 @@ function PendingVendorCard({
 	);
 }
 
+function RejectedVendorRow({ vendor }: { vendor: PendingApprovalVendor }) {
+	const [open, setOpen] = useState(false);
+	const shortDate = formatShortDate(vendor.rejectedAt);
+	return (
+		<div className="border border-red-100 rounded-lg overflow-hidden bg-red-50/30">
+			<div
+				className="flex items-center justify-between gap-3 px-3 py-2 cursor-pointer hover:bg-red-50/60"
+				onClick={() => setOpen(v => !v)}
+			>
+				<div className="flex items-center gap-2 min-w-0 flex-1">
+					<ChevronRight className={cn('h-3.5 w-3.5 text-gray-400 shrink-0 transition-transform', open && 'rotate-90')} />
+					<p className="text-sm font-medium text-gray-800 truncate">{vendor.vendorName}</p>
+					<span className="text-sm text-gray-600 shrink-0">{formatAmount(vendor.invoiceAmount)}</span>
+					<ApprovalStatusBadge status="rejected" />
+					<p className="text-xs text-gray-600 truncate min-w-0">
+						{vendor.rejectionReason && <span className="italic">"{vendor.rejectionReason}"</span>}
+						{(shortDate || vendor.rejectedBy) && (
+							<span className="text-gray-400 ml-1">
+								— {shortDate}{vendor.rejectedBy ? ` by ${vendor.rejectedBy}` : ''}
+							</span>
+						)}
+					</p>
+				</div>
+				{vendor.invoiceFileUrl && (
+					<a
+						href={vendor.invoiceFileUrl}
+						target="_blank"
+						rel="noreferrer"
+						onClick={e => e.stopPropagation()}
+						className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium px-2 py-1 rounded border border-blue-200 hover:bg-blue-50 shrink-0"
+					>
+						<FileText className="h-3 w-3" /> Invoice
+					</a>
+				)}
+			</div>
+			{open && (
+				<div className="border-t border-red-100 px-4 py-3 space-y-3 bg-white">
+					<InvoiceDetailsGrid
+						invoiceNumber={vendor.invoiceNumber}
+						invoiceDate={vendor.invoiceDate}
+						invoiceStatus={vendor.invoiceStatus}
+						contactPerson={vendor.contactPerson}
+						contactNumber={vendor.contactNumber}
+						invoiceFileUrl={vendor.invoiceFileUrl}
+						invoiceRemarks={vendor.invoiceRemarks}
+					/>
+					<ApprovalTrailPanel approvals={vendor.approvalTrail} submittedAt={vendor.approvalSubmittedAt} />
+				</div>
+			)}
+		</div>
+	);
+}
+
 function PendingLeadCard({
 	lead,
 	serialNo,
@@ -747,16 +811,31 @@ function PendingLeadCard({
 			</div>
 
 			{/* Vendors — collapsed when lead header is clicked */}
-			{open && <div className="p-4 space-y-3">
-				{lead.vendors.map(vendor => (
-					<PendingVendorCard
-						key={vendor.vendorInvoiceId}
-						vendor={vendor}
-						leadId={lead.leadId}
-						onActionDone={onActionDone}
-					/>
-				))}
-			</div>}
+			{open && (
+				<div className="p-4 space-y-3">
+					{lead.vendors.map(vendor => (
+						<PendingVendorCard
+							key={vendor.vendorInvoiceId}
+							vendor={vendor}
+							leadId={lead.leadId}
+							onActionDone={onActionDone}
+						/>
+					))}
+
+					{lead.rejectedVendors?.length > 0 && (
+						<div className="pt-3 mt-1 border-t border-dashed border-gray-200">
+							<p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+								Rejected ({lead.rejectedVendors.length})
+							</p>
+							<div className="space-y-2">
+								{lead.rejectedVendors.map(vendor => (
+									<RejectedVendorRow key={vendor.vendorInvoiceId} vendor={vendor} />
+								))}
+							</div>
+						</div>
+					)}
+				</div>
+			)}
 		</div>
 	);
 }

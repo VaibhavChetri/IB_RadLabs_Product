@@ -9,7 +9,7 @@ import { apiService } from './api';
 
 export interface VendorInvoiceApproval {
 	approverId: number;
-	approverLoginIds: number[]; // all login IDs that map to this approver (handles multi-account users)
+	approverLoginIds: number[];
 	approverName: string;
 	approverEmail: string;
 	approverRole: 'default_approver' | 'senior_approver';
@@ -18,6 +18,7 @@ export interface VendorInvoiceApproval {
 	rejectionReason: string | null;
 }
 
+// Used by the approval-status endpoint (accordion in All Invoices tab)
 export interface VendorInvoiceApprovalStatus {
 	id: number;
 	vendor_name: string;
@@ -27,7 +28,6 @@ export interface VendorInvoiceApprovalStatus {
 	approval_submitted_at: string | null;
 	approved_at: string | null;
 	rejected_at: string | null;
-	// Invoice details
 	invoice_number: string | null;
 	invoice_date: string | null;
 	invoice_file_url: string | null;
@@ -38,6 +38,7 @@ export interface VendorInvoiceApprovalStatus {
 	approvals: VendorInvoiceApproval[];
 }
 
+// Used by the dashboard endpoint (All Invoices tab — flat list)
 export interface VendorInvoiceDashboardItem {
 	vendorInvoiceId: number;
 	leadId: number;
@@ -51,11 +52,55 @@ export interface VendorInvoiceDashboardItem {
 	totalPaid: number | null;
 	approvals_total: number;
 	approvals_done: number;
-	// May include client/lead info from dashboard
+	client?: string;
 	clientName?: string;
 	leadName?: string;
-	client?: string;
 }
+
+// ─── Pending My Approval — grouped by lead ────────────────────────────────────
+
+export interface PendingApprovalTrailEntry {
+	approverName: string;
+	approverRole: 'default_approver' | 'senior_approver';
+	decision: 'pending' | 'approved' | 'rejected';
+	decidedAt: string | null;
+	rejectionReason: string | null;
+}
+
+export interface PendingApprovalVendor {
+	vendorInvoiceId: number;
+	vendorName: string;
+	invoiceAmount: number | null;
+	invoiceFileUrl: string | null;
+	invoiceNumber: string | null;
+	invoiceDate: string | null;
+	invoiceStatus: string | null;
+	invoiceRemarks: string | null;
+	contactPerson: string | null;
+	contactNumber: string | null;
+	approvalStatus: 'draft' | 'pending_approval' | 'approved' | 'rejected';
+	approvalSubmittedAt: string | null;
+	myDecision: 'pending' | 'approved' | 'rejected' | null;
+	approvalsTotal: number;
+	approvalsDone: number;
+	approvalTrail: PendingApprovalTrailEntry[];
+}
+
+export interface ClientPo {
+	poNumber: string;
+	totalAmount: string | null;
+	s3Url: string | null;
+}
+
+export interface PendingApprovalLead {
+	leadId: number;
+	client: string;
+	city: string | null;
+	clientPos: ClientPo[];
+	vendors: PendingApprovalVendor[];
+}
+
+// ─── Shared ───────────────────────────────────────────────────────────────────
 
 export interface DashboardFilters {
 	page?: number;
@@ -84,7 +129,7 @@ const BASE = '/procurement';
 export class ProcurementApiService {
 	/**
 	 * GET /procurement/vendor-invoices/dashboard
-	 * Full list of vendor invoices across all leads (summary only, no approvals[])
+	 * Flat list of all vendor invoices across leads (All Invoices tab)
 	 */
 	static async getVendorInvoiceDashboard(filters: DashboardFilters = {}): Promise<{
 		status: boolean;
@@ -103,7 +148,7 @@ export class ProcurementApiService {
 
 	/**
 	 * GET /procurement/leads-tracker/:leadId/vendor-invoices/approval-status
-	 * Per-vendor approval details including approvals[] array — used for accordion
+	 * Per-vendor approval details — used in accordion for All Invoices tab
 	 */
 	static async getVendorInvoiceApprovalStatus(leadId: number): Promise<{
 		status: boolean;
@@ -114,19 +159,44 @@ export class ProcurementApiService {
 
 	/**
 	 * GET /procurement/vendor-invoices/pending-my-approval
-	 * Invoices where the current logged-in admin has a pending decision
+	 * Grouped by lead — all vendors per lead with approvalTrail + myDecision
 	 */
 	static async getMyPendingApprovals(page = 1, perPage = 20): Promise<{
 		status: boolean;
-		data: VendorInvoiceDashboardItem[];
+		data: PendingApprovalLead[];
 		pagination: PaginationMeta;
 	}> {
-		return apiService.get(`${BASE}/vendor-invoices/pending-my-approval?page=${page}&perPage=${perPage}`) as any;
+		const res: any = await apiService.get(`${BASE}/vendor-invoices/pending-my-approval?page=${page}&perPage=${perPage}`);
+		// Normalize snake_case vendor fields that the backend may return
+		if (res?.data && Array.isArray(res.data)) {
+			res.data = res.data.map((lead: any) => ({
+				...lead,
+				vendors: (lead.vendors ?? []).map((v: any) => ({
+					...v,
+					invoiceFileUrl: v.invoiceFileUrl ?? v.invoice_file_url ?? null,
+					invoiceNumber: v.invoiceNumber ?? v.invoice_number ?? null,
+					invoiceDate: v.invoiceDate ?? v.invoice_date ?? null,
+					invoiceStatus: v.invoiceStatus ?? v.invoice_status ?? null,
+					invoiceRemarks: v.invoiceRemarks ?? v.invoice_remarks ?? null,
+					contactPerson: v.contactPerson ?? v.contact_person ?? null,
+					contactNumber: v.contactNumber ?? v.contact_number ?? null,
+					vendorName: v.vendorName ?? v.vendor_name ?? '',
+					invoiceAmount: v.invoiceAmount ?? v.invoice_amount ?? null,
+					vendorInvoiceId: v.vendorInvoiceId ?? v.id ?? v.vendor_invoice_id,
+					approvalStatus: v.approvalStatus ?? v.approval_status ?? 'draft',
+					approvalSubmittedAt: v.approvalSubmittedAt ?? v.approval_submitted_at ?? null,
+					myDecision: v.myDecision ?? v.my_decision ?? null,
+					approvalsTotal: v.approvalsTotal ?? v.approvals_total ?? 0,
+					approvalsDone: v.approvalsDone ?? v.approvals_done ?? 0,
+					approvalTrail: v.approvalTrail ?? v.approval_trail ?? [],
+				})),
+			}));
+		}
+		return res;
 	}
 
 	/**
 	 * POST /procurement/leads-tracker/:leadId/vendors/:vendorId/approval-decision
-	 * Submit approve or reject decision
 	 */
 	static async submitApprovalDecision(
 		leadId: number,

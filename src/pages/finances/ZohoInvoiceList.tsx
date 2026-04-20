@@ -56,6 +56,8 @@ const buildDefaultFilters = (): ZohoInvoiceFilters => {
 		branch_code: '',
 		business_unit: '',
 		place_of_supply: '',
+		sort_by: 'invoice_date',
+		sort_order: 'desc',
 	};
 };
 
@@ -219,6 +221,17 @@ export const ZohoInvoiceList: React.FC = () => {
 		[filters, fetchInvoices]
 	);
 
+	// Handle column sort
+	const handleSort = useCallback(
+		(key: string, order: 'asc' | 'desc') => {
+			const updatedFilters = { ...filters, sort_by: key, sort_order: order, page: 1 };
+			setFilters(updatedFilters);
+			saveFilters(updatedFilters);
+			fetchInvoices(updatedFilters);
+		},
+		[filters, fetchInvoices]
+	);
+
 	// Status tabs configuration
 	const statusTabs = [
 		{ label: 'All', value: '' },
@@ -307,21 +320,25 @@ export const ZohoInvoiceList: React.FC = () => {
 			key: 'invoice_date',
 			title: 'Invoice Date',
 			dataIndex: 'invoice_date',
+			sortable: true,
 			render: (value) => new Date(value as string).toLocaleDateString(),
 		},
 		{
 			key: 'invoice_number',
 			title: 'Invoice #',
 			dataIndex: 'invoice_number',
+			sortable: true,
 		},
 		{
 			key: 'customer_name',
 			title: 'Customer',
 			dataIndex: 'customer_name',
+			sortable: true,
 		},
 		{
 			key: 'status',
 			title: 'Status',
+			sortable: true,
 			render: (_, record: ZohoInvoice) => {
 				const statusColors: Record<string, string> = {
 					paid: 'bg-success-50 text-success-700',
@@ -341,6 +358,7 @@ export const ZohoInvoiceList: React.FC = () => {
 		{
 			key: 'total',
 			title: 'Total',
+			sortable: true,
 			render: (_, record: ZohoInvoice) => {
 				const total = parseFloat(String(record.total || 0));
 				return `₹ ${total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -349,6 +367,7 @@ export const ZohoInvoiceList: React.FC = () => {
 		{
 			key: 'balance',
 			title: 'Balance',
+			sortable: true,
 			render: (_, record: ZohoInvoice) => {
 				const balance = parseFloat(String(record.balance || 0));
 				return `₹ ${balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -358,22 +377,26 @@ export const ZohoInvoiceList: React.FC = () => {
 			key: 'due_date',
 			title: 'Due Date',
 			dataIndex: 'due_date',
+			sortable: true,
 			render: (value) => new Date(value as string).toLocaleDateString(),
 		},
 		{
 			key: 'due_days',
 			title: 'Due Days',
 			dataIndex: 'due_days',
+			sortable: true,
 		},
 		{
 			key: 'cf_branch_of_invoice',
 			title: 'Branch',
 			dataIndex: 'cf_branch_of_invoice',
+			sortable: true,
 		},
 		{
 			key: 'cf_business_unit',
 			title: 'Business Unit',
 			dataIndex: 'cf_business_unit',
+			sortable: true,
 		},
 		{
 			key: 'key_account_manager',
@@ -550,6 +573,9 @@ export const ZohoInvoiceList: React.FC = () => {
 						data={invoices as any}
 						hoverable
 						striped
+						sortBy={filters.sort_by}
+						sortOrder={filters.sort_order}
+						onSort={handleSort}
 					/>
 				)}
 			</Card>

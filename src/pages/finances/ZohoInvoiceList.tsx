@@ -27,30 +27,50 @@ interface PaginationData {
 }
 
 const STORAGE_KEY = 'zoho_invoice_filters';
-const DEFAULT_FILTERS: ZohoInvoiceFilters = {
-	page: 1,
-	limit: 50,
-	invoice_date: '',
-	date_start: '',
-	date_end: '',
-	customer_name: '',
-	status: '',
-	branch_code: '',
-	business_unit: '',
-	place_of_supply: '',
+
+const toIsoDate = (d: Date) => {
+	const y = d.getFullYear();
+	const m = String(d.getMonth() + 1).padStart(2, '0');
+	const day = String(d.getDate()).padStart(2, '0');
+	return `${y}-${m}-${day}`;
+};
+
+const getCurrentMonthRange = () => {
+	const now = new Date();
+	return {
+		date_start: toIsoDate(new Date(now.getFullYear(), now.getMonth(), 1)),
+		date_end: toIsoDate(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
+	};
+};
+
+const buildDefaultFilters = (): ZohoInvoiceFilters => {
+	const { date_start, date_end } = getCurrentMonthRange();
+	return {
+		page: 1,
+		limit: 50,
+		invoice_date: '',
+		date_start,
+		date_end,
+		customer_name: '',
+		status: '',
+		branch_code: '',
+		business_unit: '',
+		place_of_supply: '',
+	};
 };
 
 const getStoredFilters = (): ZohoInvoiceFilters => {
+	const defaults = buildDefaultFilters();
 	try {
 		const stored = localStorage.getItem(STORAGE_KEY);
 		if (stored) {
 			const parsed = JSON.parse(stored);
-			return { ...DEFAULT_FILTERS, ...parsed, page: 1, limit: 50 };
+			return { ...defaults, ...parsed, page: 1, limit: 50 };
 		}
 	} catch (error) {
 		console.error('Failed to parse stored filters:', error);
 	}
-	return DEFAULT_FILTERS;
+	return defaults;
 };
 
 const saveFilters = (filters: ZohoInvoiceFilters) => {
@@ -144,9 +164,10 @@ export const ZohoInvoiceList: React.FC = () => {
 
 	// Handle reset filters
 	const handleResetFilters = useCallback(() => {
-		setFilters(DEFAULT_FILTERS);
-		saveFilters(DEFAULT_FILTERS);
-		fetchInvoices(DEFAULT_FILTERS);
+		const defaults = buildDefaultFilters();
+		setFilters(defaults);
+		saveFilters(defaults);
+		fetchInvoices(defaults);
 	}, [fetchInvoices]);
 
 	// Handle refresh from Zoho

@@ -16,6 +16,7 @@ import {
 } from '../../components/ui';
 import { Table } from '../../components/ui/DataDisplay';
 import { ZohoInvoiceApi, ZohoInvoice, ZohoInvoiceFilters } from '../../services/zohoInvoiceApi';
+import { mapAxiosZohoError } from '../../services/zohoErrors';
 import type { TableColumn } from '../../components/ui/DataDisplay';
 import { RefreshCw } from 'lucide-react';
 
@@ -111,6 +112,24 @@ export const ZohoInvoiceList: React.FC = () => {
 		type: 'success' as 'success' | 'error',
 	});
 	const [isImporting, setIsImporting] = useState(false);
+	// Disables refresh button until epoch ms (used for 429 rate-limit cooldown and 401 reauth lockout)
+	const [refreshDisabledUntil, setRefreshDisabledUntil] = useState<number | null>(null);
+	const [refreshCountdown, setRefreshCountdown] = useState(0);
+
+	useEffect(() => {
+		if (!refreshDisabledUntil) {
+			setRefreshCountdown(0);
+			return;
+		}
+		const tick = () => {
+			const left = Math.max(0, Math.ceil((refreshDisabledUntil - Date.now()) / 1000));
+			setRefreshCountdown(left);
+			if (left === 0) setRefreshDisabledUntil(null);
+		};
+		tick();
+		const id = window.setInterval(tick, 1000);
+		return () => window.clearInterval(id);
+	}, [refreshDisabledUntil]);
 
 	// Fetch invoices
 	const fetchInvoices = useCallback(async (currentFilters: ZohoInvoiceFilters) => {
@@ -174,7 +193,6 @@ export const ZohoInvoiceList: React.FC = () => {
 
 	// Handle refresh from Zoho
 	const handleRefreshFromZoho = useCallback(async () => {
-		// Check if both date filters are set in current filters state
 		if (!filters.date_start || !filters.date_end) {
 			setSnackbar({
 				open: true,
@@ -186,25 +204,28 @@ export const ZohoInvoiceList: React.FC = () => {
 
 		setIsImporting(true);
 		try {
-			// Call import API with filtered dates
 			const importResponse = await ZohoInvoiceApi.importInvoices(
 				filters.date_start,
 				filters.date_end
 			);
 			if (importResponse.status_code === 200) {
+				const count = importResponse.importedCount ?? 0;
 				setSnackbar({
 					open: true,
-					message: `Successfully imported ${importResponse.importedCount} invoices`,
+					message: count === 0 ? 'Already up to date' : `Successfully imported ${count} invoices`,
 					type: 'success',
 				});
-
-				// Fetch the updated invoice list
 				await fetchInvoices({ ...filters, page: 1 });
 			}
 		} catch (err: any) {
-			const errorMsg =
-				err.response?.data?.message || err.message || 'Failed to refresh invoices from Zoho';
-			setSnackbar({ open: true, message: errorMsg, type: 'error' });
+			const mapped = mapAxiosZohoError(err);
+			setSnackbar({ open: true, message: mapped.message, type: 'error' });
+			if (mapped.kind === 'rate_limit') {
+				setRefreshDisabledUntil(Date.now() + (mapped.retryAfterSec ?? 60) * 1000);
+			} else if (mapped.kind === 'auth') {
+				// Lock the button — further clicks won't help; user must contact admin
+				setRefreshDisabledUntil(Number.MAX_SAFE_INTEGER);
+			}
 		} finally {
 			setIsImporting(false);
 		}
@@ -426,12 +447,16 @@ export const ZohoInvoiceList: React.FC = () => {
 				/>
 				<Button
 					onClick={handleRefreshFromZoho}
-					disabled={isImporting}
+					disabled={isImporting || refreshCountdown > 0}
 					className='flex items-center gap-2'
 					variant='outline'
 				>
 					<RefreshCw className={`h-4 w-4 ${isImporting ? 'animate-spin' : ''}`} />
-					{isImporting ? 'Refreshing...' : 'Refresh from Zoho'}
+					{isImporting
+						? 'Refreshing...'
+						: refreshCountdown > 0
+							? `Retry in ${refreshCountdown}s`
+							: 'Refresh from Zoho'}
 				</Button>
 			</div>
 

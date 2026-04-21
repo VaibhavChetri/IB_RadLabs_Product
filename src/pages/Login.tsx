@@ -8,6 +8,8 @@ import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
 import { AuthApiService } from '../services/authApi';
 import { useFormApi } from '../hooks/useApi';
+import { apiService } from '../services/api';
+import TokenManager from '../utils/tokenManager';
 
 export const Login: React.FC = () => {
 	const dispatch = useDispatch<AppDispatch>();
@@ -32,6 +34,21 @@ export const Login: React.FC = () => {
 			// Handle successful login
 			if (result.status_code === 200 && result.data && result.data.access_token) {
 				// Dispatch login success with user data from the response
+				// Fetch approver status before navigating
+				let isApprover = false;
+				let isDirectApprover = false;
+				let proxyEligible = false;
+				try {
+					const approverRes = await apiService.get('/procurement/me/is-approver');
+					isApprover = approverRes?.data?.isApprover ?? false;
+					isDirectApprover = approverRes?.data?.isDirectApprover ?? false;
+					proxyEligible = approverRes?.data?.proxy?.eligible ?? false;
+				} catch {
+					isApprover = false;
+					isDirectApprover = false;
+					proxyEligible = false;
+				}
+
 				dispatch(
 					loginSuccess({
 						id: result.data.user.id.toString(),
@@ -45,8 +62,23 @@ export const Login: React.FC = () => {
 						state_id: result.data.user.state_id,
 						state_name: result.data.user.state_name, // Use backend-provided state name
 						menuPermissions: result.data.menu_permissions || {},
+						isApprover,
+						isDirectApprover,
+						proxyEligible,
 					})
 				);
+
+				// Persist approver flags so they survive page refresh
+				const storedUserData = TokenManager.getUserData();
+				if (storedUserData) {
+					TokenManager.setUserData({
+						...storedUserData,
+						isApprover,
+						isDirectApprover,
+						proxyEligible,
+					});
+				}
+
 				navigate('/');
 			} else {
 				setError('Login failed: Invalid response from server');

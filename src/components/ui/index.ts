@@ -1,32 +1,28 @@
-/**
- * Design System Index
- * Central export file for all design system components and utilities
- */
+// Barrel exports for floating components
+export { FloatingInput } from './FloatingInput';
+export { FloatingDropdown } from './FloatingDropdown';
+export { MultiSelectDropdown } from './MultiSelectDropdown';
+export { Pagination } from './Pagination';
+export { Snackbar } from './Snackbar';
+export { SearchButton } from './SearchButton';
+export { Skeleton, TableSkeleton, FilterSkeleton } from './Skeleton';
+export { ModernFilter } from './ModernFilter';
+export { FilterChips } from './FilterChips';
+export { TimeInput } from './TimeInput';
+export { Card } from './Card';
+export { BorderlessDropdown } from './BorderlessDropdown';
+export { Dropdown } from './Dropdown';
+export { Badge } from './Badge';
+export { PageHeader } from './PageHeader';
+export { Button, IconButton, ButtonGroup, FAB } from './Button';
+export { Table, Accordion } from './DataDisplay';
+export { StatCard } from './StatCard';
+export { FacilityDropdown } from '../FacilityDropdown';
+export { Tabs } from './Navigation';
+export type { TabItem, TabsProps } from './Navigation';
 
-// Design Tokens
-export * from '../../design-system/tokens';
-export * from '../../design-system/utils';
-
-// Core UI Components
-export * from './Alert';
-export * from './Button';
-export * from './Input';
-export * from './Card';
-
-// Form Components
-export * from './Form';
-
-// Navigation Components
-export * from './Navigation';
-
-// Data Display Components
-export * from './DataDisplay';
-
-// Feedback Components
-export * from './Feedback';
-
-// Layout Components
-export * from './Layout';
-
-// Re-export utility functions
-export { cn } from '../../utils/cn';
+// Re-export types for convenience
+export type { FloatingInputProps } from './FloatingInput';
+export type { FloatingDropdownProps, DropdownOption } from './FloatingDropdown';
+export type { MultiSelectDropdownProps, MultiSelectOption } from './MultiSelectDropdown';
+export type { SnackbarProps } from './Snackbar';

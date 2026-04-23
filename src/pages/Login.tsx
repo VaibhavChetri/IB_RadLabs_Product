@@ -6,31 +6,73 @@ import { loginSuccess } from '../store/slices/authSlice';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
+import { AuthApiService } from '../services/authApi';
+import { useFormApi } from '../hooks/useApi';
+import { apiService } from '../services/api';
+import TokenManager from '../utils/tokenManager';
 
 export const Login: React.FC = () => {
 	const dispatch = useDispatch<AppDispatch>();
 	const navigate = useNavigate();
-	const [email, setEmail] = useState('admin@example.com');
-	const [password, setPassword] = useState('password123');
+	const [username, setUsername] = useState('');
+	const [password, setPassword] = useState('');
 	const [error, setError] = useState('');
 
-	const handleLogin = (e: React.FormEvent) => {
+	// Use the form API hook for login
+	const loginApi = useFormApi('login', AuthApiService.login);
+
+	const handleLogin = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setError('');
 
-		// Demo credentials
-		if (email === 'admin@example.com' && password === 'password123') {
-			dispatch(
-				loginSuccess({
-					id: '1',
-					name: 'John Doe',
-					email: 'admin@example.com',
-					role: 'Administrator',
-				}),
-			);
-			navigate('/');
-		} else {
-			setError('Invalid credentials. Use admin@example.com / password123');
+		try {
+			const result = await loginApi.submit({
+				username,
+				password,
+			});
+
+			// Handle successful login
+			if (result.status_code === 200 && result.data && result.data.access_token) {
+				// Dispatch login success with user data from the response
+				// Fetch approver status before navigating
+				let isApprover = false;
+				try {
+					const approverRes = await apiService.get('/procurement/me/is-approver');
+					isApprover = approverRes?.data?.isApprover ?? false;
+				} catch {
+					isApprover = false;
+				}
+
+				dispatch(
+					loginSuccess({
+						id: result.data.user.id.toString(),
+						name: `${result.data.user.first_name} ${result.data.user.last_name}`.trim(),
+						email: result.data.user.email,
+						role: result.data.user.user_type_name,
+						userTypeId: result.data.user.user_type_id,
+						userTypeName: result.data.user.user_type_name,
+						city_id: result.data.user.city_id,
+						city_name: result.data.user.city_name,
+						state_id: result.data.user.state_id,
+						state_name: result.data.user.state_name,
+						menuPermissions: result.data.menu_permissions || {},
+						isApprover,
+					})
+				);
+
+				// Persist isApprover so it survives page refresh
+				const storedUserData = TokenManager.getUserData();
+				if (storedUserData) {
+					TokenManager.setUserData({ ...storedUserData, isApprover });
+				}
+
+				navigate('/');
+			} else {
+				setError('Login failed: Invalid response from server');
+			}
+		} catch (error: unknown) {
+			console.error('Login error:', error);
+			setError((error as Error).message || 'Login failed. Please check your credentials.');
 		}
 	};
 
@@ -39,27 +81,12 @@ export const Login: React.FC = () => {
 			<div className='max-w-md w-full space-y-8'>
 				<div className='text-center'>
 					<div className='mx-auto w-12 h-12 bg-primary rounded-lg flex items-center justify-center'>
-						<span className='text-primary-foreground font-bold text-lg'>
-							IB
-						</span>
+						<span className='text-primary-foreground font-bold text-lg'>IB</span>
 					</div>
-					<h2 className='mt-6 text-h3 text-foreground'>
-						Sign in to your account
-					</h2>
+					<h2 className='mt-6 text-h3 text-foreground'>Sign in to your account</h2>
 					<p className='mt-2 text-body2 text-foreground-secondary'>
 						Welcome back! Please sign in to continue.
 					</p>
-					<div className='mt-4 p-3 bg-background-secondary rounded-lg'>
-						<p className='text-sm text-foreground-muted'>
-							<strong>Demo Credentials:</strong>
-						</p>
-						<p className='text-sm text-foreground-muted'>
-							Email: admin@example.com
-						</p>
-						<p className='text-sm text-foreground-muted'>
-							Password: password123
-						</p>
-					</div>
 				</div>
 
 				<Card className='p-8'>
@@ -71,11 +98,11 @@ export const Login: React.FC = () => {
 						)}
 
 						<Input
-							label='Email address'
-							type='email'
-							placeholder='Enter your email'
-							value={email}
-							onChange={(e) => setEmail(e.target.value)}
+							label='Username'
+							type='text'
+							placeholder='Enter your username'
+							value={username}
+							onChange={e => setUsername(e.target.value)}
 							required
 						/>
 						<Input
@@ -83,7 +110,7 @@ export const Login: React.FC = () => {
 							type='password'
 							placeholder='Enter your password'
 							value={password}
-							onChange={(e) => setPassword(e.target.value)}
+							onChange={e => setPassword(e.target.value)}
 							required
 						/>
 
@@ -104,17 +131,14 @@ export const Login: React.FC = () => {
 							</div>
 
 							<div className='text-sm'>
-								<a
-									href='#'
-									className='font-medium text-primary hover:text-primary/80'
-								>
+								<a href='#' className='font-medium text-primary hover:text-primary/80'>
 									Forgot your password?
 								</a>
 							</div>
 						</div>
 
-						<Button type='submit' className='w-full'>
-							Sign in
+						<Button type='submit' className='w-full' disabled={loginApi.isSubmitting}>
+							{loginApi.isSubmitting ? 'Signing in...' : 'Sign in'}
 						</Button>
 					</form>
 				</Card>

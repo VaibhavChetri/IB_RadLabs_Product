@@ -96,6 +96,7 @@ export default [
 			'*.config.ts',
 			'vite.config.ts',
 			'postcss.config.js',
+			'test-api.js',
 		],
 	},
 ];

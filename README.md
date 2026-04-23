@@ -57,6 +57,28 @@ The project includes a comprehensive design system with:
 - **Email**: `admin@example.com`
 - **Password**: `password123`
 
+## 📚 Documentation
+
+Comprehensive documentation is organized by **module/feature area** for easy navigation:
+
+### 📁 **Documentation Structure**
+```
+Documentation/
+├── 01-Architecture/           # Core system architecture
+├── 02-Client-Management/      # Client CRUD operations
+├── 03-Transit-Plan/          # Transit plan management
+├── 04-UI-Components/         # Reusable components
+├── 05-Menu-Management/       # Menu system and navigation
+└── 06-API-Reference/         # API documentation
+```
+
+### 🚀 **Quick Start Guide**
+- **New to the project?** Start with: [Architecture Overview](./Documentation/01-Architecture/01-Architecture-Overview.md)
+- **Frontend development?** Check: [UI Components Guide](./Documentation/04-UI-Components/03-UI-Components.md)
+- **Feature development?** Browse: [Client Management](./Documentation/02-Client-Management/) or [Transit Plan](./Documentation/03-Transit-Plan/)
+
+📖 **Full Documentation**: [Documentation README](./Documentation/README.md)
+
 ## 📁 Project Structure
 
 ```
@@ -68,10 +90,17 @@ src/
 │   └── Header.tsx          # Top header
 ├── pages/
 │   ├── Dashboard.tsx       # Main dashboard page
-│   └── Login.tsx           # Authentication page
+│   ├── Login.tsx           # Authentication page
+│   ├── MasterPlanListing.tsx # Transit plan management
+│   ├── ManageClients.tsx   # Client management
+│   └── AddClient.tsx       # Add client form
 ├── store/
 │   ├── slices/             # Redux slices
 │   └── index.ts            # Store configuration
+├── services/
+│   ├── api.ts              # API service layer
+│   ├── clientApi.ts        # Client API
+│   └── transitPlanApi.ts   # Transit plan API
 ├── design-system/
 │   ├── tokens.ts           # Design tokens
 │   └── utils.ts            # Design utilities

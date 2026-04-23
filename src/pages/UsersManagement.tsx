@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { PageHeader } from '../components/ui/PageHeader';
 import {
 	Search,
 	Filter,
@@ -150,12 +151,7 @@ export const UsersManagement: React.FC = () => {
 		<div className='space-y-6'>
 			{/* Header */}
 			<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between'>
-				<div>
-					<h1 className='text-h3 text-foreground'>User Management</h1>
-					<p className='mt-2 text-body2 text-foreground-secondary'>
-						Manage user accounts, roles, and permissions
-					</p>
-				</div>
+				<PageHeader title='User Management' totalItems={users.length} itemType='users' icon='👥' />
 				<div className='mt-4 sm:mt-0 flex space-x-3'>
 					<Button variant='outline' className='flex items-center'>
 						<Filter className='w-4 h-4 mr-2' />

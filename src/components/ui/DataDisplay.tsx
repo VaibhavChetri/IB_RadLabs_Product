@@ -17,6 +17,8 @@ export interface TableColumn<T = Record<string, unknown>> {
 	width?: string | number;
 	align?: 'left' | 'center' | 'right';
 	fixed?: 'left' | 'right';
+	headerClassName?: string; // Custom className for header cell
+	cellClassName?: string; // Custom className for cell content
 }
 
 export interface TableProps<T = Record<string, unknown>> {
@@ -42,7 +44,6 @@ export const Table = <T extends Record<string, unknown>>({
 	size = 'md',
 	striped = false,
 	hoverable = true,
-	bordered = false,
 	sortBy,
 	sortOrder,
 	onSort,
@@ -52,6 +53,12 @@ export const Table = <T extends Record<string, unknown>>({
 		sm: 'text-xs',
 		md: 'text-sm',
 		lg: 'text-base',
+	};
+
+	const cellSizeClasses = {
+		sm: 'text-[11px]', // Slightly smaller than text-xs (12px)
+		md: 'text-xs',
+		lg: 'text-sm',
 	};
 
 	const handleSort = (key: string) => {
@@ -87,27 +94,34 @@ export const Table = <T extends Record<string, unknown>>({
 	}
 
 	return (
-		<div className={cn('w-full overflow-hidden', className)}>
+		<div className={cn('w-full', className)}>
 			<div className='overflow-x-auto'>
-				<table className={cn('w-full border-collapse', bordered && 'border border-border')}>
+				<table className='w-full border-collapse'>
 					<thead>
-						<tr className='border-b border-border'>
+						<tr className='border-b border-gray-200'>
 							{columns.map(column => (
 								<th
 									key={column.key}
 									className={cn(
-										'px-4 py-3 text-left font-medium text-foreground-secondary',
+										'px-3 py-2 text-left font-bold text-gray-700 whitespace-nowrap', // Changed to font-bold
 										sizeClasses[size],
 										column.align === 'center' && 'text-center',
 										column.align === 'right' && 'text-right',
-										column.sortable && 'cursor-pointer hover:text-foreground select-none',
-										column.fixed === 'left' && 'sticky left-0 bg-background z-10',
-										column.fixed === 'right' && 'sticky right-0 bg-background z-10'
+										column.sortable && 'cursor-pointer hover:bg-gray-50 select-none',
+										column.fixed === 'left' && 'sticky left-0 bg-white z-10',
+										column.fixed === 'right' && 'sticky right-0 bg-white z-10',
+										column.headerClassName // Add custom header className
 									)}
 									style={{ width: column.width }}
 									onClick={() => column.sortable && handleSort(column.key)}
 								>
-									<div className='flex items-center space-x-1'>
+									<div
+										className={cn(
+											'flex items-center space-x-2',
+											column.align === 'center' && 'justify-center',
+											column.align === 'right' && 'justify-end'
+										)}
+									>
 										<span>{column.title}</span>
 										{column.sortable && (
 											<span className='flex-shrink-0'>{getSortIcon(column.key)}</span>
@@ -118,7 +132,7 @@ export const Table = <T extends Record<string, unknown>>({
 						</tr>
 					</thead>
 					<tbody>
-						{data.length === 0 ? (
+						{!data || data.length === 0 ? (
 							<tr>
 								<td
 									colSpan={columns.length}
@@ -132,9 +146,9 @@ export const Table = <T extends Record<string, unknown>>({
 								<tr
 									key={index}
 									className={cn(
-										'border-b border-border transition-colors',
-										striped && index % 2 === 1 && 'bg-background-secondary',
-										hoverable && 'hover:bg-background-secondary'
+										'border-b border-gray-200 transition-colors',
+										striped && index % 2 === 1 && 'bg-gray-50',
+										hoverable && 'hover:bg-gray-50'
 									)}
 								>
 									{columns.map(column => {
@@ -147,13 +161,14 @@ export const Table = <T extends Record<string, unknown>>({
 											<td
 												key={column.key}
 												className={cn(
-													'px-4 py-3',
-													sizeClasses[size],
+													'px-3 py-2 font-normal text-gray-900',
+													column.cellClassName || cellSizeClasses[size], // Use custom cellClassName if provided, otherwise use default size
 													column.align === 'center' && 'text-center',
 													column.align === 'right' && 'text-right',
-													column.fixed === 'left' && 'sticky left-0 bg-background z-10',
-													column.fixed === 'right' && 'sticky right-0 bg-background z-10'
+													column.fixed === 'left' && 'sticky left-0 bg-white z-10',
+													column.fixed === 'right' && 'sticky right-0 bg-white z-10'
 												)}
+												style={{ width: column.width, minWidth: column.width }}
 											>
 												{renderedValue as React.ReactNode}
 											</td>

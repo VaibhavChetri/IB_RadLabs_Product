@@ -255,27 +255,30 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
 	) => {
 		const hasError = !!error;
 
+		// Improved sizing with proper proportions
 		const sizeClasses = {
 			sm: 'h-5 w-9',
 			md: 'h-6 w-11',
-			lg: 'h-7 w-13',
+			lg: 'h-7 w-14',
 		};
 
 		const thumbSizeClasses = {
-			sm: 'h-4 w-4',
-			md: 'h-5 w-5',
-			lg: 'h-6 w-6',
+			sm: 'h-3.5 w-3.5',
+			md: 'h-4.5 w-4.5',
+			lg: 'h-5.5 w-5.5',
 		};
 
-		const variantClasses = {
-			default: 'bg-input border-border',
-			filled: 'bg-input-secondary border-transparent',
+		// Translation values based on track width minus thumb size and padding
+		const translateClasses = {
+			sm: 'translate-x-[18px]', // w-9 (36px) - h-3.5 (14px) - 4px padding
+			md: 'translate-x-[22px]', // w-11 (44px) - h-4.5 (18px) - 4px padding
+			lg: 'translate-x-[28px]', // w-14 (56px) - h-5.5 (22px) - 6px padding
 		};
 
 		return (
 			<div className='space-y-2'>
 				<label className='flex items-start space-x-3 cursor-pointer'>
-					<div className='relative'>
+					<div className='relative flex-shrink-0'>
 						<input
 							ref={ref}
 							type='checkbox'
@@ -284,19 +287,25 @@ export const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
 						/>
 						<div
 							className={cn(
-								'rounded-full border-2 transition-all duration-200 relative',
+								'relative inline-flex items-center rounded-full transition-all duration-300 ease-in-out',
 								sizeClasses[size],
-								variantClasses[variant],
-								hasError ? 'border-error' : 'border-border',
-								props.checked && 'bg-primary border-primary',
-								'focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
+								// Better color scheme: green when active, gray when inactive
+								props.checked
+									? 'bg-green-500 hover:bg-green-600'
+									: 'bg-gray-300 hover:bg-gray-400',
+								props.disabled && 'opacity-50 cursor-not-allowed',
+								hasError && !props.checked && 'bg-red-100 border-2 border-red-400',
+								'focus-within:outline-none focus-within:ring-2 focus-within:ring-green-500 focus-within:ring-offset-2',
 							)}
 						>
-							<div
+							<span
 								className={cn(
-									'absolute top-0.5 left-0.5 bg-background rounded-full transition-transform duration-200',
+									'inline-block rounded-full bg-white shadow-md transform transition-all duration-300 ease-in-out',
 									thumbSizeClasses[size],
-									props.checked && 'translate-x-5',
+									// Proper positioning: left when off, right when on
+									props.checked ? translateClasses[size] : 'translate-x-0.5',
+									// Add shadow when active for depth
+									props.checked && 'shadow-lg',
 								)}
 							/>
 						</div>

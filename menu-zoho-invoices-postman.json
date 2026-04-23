@@ -1,0 +1,16 @@
+{
+	"parent": {
+		"id": 64
+	},
+	"children": [
+		{
+			"name": "Zoho Invoices",
+			"slug": "zoho-invoices",
+			"parent_id": null,
+			"sort_order": 3,
+			"level": 1,
+			"badge": null,
+			"status": 1
+		}
+	]
+}

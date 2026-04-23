@@ -1,0 +1,68 @@
+# Apache configuration for SPA routing
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  
+  # Don't rewrite if the file exists
+  RewriteCond %{REQUEST_FILENAME} -f
+  RewriteRule ^ - [L]
+  
+  # Don't rewrite if the directory exists
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+  
+  # Don't rewrite service worker URLs - return 404
+  # This prevents service worker files from being served as HTML (which causes "Unexpected token <" errors)
+  RewriteCond %{REQUEST_URI} ^/(service-worker|firebase-messaging-sw|sw|worker|workbox-.*)\.js$
+  RewriteRule ^ - [R=404,L]
+  
+  # Don't rewrite assets directory
+  RewriteCond %{REQUEST_URI} ^/assets/ [OR]
+  RewriteCond %{REQUEST_URI} \.(js|css|map|json|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$
+  RewriteRule ^ - [L]
+  
+  # For all other requests, serve index.html
+  RewriteRule ^index\.html$ - [L]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . /index.html [L]
+</IfModule>
+
+# Ensure proper MIME types for all file types
+<IfModule mod_mime.c>
+  # JavaScript
+  AddType application/javascript js
+  AddType application/json json
+  AddType application/json map
+  
+  # CSS
+  AddType text/css css
+  
+  # Images
+  AddType image/png png
+  AddType image/jpeg jpg jpeg
+  AddType image/gif gif
+  AddType image/svg+xml svg
+  AddType image/x-icon ico
+  
+  # Fonts
+  AddType font/woff woff
+  AddType font/woff2 woff2
+  AddType font/ttf ttf
+  AddType font/otf otf
+  AddType application/vnd.ms-fontobject eot
+  
+  # Other
+  AddType text/html html htm
+  AddType application/manifest+json webmanifest
+</IfModule>
+
+# Security headers
+<IfModule mod_headers.c>
+  # Prevent MIME type sniffing
+  Header set X-Content-Type-Options "nosniff"
+  
+  # Enable strict MIME type checking
+  Header set Content-Type-Options "nosniff"
+</IfModule>
+

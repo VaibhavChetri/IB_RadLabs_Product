@@ -1,0 +1,11 @@
+# Netlify redirects for SPA
+# Exclude service worker URLs - return 404 instead of rewriting to index.html
+# This prevents service worker files from being served as HTML (which causes "Unexpected token <" errors)
+/service-worker.js    404
+/firebase-messaging-sw.js    404
+/sw.js    404
+/worker.js    404
+/workbox-*.js    404
+# manifest.json is provided as a valid file, so it will be served normally
+/*    /index.html   200
+

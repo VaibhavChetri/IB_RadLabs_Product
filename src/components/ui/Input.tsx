@@ -49,6 +49,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
 			onClear,
 			value,
 			onChange,
+			type,
 			...props
 		},
 		ref
@@ -56,7 +57,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
 		const [showPassword, setShowPassword] = React.useState(false);
 		const [internalValue, setInternalValue] = React.useState(value || '');
 
-		const isPassword = props.type === 'password';
+		const isPassword = type === 'password';
 		const hasError = !!error;
 		const hasValue = value !== undefined ? value !== '' : internalValue !== '';
 
@@ -70,7 +71,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
 			onClear?.();
 		};
 
-		const inputType = isPassword && showPassword ? 'text' : props.type;
+		const inputType = isPassword && showPassword ? 'text' : type;
 
 		return (
 			<div className={cn('space-y-2', fullWidth && 'w-full')}>
@@ -131,8 +132,13 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
 						{isPassword && (
 							<button
 								type='button'
-								onClick={() => setShowPassword(!showPassword)}
-								className='text-foreground-muted hover:text-foreground transition-colors'
+								onClick={(e) => {
+									e.preventDefault();
+									e.stopPropagation();
+									setShowPassword(!showPassword);
+								}}
+								className='text-foreground-muted hover:text-foreground transition-colors cursor-pointer focus:outline-none'
+								aria-label={showPassword ? 'Hide password' : 'Show password'}
 							>
 								{showPassword ? <EyeOff className='h-4 w-4' /> : <Eye className='h-4 w-4' />}
 							</button>

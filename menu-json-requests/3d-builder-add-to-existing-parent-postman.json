@@ -1,0 +1,14 @@
+{
+  "parent": {
+    "id": REPLACE_WITH_DASHBOARD_PARENT_ID
+  },
+  "children": [
+    {
+      "name": "3D Builder",
+      "slug": "3d-builder",
+      "sort_order": 1,
+      "level": 1,
+      "status": 1
+    }
+  ]
+}

@@ -4,8 +4,11 @@
  */
 
 // Core API
-export { apiService, apiClient, TokenManager } from './api';
+export { apiService, apiClient } from './api';
 export type { ApiResponse, ApiError } from './api';
+
+// Token Management
+export { default as TokenManager } from '../utils/tokenManager';
 
 // Domain-specific services
 export { AuthApiService } from './authApi';
@@ -13,6 +16,8 @@ export type { LoginCredentials, LoginResponse, UserProfile } from './authApi';
 
 export { DashboardApiService } from './dashboardApi';
 export type { DashboardStats, ChartData, RecentActivity } from './dashboardApi';
+
+export { MenuApiService } from './menuApi';
 
 // Factory services
 export { ApiServiceFactory, userService, fileService, analyticsService } from './apiFactory';

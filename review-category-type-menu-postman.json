@@ -1,0 +1,14 @@
+{
+	"parent": {
+		"id": 39
+	},
+	"children": [
+		{
+			"name": "Review Category Type",
+			"slug": "review-category-type",
+			"sort_order": 2,
+			"level": 2,
+			"status": 1
+		}
+	]
+}

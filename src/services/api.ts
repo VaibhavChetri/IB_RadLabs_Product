@@ -10,19 +10,19 @@ import axios, {
 	AxiosError,
 	InternalAxiosRequestConfig,
 } from 'axios';
+import TokenManager from '../utils/tokenManager';
 
 // Environment variables
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3099/v1/api';
 const API_TIMEOUT = Number(import.meta.env.VITE_API_TIMEOUT) || 10000;
-const AUTH_TOKEN_KEY = import.meta.env.VITE_AUTH_TOKEN_KEY || 'auth_token';
-const REFRESH_TOKEN_KEY = import.meta.env.VITE_REFRESH_TOKEN_KEY || 'refresh_token';
 
 // API Response Types
 export interface ApiResponse<T = any> {
+	status_code: number;
+	statusCode?: number; // Alternative format for some APIs
+	status: string;
+	message: string | null;
 	data: T;
-	message?: string;
-	status: number;
-	success: boolean;
 }
 
 export interface ApiError {
@@ -30,38 +30,6 @@ export interface ApiError {
 	status: number;
 	code?: string;
 	details?: any;
-}
-
-// Token Management
-export class TokenManager {
-	static getToken(): string | null {
-		return localStorage.getItem(AUTH_TOKEN_KEY);
-	}
-
-	static setToken(token: string): void {
-		localStorage.setItem(AUTH_TOKEN_KEY, token);
-	}
-
-	static removeToken(): void {
-		localStorage.removeItem(AUTH_TOKEN_KEY);
-	}
-
-	static getRefreshToken(): string | null {
-		return localStorage.getItem(REFRESH_TOKEN_KEY);
-	}
-
-	static setRefreshToken(token: string): void {
-		localStorage.setItem(REFRESH_TOKEN_KEY, token);
-	}
-
-	static removeRefreshToken(): void {
-		localStorage.removeItem(REFRESH_TOKEN_KEY);
-	}
-
-	static clearTokens(): void {
-		this.removeToken();
-		this.removeRefreshToken();
-	}
 }
 
 // Create Axios instance
@@ -76,14 +44,46 @@ const apiClient: AxiosInstance = axios.create({
 // Request interceptor
 apiClient.interceptors.request.use(
 	(config: InternalAxiosRequestConfig) => {
-		// Add auth token to requests
-		const token = TokenManager.getToken();
-		if (token && config.headers) {
-			config.headers.Authorization = `Bearer ${token}`;
+		// Add Bearer token to requests
+		const accessToken = TokenManager.getAccessToken();
+		const tokenData = TokenManager.getTokenData();
+		const bearerToken = accessToken ? `Bearer ${accessToken}` : null;
+		
+		// Check if token is expired
+		let tokenExpired = false;
+		if (tokenData && tokenData.access_expires) {
+			const expiryDate = new Date(tokenData.access_expires);
+			tokenExpired = expiryDate <= new Date();
 		}
+		
+		// Log token source and details
+		console.log('=== TOKEN SOURCE INFO ===');
+		console.log('localStorage key used: "auth_token"');
+		console.log('Token retrieved from:', localStorage.getItem('auth_token') ? 'localStorage["auth_token"]' : 'NOT FOUND');
+		console.log('Access token (raw):', accessToken);
+		console.log('Bearer token (formatted):', bearerToken);
+		console.log('Token data exists:', !!tokenData);
+		if (tokenData) {
+			console.log('Token expiry:', tokenData.access_expires);
+			console.log('Token expired?', tokenExpired);
+		}
+		console.log('========================');
+		
+		if (bearerToken && config.headers) {
+			config.headers.Authorization = bearerToken;
+		}
+
+		// Update user activity on each request
+		TokenManager.updateUserActivity();
 
 		// Add request timestamp for debugging
 		(config as any).metadata = { startTime: new Date() };
+		
+		// Preserve skipAuthRedirect flag from config to request object
+		// This allows the response interceptor to check it
+		if ((config as any).skipAuthRedirect !== undefined) {
+			(config as any).skipAuthRedirect = (config as any).skipAuthRedirect;
+		}
 
 		return config;
 	},
@@ -113,17 +113,23 @@ apiClient.interceptors.response.use(
 
 			try {
 				const refreshToken = TokenManager.getRefreshToken();
+				
 				if (refreshToken) {
-					// Attempt to refresh token
-					const refreshResponse = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+					// Attempt to refresh token - Use correct endpoint: /oauth/refresh (not /auth/refresh)
+					const refreshResponse = await axios.post(`${API_BASE_URL}/oauth/refresh`, {
 						refresh_token: refreshToken,
 					});
 
 					const { access_token, refresh_token: newRefreshToken } = refreshResponse.data;
 
-					TokenManager.setToken(access_token);
-					if (newRefreshToken) {
-						TokenManager.setRefreshToken(newRefreshToken);
+					// Update token data in TokenManager
+					const currentTokenData = TokenManager.getTokenData();
+					if (currentTokenData) {
+						TokenManager.setTokenData({
+							...currentTokenData,
+							access_token,
+							refresh_token: newRefreshToken || currentTokenData.refresh_token,
+						});
 					}
 
 					// Retry original request with new token
@@ -134,9 +140,21 @@ apiClient.interceptors.response.use(
 					return apiClient(originalRequest);
 				}
 			} catch (refreshError) {
-				// Refresh failed, redirect to login
-				TokenManager.clearTokens();
-				window.location.href = '/login';
+				// Refresh failed - check if we should skip redirect
+				// Check both config.skipAuthRedirect and the request object itself
+				const skipRedirect = 
+					(originalRequest as any)?.skipAuthRedirect === true ||
+					(originalRequest as any)?.config?.skipAuthRedirect === true ||
+					(originalRequest as any)?.skipAuthRedirect === true;
+				
+				if (!skipRedirect) {
+					// Only redirect if not explicitly skipped
+					// Add a small delay to allow error handlers to catch the error first
+					setTimeout(() => {
+						TokenManager.clearTokens();
+						window.location.href = '/login';
+					}, 100);
+				}
 				return Promise.reject(refreshError);
 			}
 		}

@@ -3,7 +3,7 @@
  * Provides convenient hooks for API calls with loading states and error handling
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../store';
 import { clearError, selectApiState } from '../store/slices/apiSlice';
@@ -15,7 +15,11 @@ export function useApi<TArgs = any, TReturn = any>(
 	apiCall: (args: TArgs) => Promise<ApiResponse<TReturn>>
 ) {
 	const dispatch = useDispatch<AppDispatch>();
-	const apiState = useSelector((state: RootState) => selectApiState(state, apiKey));
+
+	// Memoize the selector to prevent unnecessary rerenders
+	const apiState = useSelector(
+		useMemo(() => (state: RootState) => selectApiState(state, apiKey), [apiKey])
+	);
 
 	const execute = useCallback(
 		async (args: TArgs) => {

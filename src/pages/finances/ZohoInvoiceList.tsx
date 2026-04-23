@@ -16,6 +16,7 @@ import {
 } from '../../components/ui';
 import { Table } from '../../components/ui/DataDisplay';
 import { ZohoInvoiceApi, ZohoInvoice, ZohoInvoiceFilters } from '../../services/zohoInvoiceApi';
+import { mapAxiosZohoError } from '../../services/zohoErrors';
 import type { TableColumn } from '../../components/ui/DataDisplay';
 import { RefreshCw } from 'lucide-react';
 
@@ -27,30 +28,52 @@ interface PaginationData {
 }
 
 const STORAGE_KEY = 'zoho_invoice_filters';
-const DEFAULT_FILTERS: ZohoInvoiceFilters = {
-	page: 1,
-	limit: 50,
-	invoice_date: '',
-	date_start: '',
-	date_end: '',
-	customer_name: '',
-	status: '',
-	branch_code: '',
-	business_unit: '',
-	place_of_supply: '',
+
+const toIsoDate = (d: Date) => {
+	const y = d.getFullYear();
+	const m = String(d.getMonth() + 1).padStart(2, '0');
+	const day = String(d.getDate()).padStart(2, '0');
+	return `${y}-${m}-${day}`;
+};
+
+const getCurrentMonthRange = () => {
+	const now = new Date();
+	return {
+		date_start: toIsoDate(new Date(now.getFullYear(), now.getMonth(), 1)),
+		date_end: toIsoDate(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
+	};
+};
+
+const buildDefaultFilters = (): ZohoInvoiceFilters => {
+	const { date_start, date_end } = getCurrentMonthRange();
+	return {
+		page: 1,
+		limit: 50,
+		invoice_date: '',
+		date_start,
+		date_end,
+		customer_name: '',
+		status: '',
+		branch_code: '',
+		business_unit: '',
+		place_of_supply: '',
+		sort_by: 'invoice_date',
+		sort_order: 'desc',
+	};
 };
 
 const getStoredFilters = (): ZohoInvoiceFilters => {
+	const defaults = buildDefaultFilters();
 	try {
 		const stored = localStorage.getItem(STORAGE_KEY);
 		if (stored) {
 			const parsed = JSON.parse(stored);
-			return { ...DEFAULT_FILTERS, ...parsed, page: 1, limit: 50 };
+			return { ...defaults, ...parsed, page: 1, limit: 50 };
 		}
 	} catch (error) {
 		console.error('Failed to parse stored filters:', error);
 	}
-	return DEFAULT_FILTERS;
+	return defaults;
 };
 
 const saveFilters = (filters: ZohoInvoiceFilters) => {
@@ -89,6 +112,24 @@ export const ZohoInvoiceList: React.FC = () => {
 		type: 'success' as 'success' | 'error',
 	});
 	const [isImporting, setIsImporting] = useState(false);
+	// Disables refresh button until epoch ms (used for 429 rate-limit cooldown and 401 reauth lockout)
+	const [refreshDisabledUntil, setRefreshDisabledUntil] = useState<number | null>(null);
+	const [refreshCountdown, setRefreshCountdown] = useState(0);
+
+	useEffect(() => {
+		if (!refreshDisabledUntil) {
+			setRefreshCountdown(0);
+			return;
+		}
+		const tick = () => {
+			const left = Math.max(0, Math.ceil((refreshDisabledUntil - Date.now()) / 1000));
+			setRefreshCountdown(left);
+			if (left === 0) setRefreshDisabledUntil(null);
+		};
+		tick();
+		const id = window.setInterval(tick, 1000);
+		return () => window.clearInterval(id);
+	}, [refreshDisabledUntil]);
 
 	// Fetch invoices
 	const fetchInvoices = useCallback(async (currentFilters: ZohoInvoiceFilters) => {
@@ -144,14 +185,14 @@ export const ZohoInvoiceList: React.FC = () => {
 
 	// Handle reset filters
 	const handleResetFilters = useCallback(() => {
-		setFilters(DEFAULT_FILTERS);
-		saveFilters(DEFAULT_FILTERS);
-		fetchInvoices(DEFAULT_FILTERS);
+		const defaults = buildDefaultFilters();
+		setFilters(defaults);
+		saveFilters(defaults);
+		fetchInvoices(defaults);
 	}, [fetchInvoices]);
 
 	// Handle refresh from Zoho
 	const handleRefreshFromZoho = useCallback(async () => {
-		// Check if both date filters are set in current filters state
 		if (!filters.date_start || !filters.date_end) {
 			setSnackbar({
 				open: true,
@@ -163,25 +204,28 @@ export const ZohoInvoiceList: React.FC = () => {
 
 		setIsImporting(true);
 		try {
-			// Call import API with filtered dates
 			const importResponse = await ZohoInvoiceApi.importInvoices(
 				filters.date_start,
 				filters.date_end
 			);
 			if (importResponse.status_code === 200) {
+				const count = importResponse.importedCount ?? 0;
 				setSnackbar({
 					open: true,
-					message: `Successfully imported ${importResponse.importedCount} invoices`,
+					message: count === 0 ? 'Already up to date' : `Successfully imported ${count} invoices`,
 					type: 'success',
 				});
-
-				// Fetch the updated invoice list
 				await fetchInvoices({ ...filters, page: 1 });
 			}
 		} catch (err: any) {
-			const errorMsg =
-				err.response?.data?.message || err.message || 'Failed to refresh invoices from Zoho';
-			setSnackbar({ open: true, message: errorMsg, type: 'error' });
+			const mapped = mapAxiosZohoError(err);
+			setSnackbar({ open: true, message: mapped.message, type: 'error' });
+			if (mapped.kind === 'rate_limit') {
+				setRefreshDisabledUntil(Date.now() + (mapped.retryAfterSec ?? 60) * 1000);
+			} else if (mapped.kind === 'auth') {
+				// Lock the button — further clicks won't help; user must contact admin
+				setRefreshDisabledUntil(Number.MAX_SAFE_INTEGER);
+			}
 		} finally {
 			setIsImporting(false);
 		}
@@ -191,6 +235,17 @@ export const ZohoInvoiceList: React.FC = () => {
 	const handlePageChange = useCallback(
 		(newPage: number) => {
 			const updatedFilters = { ...filters, page: newPage };
+			setFilters(updatedFilters);
+			saveFilters(updatedFilters);
+			fetchInvoices(updatedFilters);
+		},
+		[filters, fetchInvoices]
+	);
+
+	// Handle column sort
+	const handleSort = useCallback(
+		(key: string, order: 'asc' | 'desc') => {
+			const updatedFilters = { ...filters, sort_by: key, sort_order: order, page: 1 };
 			setFilters(updatedFilters);
 			saveFilters(updatedFilters);
 			fetchInvoices(updatedFilters);
@@ -286,21 +341,25 @@ export const ZohoInvoiceList: React.FC = () => {
 			key: 'invoice_date',
 			title: 'Invoice Date',
 			dataIndex: 'invoice_date',
+			sortable: true,
 			render: (value) => new Date(value as string).toLocaleDateString(),
 		},
 		{
 			key: 'invoice_number',
 			title: 'Invoice #',
 			dataIndex: 'invoice_number',
+			sortable: true,
 		},
 		{
 			key: 'customer_name',
 			title: 'Customer',
 			dataIndex: 'customer_name',
+			sortable: true,
 		},
 		{
 			key: 'status',
 			title: 'Status',
+			sortable: true,
 			render: (_, record: ZohoInvoice) => {
 				const statusColors: Record<string, string> = {
 					paid: 'bg-success-50 text-success-700',
@@ -320,6 +379,7 @@ export const ZohoInvoiceList: React.FC = () => {
 		{
 			key: 'total',
 			title: 'Total',
+			sortable: true,
 			render: (_, record: ZohoInvoice) => {
 				const total = parseFloat(String(record.total || 0));
 				return `₹ ${total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -328,6 +388,7 @@ export const ZohoInvoiceList: React.FC = () => {
 		{
 			key: 'balance',
 			title: 'Balance',
+			sortable: true,
 			render: (_, record: ZohoInvoice) => {
 				const balance = parseFloat(String(record.balance || 0));
 				return `₹ ${balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -337,22 +398,26 @@ export const ZohoInvoiceList: React.FC = () => {
 			key: 'due_date',
 			title: 'Due Date',
 			dataIndex: 'due_date',
+			sortable: true,
 			render: (value) => new Date(value as string).toLocaleDateString(),
 		},
 		{
 			key: 'due_days',
 			title: 'Due Days',
 			dataIndex: 'due_days',
+			sortable: true,
 		},
 		{
 			key: 'cf_branch_of_invoice',
 			title: 'Branch',
 			dataIndex: 'cf_branch_of_invoice',
+			sortable: true,
 		},
 		{
 			key: 'cf_business_unit',
 			title: 'Business Unit',
 			dataIndex: 'cf_business_unit',
+			sortable: true,
 		},
 		{
 			key: 'key_account_manager',
@@ -382,12 +447,16 @@ export const ZohoInvoiceList: React.FC = () => {
 				/>
 				<Button
 					onClick={handleRefreshFromZoho}
-					disabled={isImporting}
+					disabled={isImporting || refreshCountdown > 0}
 					className='flex items-center gap-2'
 					variant='outline'
 				>
 					<RefreshCw className={`h-4 w-4 ${isImporting ? 'animate-spin' : ''}`} />
-					{isImporting ? 'Refreshing...' : 'Refresh from Zoho'}
+					{isImporting
+						? 'Refreshing...'
+						: refreshCountdown > 0
+							? `Retry in ${refreshCountdown}s`
+							: 'Refresh from Zoho'}
 				</Button>
 			</div>
 
@@ -529,6 +598,9 @@ export const ZohoInvoiceList: React.FC = () => {
 						data={invoices as any}
 						hoverable
 						striped
+						sortBy={filters.sort_by}
+						sortOrder={filters.sort_order}
+						onSort={handleSort}
 					/>
 				)}
 			</Card>

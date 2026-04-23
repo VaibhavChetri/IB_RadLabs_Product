@@ -105,9 +105,12 @@ import InvoiceList from '../pages/billing/InvoiceList';
 import BillingDetails from '../pages/billing/BillingDetails';
 // 3D Builder
 import { ThreeDBuilder } from '../pages/3d-builder/ThreeDBuilder';
+// Approvals
+import VendorInvoiceApprovals from '../pages/approvals/VendorInvoiceApprovals';
 // Finances - Amazon Invoice
 import AmazonInvoiceList from '../pages/finances/AmazonInvoiceList';
 import AmazonInvoiceDetail from '../pages/finances/AmazonInvoiceDetail';
+import AmazonInvoiceUpload from '../pages/finances/AmazonInvoiceUpload';
 // Finances - Zoho Payment Received
 import { ZohoPaymentList } from '../pages/finances/ZohoPaymentList';
 // Finances - Zoho Invoices
@@ -223,8 +226,11 @@ export const routes: RouteConfig[] = [
 	{ path: '/billing/details', component: BillingDetails },
 	// 3D Builder
 	{ path: '/dashboard/3d-builder', component: ThreeDBuilder },
+	// Approvals
+	{ path: '/approvals/vendor-invoices', component: VendorInvoiceApprovals },
 	// Finances - Amazon Invoice
 	{ path: '/finances/amazon-invoice', component: AmazonInvoiceList },
+	{ path: '/finances/amazon-invoice/upload', component: AmazonInvoiceUpload },
 	{ path: '/finances/amazon-invoice/:invoiceNumber', component: AmazonInvoiceDetail },
 	// Finances - Zoho Payment Received
 	{ path: '/finances/zoho-payment-received', component: ZohoPaymentList },

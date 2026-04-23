@@ -58,6 +58,8 @@ export interface ZohoInvoiceFilters {
 	place_of_supply?: string;
 	page?: number;
 	limit?: number;
+	sort_by?: string;
+	sort_order?: 'asc' | 'desc';
 }
 
 export interface ZohoInvoicePagination {
@@ -117,6 +119,8 @@ export class ZohoInvoiceApi {
 		if (filters.place_of_supply) params.append('place_of_supply', filters.place_of_supply);
 		if (filters.page) params.append('page', filters.page.toString());
 		if (filters.limit) params.append('limit', filters.limit.toString());
+		if (filters.sort_by) params.append('sort_by', filters.sort_by);
+		if (filters.sort_order) params.append('sort_order', filters.sort_order);
 
 		return apiService.get(
 			`/billing/zoho/invoices?${params.toString()}`

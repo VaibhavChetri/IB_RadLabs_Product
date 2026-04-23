@@ -41,8 +41,12 @@ export interface HrmEmployee {
 	full_name: string;
 	gender: string;
 	email: string;
+	personal_email: string | null;
 	phone: string;
 	whatsapp_opt_in: boolean;
+	city: string | null;
+	address: string | null;
+	team: string | null;
 	date_of_joining: string;
 	date_of_birth: string;
 	date_of_exit: string | null;
@@ -61,6 +65,20 @@ export interface HrmEmployee {
 	primary_manager_id: number | null;
 	primary_manager_name: string | null;
 	admin_id: number | null;
+	annual_ctc: number | null;
+	monthly_salary: number | null;
+	bonus_variable_yearly: number | null;
+	joining_bonus: number | null;
+	emergency_contact_name: string | null;
+	emergency_contact_number: string | null;
+	emergency_contact_relation: string | null;
+	pan_number?: string | null;
+	aadhaar_number?: string | null;
+	uan_number?: string | null;
+	bank_account_number?: string | null;
+	bank_ifsc?: string | null;
+	created_at?: string;
+	updated_at?: string;
 	is_active: boolean;
 }
 
@@ -82,10 +100,14 @@ export interface CreateEmployeeRequest {
 	last_name: string;
 	gender: string;
 	email: string;
+	personal_email?: string | null;
 	phone: string;
 	whatsapp_opt_in?: boolean;
 	date_of_joining: string;
 	date_of_birth?: string;
+	city?: string | null;
+	address?: string | null;
+	team?: string | null;
 	department_id?: number;
 	designation_id?: number;
 	/** Reporting manager; omit or set null to clear */
@@ -94,6 +116,13 @@ export interface CreateEmployeeRequest {
 	admin_id?: number | null;
 	employment_type: string;
 	status?: string;
+	annual_ctc?: number | null;
+	monthly_salary?: number | null;
+	bonus_variable_yearly?: number | null;
+	joining_bonus?: number | null;
+	emergency_contact_name?: string | null;
+	emergency_contact_number?: string | null;
+	emergency_contact_relation?: string | null;
 	pan_number?: string;
 	aadhaar_number?: string;
 	uan_number?: string;

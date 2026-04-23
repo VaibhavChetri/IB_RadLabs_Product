@@ -54,13 +54,13 @@ export const Login: React.FC = () => {
 						id: result.data.user.id.toString(),
 						name: `${result.data.user.first_name} ${result.data.user.last_name}`.trim(),
 						email: result.data.user.email,
-						role: result.data.user.user_type_name, // Use backend-provided user type name
+						role: result.data.user.user_type_name,
 						userTypeId: result.data.user.user_type_id,
-						userTypeName: result.data.user.user_type_name, // Use backend-provided user type name
+						userTypeName: result.data.user.user_type_name,
 						city_id: result.data.user.city_id,
-						city_name: result.data.user.city_name, // Use backend-provided city name
+						city_name: result.data.user.city_name,
 						state_id: result.data.user.state_id,
-						state_name: result.data.user.state_name, // Use backend-provided state name
+						state_name: result.data.user.state_name,
 						menuPermissions: result.data.menu_permissions || {},
 						isApprover,
 						isDirectApprover,

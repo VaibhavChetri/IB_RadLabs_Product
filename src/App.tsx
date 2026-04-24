@@ -44,6 +44,8 @@ function App() {
 					state_name: userData?.state_name || undefined,
 					menuPermissions: menuPermissions || {},
 					isApprover: userData?.isApprover ?? false,
+					isDirectApprover: userData?.isDirectApprover ?? false,
+					proxyEligible: userData?.proxyEligible ?? false,
 				};
 				dispatch(restoreAuth(user));
 			} else {

@@ -10,6 +10,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { PageHeader, FloatingDropdown, Button, Pagination } from '../../components/ui';
 import { FloatingInput } from '../../components/ui';
+import { Switch } from '../../components/ui/Form';
 import {
 	ProcurementApiService,
 	VendorInvoiceDashboardItem,
@@ -32,6 +33,7 @@ import {
 	FileText,
 	ExternalLink,
 	Download,
+	RotateCcw,
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
@@ -96,9 +98,11 @@ function ApprovalDecisionIcon({ decision }: { decision: string }) {
 function ApprovalTrailPanel({
 	approvals,
 	submittedAt,
+	inProxyMode = false,
 }: {
 	approvals: (VendorInvoiceApproval | PendingApprovalTrailEntry)[];
 	submittedAt: string | null;
+	inProxyMode?: boolean;
 }) {
 	return (
 		<div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
@@ -112,33 +116,68 @@ function ApprovalTrailPanel({
 				<p className="text-xs text-gray-400">No approvals submitted yet.</p>
 			) : (
 				<div className="space-y-2">
-					{approvals.map((a, i) => (
-						<div key={i} className="flex items-start gap-3 bg-white rounded-md border border-gray-100 px-3 py-2">
-							<ApprovalDecisionIcon decision={a.decision} />
-							<div className="flex-1 min-w-0">
-								<div className="flex items-center gap-2">
-									<p className="text-sm font-medium text-gray-800">{a.approverName}</p>
-									<span className="text-xs text-gray-400 capitalize">{a.approverRole.replace('_', ' ')}</span>
-								</div>
-								<div className="flex items-center gap-2 mt-0.5">
-									<span className={cn(
-										'text-xs font-medium capitalize',
-										a.decision === 'approved' && 'text-green-600',
-										a.decision === 'rejected' && 'text-red-600',
-										a.decision === 'pending' && 'text-amber-600',
-									)}>
-										{a.decision}
-									</span>
-									{'decidedAt' in a && a.decidedAt && (
-										<span className="text-xs text-gray-400">{formatDate(a.decidedAt)}</span>
+					{approvals.map((a, i) => {
+						// A row that was created by a Stage 2 loop-back is always Stage 1 pending,
+						// owned by the procurement approver. If we're also in proxy mode, reopen
+						// styling takes precedence — reopen is a sharper signal than "this pending
+						// is for someone on leave."
+						const isReopenedRow = 'reopenedFromStage2' in a && a.reopenedFromStage2 === true;
+						const isProxyTarget = !isReopenedRow && inProxyMode && a.decision === 'pending';
+						const highlighted = isReopenedRow || isProxyTarget;
+						return (
+							<div
+								key={i}
+								className={cn(
+									'flex items-start gap-3 rounded-md px-3 py-2',
+									highlighted
+										? 'bg-amber-50 border border-amber-200'
+										: 'bg-white border border-gray-100',
+								)}
+							>
+								<ApprovalDecisionIcon decision={a.decision} />
+								<div className="flex-1 min-w-0">
+									<div className="flex items-center gap-2 flex-wrap">
+										<p className="text-sm font-medium text-gray-800">{a.approverName}</p>
+										<span className="text-xs text-gray-400 capitalize">{a.approverRole.replace('_', ' ')}</span>
+										{isReopenedRow && (
+											<span className="text-[10px] font-semibold uppercase tracking-wide bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded">
+												Reopened
+											</span>
+										)}
+										{isProxyTarget && (
+											<span className="text-[10px] font-semibold uppercase tracking-wide bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded">
+												for {a.approverName}
+											</span>
+										)}
+									</div>
+									<div className="flex items-center gap-2 mt-0.5">
+										<span className={cn(
+											'text-xs font-medium capitalize',
+											a.decision === 'approved' && 'text-green-600',
+											a.decision === 'rejected' && 'text-red-600',
+											a.decision === 'pending' && 'text-amber-600',
+										)}>
+											{a.decision}
+										</span>
+										{'decidedAt' in a && a.decidedAt && (
+											<span className="text-xs text-gray-400">{formatDate(a.decidedAt)}</span>
+										)}
+									</div>
+									{isReopenedRow && (
+										<p className="text-xs text-amber-800 mt-1">
+											previously rejected by {a.reopenedRejectedByName ?? 'finance'}
+											{a.reopenedReason && (
+												<span className="italic"> — "{a.reopenedReason}"</span>
+											)}
+										</p>
+									)}
+									{'rejectionReason' in a && a.rejectionReason && (
+										<p className="text-xs text-red-500 mt-1 italic">"{a.rejectionReason}"</p>
 									)}
 								</div>
-								{'rejectionReason' in a && a.rejectionReason && (
-									<p className="text-xs text-red-500 mt-1 italic">"{a.rejectionReason}"</p>
-								)}
 							</div>
-						</div>
-					))}
+						);
+					})}
 				</div>
 			)}
 		</div>
@@ -566,10 +605,12 @@ function PendingVendorCard({
 	vendor,
 	leadId,
 	onActionDone,
+	inProxyMode = false,
 }: {
 	vendor: PendingApprovalVendor;
 	leadId: number;
 	onActionDone: () => void;
+	inProxyMode?: boolean;
 }) {
 	const [open, setOpen] = useState(false);
 	const [actionLoading, setActionLoading] = useState(false);
@@ -621,8 +662,31 @@ function PendingVendorCard({
 			)}
 			<div className={cn(
 				'border rounded-xl overflow-hidden',
-				isActionable ? 'border-amber-200' : 'border-gray-200'
+				vendor.reopened?.isReopened
+					? 'border-amber-300'
+					: isActionable ? 'border-amber-200' : 'border-gray-200'
 			)}>
+				{/* Reopen banner — fires when finance (Stage 2) rejected and the invoice
+				    looped back to the Stage 1 approver. Visible while the card is collapsed
+				    so the approver can scan their queue for re-review items at a glance. */}
+				{vendor.reopened?.isReopened && (
+					<div className="flex items-start gap-2.5 px-4 py-2.5 bg-amber-50 border-b border-amber-200">
+						<RotateCcw className="h-4 w-4 text-amber-700 shrink-0 mt-0.5" />
+						<div className="flex-1 min-w-0">
+							<p className="text-sm font-semibold text-amber-900">
+								Reopened by {vendor.reopened.rejectedByName ?? 'finance team'}
+							</p>
+							{vendor.reopened.reason && (
+								<p className="text-xs text-amber-800 mt-0.5 italic">
+									"{vendor.reopened.reason}"
+								</p>
+							)}
+							<p className="text-xs text-amber-700/80 mt-1">
+								Review the issue, then approve (sends back to finance) or reject (terminal).
+							</p>
+						</div>
+					</div>
+				)}
 				{/* Vendor header row */}
 				<div
 					className={cn(
@@ -695,7 +759,11 @@ function PendingVendorCard({
 							invoiceFileUrl={vendor.invoiceFileUrl}
 							invoiceRemarks={vendor.invoiceRemarks}
 						/>
-						<ApprovalTrailPanel approvals={vendor.approvalTrail} submittedAt={vendor.approvalSubmittedAt} />
+						<ApprovalTrailPanel
+							approvals={vendor.approvalTrail}
+							submittedAt={vendor.approvalSubmittedAt}
+							inProxyMode={inProxyMode}
+						/>
 					</div>
 				)}
 			</div>
@@ -760,10 +828,12 @@ function PendingLeadCard({
 	lead,
 	serialNo,
 	onActionDone,
+	inProxyMode = false,
 }: {
 	lead: PendingApprovalLead;
 	serialNo: number;
 	onActionDone: () => void;
+	inProxyMode?: boolean;
 }) {
 	const actionableCount = lead.vendors.filter(v => v.myDecision === 'pending').length;
 	const [open, setOpen] = useState(false);
@@ -819,6 +889,7 @@ function PendingLeadCard({
 							vendor={vendor}
 							leadId={lead.leadId}
 							onActionDone={onActionDone}
+							inProxyMode={inProxyMode}
 						/>
 					))}
 
@@ -845,11 +916,13 @@ function PendingApprovalList({
 	loading,
 	serialOffset,
 	onActionDone,
+	inProxyMode = false,
 }: {
 	leads: PendingApprovalLead[];
 	loading: boolean;
 	serialOffset: number;
 	onActionDone: () => void;
+	inProxyMode?: boolean;
 }) {
 	if (loading) return <div className="flex items-center justify-center py-16 text-gray-500 gap-2"><Loader2 className="h-6 w-6 animate-spin" /> Loading…</div>;
 	if (leads.length === 0) return <div className="py-16 text-center text-gray-400 text-sm">No pending approvals.</div>;
@@ -861,6 +934,7 @@ function PendingApprovalList({
 					lead={lead}
 					serialNo={serialOffset + idx + 1}
 					onActionDone={onActionDone}
+					inProxyMode={inProxyMode}
 				/>
 			))}
 		</div>
@@ -895,6 +969,10 @@ const VendorInvoiceApprovals: React.FC = () => {
 	const [pendingTotal, setPendingTotal] = useState(0);
 	const [pendingTotalPages, setPendingTotalPages] = useState(1);
 
+	// Proxy Mode — visible only to proxy-eligible users (Swati, Priyanka, …)
+	const [proxyActive, setProxyActive] = useState(false);
+	const [proxyFlipping, setProxyFlipping] = useState(false);
+
 	const fetchAll = useCallback(async (page: number) => {
 		setAllLoading(true);
 		try {
@@ -915,8 +993,25 @@ const VendorInvoiceApprovals: React.FC = () => {
 			const res = await ProcurementApiService.getMyPendingApprovals(page, pendingPerPage);
 			setPendingLeads(res?.data ?? []);
 			if (res?.pagination) { setPendingTotal(res.pagination.total); setPendingTotalPages(res.pagination.pages); }
+			if (res?.proxy) setProxyActive(!!res.proxy.active);
 		} catch { setPendingLeads([]); } finally { setPendingLoading(false); }
 	}, [pendingPerPage]);
+
+	const handleProxyToggle = useCallback(async (next: boolean) => {
+		setProxyFlipping(true);
+		try {
+			const res = await ProcurementApiService.setProxyMode(next);
+			const applied = res?.data?.enabled ?? next;
+			setProxyActive(applied);
+			// Refetch so the list expands/contracts to match the new mode.
+			setPendingPage(1);
+			await fetchPending(1);
+		} catch {
+			// Leave toggle in its previous state on failure.
+		} finally {
+			setProxyFlipping(false);
+		}
+	}, [fetchPending]);
 
 	useEffect(() => { fetchAll(allPage); }, [fetchAll, allPage]);
 	useEffect(() => { fetchPending(pendingPage); }, [fetchPending, pendingPage]);
@@ -928,12 +1023,33 @@ const VendorInvoiceApprovals: React.FC = () => {
 
 	return (
 		<div className="space-y-5">
-			<PageHeader
-				title="Vendor Invoice Approvals"
-				locationName="Approvals"
-				totalItems={activeTab === 'all' ? allTotal : pendingTotal}
-				itemType={activeTab === 'all' ? 'invoices' : 'leads'}
-			/>
+			<div className="flex items-start justify-between gap-4 flex-wrap">
+				<div className="flex-1 min-w-0">
+					<PageHeader
+						title="Vendor Invoice Approvals"
+						locationName="Approvals"
+						totalItems={activeTab === 'all' ? allTotal : pendingTotal}
+						itemType={activeTab === 'all' ? 'invoices' : 'leads'}
+					/>
+					{proxyActive && (
+						<p className="mt-1 text-xs text-amber-700 font-medium">
+							Viewing all pending approvals (proxy mode)
+						</p>
+					)}
+				</div>
+				{user?.proxyEligible && (
+					<div className="flex items-center gap-2 shrink-0 pt-1">
+						<Switch
+							size="sm"
+							label="Proxy Mode"
+							checked={proxyActive}
+							disabled={proxyFlipping}
+							onChange={e => handleProxyToggle(e.target.checked)}
+						/>
+						{proxyFlipping && <Loader2 className="h-3.5 w-3.5 animate-spin text-gray-400" />}
+					</div>
+				)}
+			</div>
 
 			{/* Tabs */}
 			<div className="flex gap-1 border-b border-gray-200">
@@ -1005,6 +1121,7 @@ const VendorInvoiceApprovals: React.FC = () => {
 						loading={pendingLoading}
 						serialOffset={(pendingPage - 1) * pendingPerPage}
 						onActionDone={() => fetchPending(pendingPage)}
+						inProxyMode={proxyActive}
 					/>
 					{pendingTotalPages > 1 && (
 						<Pagination

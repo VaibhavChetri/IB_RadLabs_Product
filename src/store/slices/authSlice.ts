@@ -15,6 +15,8 @@ export interface User {
 	state_name?: string; // NEW: User's state name
 	menuPermissions?: Record<string, MenuPermission>; // NEW: Menu permissions
 	isApprover?: boolean; // Whether this admin is a configured vendor invoice approver
+	isDirectApprover?: boolean; // Whether this admin is a direct approver (not proxy-only)
+	proxyEligible?: boolean; // Whether this admin can toggle Proxy Mode
 }
 
 export interface AuthState {

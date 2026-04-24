@@ -116,8 +116,10 @@ export const useUserMenus = (): UseUserMenusReturn => {
 	// Filter menus based on permissions (use normalized so invoice/invoices/billing all work)
 	let menus = filterMenusByPermissions(ALL_MENU_ITEMS, normalizedPermissions);
 
-	// Hide 'approvals' menu for non-approvers (flag comes from backend /procurement/me/is-approver)
-	if (!user?.isApprover) {
+	// Hide 'approvals' menu for non-approvers (flags come from backend /procurement/me/is-approver).
+	// Proxy-eligible users (e.g. Swati, Priyanka) are not direct approvers but still need the menu
+	// so they can open the page and toggle Proxy Mode.
+	if (!user?.isApprover && !user?.proxyEligible) {
 		menus = menus.filter(m => m.id !== 'approvals');
 	}
 

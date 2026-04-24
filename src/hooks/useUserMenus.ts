@@ -113,15 +113,34 @@ export const useUserMenus = (): UseUserMenusReturn => {
 		}
 	}, [permissions, isAuthenticated]);
 
-	// Filter menus based on permissions (use normalized so invoice/invoices/billing all work)
-	let menus = filterMenusByPermissions(ALL_MENU_ITEMS, normalizedPermissions);
-
-	// Hide 'approvals' menu for non-approvers (flags come from backend /procurement/me/is-approver).
-	// Proxy-eligible users (e.g. Swati, Priyanka) are not direct approvers but still need the menu
-	// so they can open the page and toggle Proxy Mode.
-	if (!user?.isApprover && !user?.proxyEligible) {
-		menus = menus.filter(m => m.id !== 'approvals');
+	// The Approvals menu is gated by a per-user feature flag (isApprover /
+	// proxyEligible from /procurement/me/is-approver), NOT by the role-based
+	// menu_permissions table — because not every "accounts" user is an
+	// approver. Only the specific individuals designated as approvers
+	// (Shashwat / Asha / Swati / Priyanka) should see it.
+	//
+	// Problem this solves: a finance user like Asha has user_type='accounts',
+	// which does not have menu_permissions rows for 'approvals' or
+	// 'vendor-invoice-approvals'. filterMenusByPermissions strips the whole
+	// subtree. The old patch (below) only prevented *removing* the parent;
+	// the child submenu was already gone by then. Result: Asha saw the
+	// Approvals parent but no clickable submenu.
+	//
+	// Fix: before filtering, if the user is an approver or proxy-eligible,
+	// inject a fully-granted approvals subtree into their permission map.
+	// filterMenusByPermissions then preserves both parent and children
+	// exactly as designed. Non-approvers still fall through with no change,
+	// so blanket-granting to every accounts user is avoided.
+	if (user?.isApprover || user?.proxyEligible) {
+		normalizedPermissions['approvals'] = {
+			access: true,
+			children: {
+				'vendor-invoice-approvals': { access: true, children: {} },
+			},
+		};
 	}
+
+	let menus = filterMenusByPermissions(ALL_MENU_ITEMS, normalizedPermissions);
 
 	// Check if user has access to a specific menu
 	const checkMenuAccess = useCallback(

@@ -33,6 +33,7 @@ import {
 	FileText,
 	ExternalLink,
 	Download,
+	RotateCcw,
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
@@ -116,13 +117,19 @@ function ApprovalTrailPanel({
 			) : (
 				<div className="space-y-2">
 					{approvals.map((a, i) => {
-						const isProxyTarget = inProxyMode && a.decision === 'pending';
+						// A row that was created by a Stage 2 loop-back is always Stage 1 pending,
+						// owned by the procurement approver. If we're also in proxy mode, reopen
+						// styling takes precedence — reopen is a sharper signal than "this pending
+						// is for someone on leave."
+						const isReopenedRow = 'reopenedFromStage2' in a && a.reopenedFromStage2 === true;
+						const isProxyTarget = !isReopenedRow && inProxyMode && a.decision === 'pending';
+						const highlighted = isReopenedRow || isProxyTarget;
 						return (
 							<div
 								key={i}
 								className={cn(
 									'flex items-start gap-3 rounded-md px-3 py-2',
-									isProxyTarget
+									highlighted
 										? 'bg-amber-50 border border-amber-200'
 										: 'bg-white border border-gray-100',
 								)}
@@ -132,6 +139,11 @@ function ApprovalTrailPanel({
 									<div className="flex items-center gap-2 flex-wrap">
 										<p className="text-sm font-medium text-gray-800">{a.approverName}</p>
 										<span className="text-xs text-gray-400 capitalize">{a.approverRole.replace('_', ' ')}</span>
+										{isReopenedRow && (
+											<span className="text-[10px] font-semibold uppercase tracking-wide bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded">
+												Reopened
+											</span>
+										)}
 										{isProxyTarget && (
 											<span className="text-[10px] font-semibold uppercase tracking-wide bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded">
 												for {a.approverName}
@@ -151,6 +163,14 @@ function ApprovalTrailPanel({
 											<span className="text-xs text-gray-400">{formatDate(a.decidedAt)}</span>
 										)}
 									</div>
+									{isReopenedRow && (
+										<p className="text-xs text-amber-800 mt-1">
+											previously rejected by {a.reopenedRejectedByName ?? 'finance'}
+											{a.reopenedReason && (
+												<span className="italic"> — "{a.reopenedReason}"</span>
+											)}
+										</p>
+									)}
 									{'rejectionReason' in a && a.rejectionReason && (
 										<p className="text-xs text-red-500 mt-1 italic">"{a.rejectionReason}"</p>
 									)}
@@ -642,8 +662,31 @@ function PendingVendorCard({
 			)}
 			<div className={cn(
 				'border rounded-xl overflow-hidden',
-				isActionable ? 'border-amber-200' : 'border-gray-200'
+				vendor.reopened?.isReopened
+					? 'border-amber-300'
+					: isActionable ? 'border-amber-200' : 'border-gray-200'
 			)}>
+				{/* Reopen banner — fires when finance (Stage 2) rejected and the invoice
+				    looped back to the Stage 1 approver. Visible while the card is collapsed
+				    so the approver can scan their queue for re-review items at a glance. */}
+				{vendor.reopened?.isReopened && (
+					<div className="flex items-start gap-2.5 px-4 py-2.5 bg-amber-50 border-b border-amber-200">
+						<RotateCcw className="h-4 w-4 text-amber-700 shrink-0 mt-0.5" />
+						<div className="flex-1 min-w-0">
+							<p className="text-sm font-semibold text-amber-900">
+								Reopened by {vendor.reopened.rejectedByName ?? 'finance team'}
+							</p>
+							{vendor.reopened.reason && (
+								<p className="text-xs text-amber-800 mt-0.5 italic">
+									"{vendor.reopened.reason}"
+								</p>
+							)}
+							<p className="text-xs text-amber-700/80 mt-1">
+								Review the issue, then approve (sends back to finance) or reject (terminal).
+							</p>
+						</div>
+					</div>
+				)}
 				{/* Vendor header row */}
 				<div
 					className={cn(

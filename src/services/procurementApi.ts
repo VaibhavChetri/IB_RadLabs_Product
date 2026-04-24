@@ -7,12 +7,24 @@ import { apiService } from './api';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export interface VendorInvoiceApproval {
+export type ApproverRole = 'default_approver' | 'senior_approver' | 'first_approver' | string;
+
+// Per-trail-entry reopen fields. Populated on the Stage 1 row that's created
+// when a Stage 2 rejection loops back. Absent / all-null on regular rows.
+export interface TrailReopenFields {
+	reopenedFromStage2?: boolean;
+	reopenedReason?: string | null;
+	reopenedRejectedByAdminId?: number | null;
+	reopenedRejectedByName?: string | null;
+	approvalStage?: number;
+}
+
+export interface VendorInvoiceApproval extends TrailReopenFields {
 	approverId: number;
 	approverLoginIds: number[];
 	approverName: string;
 	approverEmail: string;
-	approverRole: 'default_approver' | 'senior_approver';
+	approverRole: ApproverRole;
 	decision: 'pending' | 'approved' | 'rejected';
 	decidedAt: string | null;
 	rejectionReason: string | null;
@@ -36,6 +48,7 @@ export interface VendorInvoiceApprovalStatus {
 	contact_number: string | null;
 	notes: string | null;
 	approvals: VendorInvoiceApproval[];
+	reopened?: VendorReopenInfo;
 }
 
 // Used by the dashboard endpoint (All Invoices tab — flat list)
@@ -59,12 +72,23 @@ export interface VendorInvoiceDashboardItem {
 
 // ─── Pending My Approval — grouped by lead ────────────────────────────────────
 
-export interface PendingApprovalTrailEntry {
+export interface PendingApprovalTrailEntry extends TrailReopenFields {
 	approverName: string;
-	approverRole: 'default_approver' | 'senior_approver';
+	approverRole: ApproverRole;
 	decision: 'pending' | 'approved' | 'rejected';
 	decidedAt: string | null;
 	rejectionReason: string | null;
+}
+
+// Top-level reopen block on a vendor. If isReopened is true, the vendor is in
+// a loop-back state: finance (Stage 2) rejected, a fresh Stage 1 row was created,
+// procurement approver is re-deciding. The fields describe the finance rejection
+// that triggered the loop-back.
+export interface VendorReopenInfo {
+	isReopened: boolean;
+	reason: string | null;
+	rejectedByAdminId: number | null;
+	rejectedByName: string | null;
 }
 
 export interface PendingApprovalVendor {
@@ -88,6 +112,8 @@ export interface PendingApprovalVendor {
 	rejectedAt?: string | null;
 	rejectionReason?: string | null;
 	rejectedBy?: string | null;
+	// Present when the invoice looped back from a Stage 2 rejection (see VendorReopenInfo).
+	reopened?: VendorReopenInfo;
 }
 
 export interface ClientPo {
@@ -138,6 +164,16 @@ const BASE = '/procurement';
 
 // Normalizes snake_case vendor payloads to the camelCase shape the UI expects
 function normalizePendingVendor(v: any): PendingApprovalVendor {
+	const reopenRaw = v.reopened ?? v.reopened_block ?? null;
+	const reopened: VendorReopenInfo = reopenRaw
+		? {
+				isReopened: !!(reopenRaw.isReopened ?? reopenRaw.is_reopened),
+				reason: reopenRaw.reason ?? null,
+				rejectedByAdminId: reopenRaw.rejectedByAdminId ?? reopenRaw.rejected_by_admin_id ?? null,
+				rejectedByName: reopenRaw.rejectedByName ?? reopenRaw.rejected_by_name ?? null,
+		  }
+		: { isReopened: false, reason: null, rejectedByAdminId: null, rejectedByName: null };
+
 	return {
 		...v,
 		vendorInvoiceId: v.vendorInvoiceId ?? v.id ?? v.vendor_invoice_id,
@@ -155,10 +191,28 @@ function normalizePendingVendor(v: any): PendingApprovalVendor {
 		myDecision: v.myDecision ?? v.my_decision ?? null,
 		approvalsTotal: v.approvalsTotal ?? v.approvals_total ?? 0,
 		approvalsDone: v.approvalsDone ?? v.approvals_done ?? 0,
-		approvalTrail: v.approvalTrail ?? v.approval_trail ?? [],
+		approvalTrail: (v.approvalTrail ?? v.approval_trail ?? []).map(normalizeTrailEntry),
 		rejectedAt: v.rejectedAt ?? v.rejected_at ?? null,
 		rejectionReason: v.rejectionReason ?? v.rejection_reason ?? null,
 		rejectedBy: v.rejectedBy ?? v.rejected_by ?? null,
+		reopened,
+	};
+}
+
+// Normalizes snake_case trail-entry fields (including reopen-loop fields) to camelCase.
+function normalizeTrailEntry(e: any): PendingApprovalTrailEntry {
+	return {
+		...e,
+		approverName: e.approverName ?? e.approver_name ?? '',
+		approverRole: e.approverRole ?? e.approver_role ?? 'default_approver',
+		decision: e.decision ?? 'pending',
+		decidedAt: e.decidedAt ?? e.decided_at ?? null,
+		rejectionReason: e.rejectionReason ?? e.rejection_reason ?? null,
+		reopenedFromStage2: !!(e.reopenedFromStage2 ?? e.reopened_from_stage_2 ?? e.reopened_from_stage2),
+		reopenedReason: e.reopenedReason ?? e.reopened_reason ?? null,
+		reopenedRejectedByAdminId: e.reopenedRejectedByAdminId ?? e.reopened_rejected_by_admin_id ?? null,
+		reopenedRejectedByName: e.reopenedRejectedByName ?? e.reopened_rejected_by_name ?? null,
+		approvalStage: e.approvalStage ?? e.approval_stage,
 	};
 }
 

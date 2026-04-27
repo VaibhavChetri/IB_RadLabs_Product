@@ -4,6 +4,7 @@ import { Card } from '../../../components/ui/Card';
 import { FloatingDropdown, SearchButton } from '../../../components/ui';
 import { DropdownOption } from '../hooks/useRevenueFilters';
 import { RootState } from '../../../store';
+import { canFilterByCity } from '../../../utils/cityFilterPermissions';
 
 interface RevenueFiltersProps {
 	selectedMonth: string;
@@ -44,7 +45,7 @@ export const RevenueFilters: React.FC<RevenueFiltersProps> = ({
 }) => {
 	const user = useSelector((state: RootState) => state.auth.user);
 	const userTypeId = user?.userTypeId;
-	const showCityFilter = userTypeId === 4;
+	const showCityFilter = canFilterByCity(userTypeId);
 
 	// Cost category is optional - search is enabled when month, year, and facility are selected
 	// For user_type_id=4, city must also be selected

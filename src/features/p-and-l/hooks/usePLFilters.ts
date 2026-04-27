@@ -4,6 +4,7 @@ import { CommonApiService } from '../../../services/commonApi';
 import { MONTH_OPTIONS, getCurrentMonth } from '../../dashboard/config/constants';
 import { getCurrentYear, getYearOptions } from '../config/constants';
 import { RootState } from '../../../store';
+import { canFilterByCity } from '../../../utils/cityFilterPermissions';
 
 export interface DropdownOption {
 	value: string;
@@ -60,9 +61,9 @@ export const usePLFilters = (): UsePLFiltersReturn => {
 	const [loadingCities, setLoadingCities] = useState(false);
 	const [loadingFacilities, setLoadingFacilities] = useState(false);
 
-	// Load cities (only for user_type_id = 4)
+	// Load cities (only for user types with the city-filter capability)
 	useEffect(() => {
-		if (userTypeId !== 4) return;
+		if (!canFilterByCity(userTypeId)) return;
 
 		const loadCities = async () => {
 			setLoadingCities(true);
@@ -101,7 +102,7 @@ export const usePLFilters = (): UsePLFiltersReturn => {
 			setLoadingFacilities(true);
 			try {
 				let response;
-				if (userTypeId === 4 && selectedCity) {
+				if (canFilterByCity(userTypeId) && selectedCity) {
 					// Load facilities for specific city
 					response = await CommonApiService.getFacilities(parseInt(selectedCity));
 				} else {

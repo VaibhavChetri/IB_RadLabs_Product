@@ -5,6 +5,7 @@ import { PAndLApiService } from '../../../services/pAndLApi';
 import { MONTH_OPTIONS, getCurrentMonth } from '../../dashboard/config/constants';
 import { getCurrentYear, getYearOptions } from '../../p-and-l/config/constants';
 import { RootState } from '../../../store';
+import { canFilterByCity } from '../../../utils/cityFilterPermissions';
 
 export interface DropdownOption {
 	value: string;
@@ -57,9 +58,9 @@ export const useRevenueFilters = (): UseRevenueFiltersReturn => {
 	const [loadingFacilities, setLoadingFacilities] = useState(false);
 	const [loadingCostCategories, setLoadingCostCategories] = useState(false);
 
-	// Load cities (only for user_type_id = 4)
+	// Load cities (only for user types with the city-filter capability)
 	useEffect(() => {
-		if (userTypeId !== 4) return;
+		if (!canFilterByCity(userTypeId)) return;
 
 		const loadCities = async () => {
 			setLoadingCities(true);
@@ -98,7 +99,7 @@ export const useRevenueFilters = (): UseRevenueFiltersReturn => {
 			setLoadingFacilities(true);
 			try {
 				let response;
-				if (userTypeId === 4 && selectedCity) {
+				if (canFilterByCity(userTypeId) && selectedCity) {
 					// Load facilities for specific city
 					response = await CommonApiService.getFacilities(parseInt(selectedCity));
 				} else {

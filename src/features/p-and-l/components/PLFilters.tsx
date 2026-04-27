@@ -4,6 +4,7 @@ import { Card } from '../../../components/ui/Card';
 import { FloatingDropdown, SearchButton } from '../../../components/ui';
 import { DropdownOption } from '../hooks/usePLFilters';
 import { RootState } from '../../../store';
+import { canFilterByCity } from '../../../utils/cityFilterPermissions';
 
 interface PLFiltersProps {
 	selectedMonth: string;
@@ -38,7 +39,7 @@ export const PLFilters: React.FC<PLFiltersProps> = ({
 }) => {
 	const user = useSelector((state: RootState) => state.auth.user);
 	const userTypeId = user?.userTypeId;
-	const showCityFilter = userTypeId === 4;
+	const showCityFilter = canFilterByCity(userTypeId);
 
 	const isSearchDisabled = !selectedMonth || !selectedYear || !selectedFacility || (showCityFilter && !selectedCity);
 

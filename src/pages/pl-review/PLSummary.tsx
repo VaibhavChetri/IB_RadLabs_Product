@@ -11,6 +11,7 @@ import {
 	useEBITDAData,
 	useEscalationData,
 } from '../../features/p-and-l/hooks/usePLTabData';
+import { canFilterByCity } from '../../utils/cityFilterPermissions';
 
 /**
  * P&L Summary Page
@@ -46,11 +47,14 @@ export const PLSummary: React.FC = () => {
 		selectedMonth &&
 		selectedYear &&
 		selectedFacility &&
-		(user?.userTypeId !== 4 || selectedCity)
+		(!canFilterByCity(user?.userTypeId) || selectedCity)
 	);
 
-	// Determine city_id to use - selected city for user_type_id=4, otherwise user's city
-	const cityId = user?.userTypeId === 4 ? (selectedCity ? parseInt(selectedCity) : undefined) : user?.city_id;
+	// Determine city_id to use - selected city for users with the city-filter capability,
+	// otherwise the user's own assigned city.
+	const cityId = canFilterByCity(user?.userTypeId)
+		? (selectedCity ? parseInt(selectedCity) : undefined)
+		: user?.city_id;
 
 	// Call APIs at page level - regardless of active tab
 	// This ensures all APIs are called when filters change, not when tabs change

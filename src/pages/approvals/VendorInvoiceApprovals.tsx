@@ -19,6 +19,7 @@ import {
 	PendingApprovalLead,
 	PendingApprovalVendor,
 	PendingApprovalTrailEntry,
+	ClientPo,
 } from '../../services/procurementApi';
 import type { RootState } from '../../store';
 import {
@@ -257,6 +258,7 @@ function InvoiceDetailsGrid({
 	invoiceFileUrl,
 	invoiceRemarks,
 	notes,
+	clientPo,
 }: {
 	invoiceNumber?: string | null;
 	invoiceDate?: string | null;
@@ -266,8 +268,10 @@ function InvoiceDetailsGrid({
 	invoiceFileUrl?: string | null;
 	invoiceRemarks?: string | null;
 	notes?: string | null;
+	clientPo?: ClientPo | null;
 }) {
-	const hasAny = invoiceNumber || invoiceDate || invoiceStatus || contactPerson || invoiceFileUrl || invoiceRemarks || notes;
+	const hasPoLink = !!clientPo?.s3Url;
+	const hasAny = invoiceNumber || invoiceDate || invoiceStatus || contactPerson || invoiceFileUrl || invoiceRemarks || notes || hasPoLink;
 	if (!hasAny) return null;
 	return (
 		<div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 bg-gray-50 rounded-lg border border-gray-100 px-4 py-3 text-xs">
@@ -309,6 +313,22 @@ function InvoiceDetailsGrid({
 						className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium"
 					>
 						<FileText className="h-3.5 w-3.5" /> View Invoice <ExternalLink className="h-3 w-3" />
+					</a>
+				</div>
+			)}
+			{hasPoLink && (
+				<div>
+					<p className="text-gray-400 font-medium uppercase tracking-wide mb-0.5">Client PO</p>
+					<a
+						href={clientPo!.s3Url!}
+						target="_blank"
+						rel="noreferrer"
+						onClick={e => e.stopPropagation()}
+						className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium"
+					>
+						<Download className="h-3.5 w-3.5" />
+						View PO {clientPo!.poNumber}
+						<ExternalLink className="h-3 w-3" />
 					</a>
 				</div>
 			)}
@@ -369,6 +389,7 @@ function AllInvoicesRow({
 }) {
 	const [open, setOpen] = useState(false);
 	const [approvalData, setApprovalData] = useState<VendorInvoiceApprovalStatus[] | null>(null);
+	const [clientPos, setClientPos] = useState<ClientPo[]>([]);
 	const [loadingDetail, setLoadingDetail] = useState(false);
 	const [detailError, setDetailError] = useState<string | null>(null);
 	const [actionLoading, setActionLoading] = useState(false);
@@ -388,7 +409,11 @@ function AllInvoicesRow({
 		setLoadingDetail(true);
 		setDetailError(null);
 		ProcurementApiService.getVendorInvoiceApprovalStatus(row.leadId)
-			.then(res => { if (!cancelled) setApprovalData(res?.data ?? []); })
+			.then(res => {
+				if (cancelled) return;
+				setApprovalData(res?.data ?? []);
+				setClientPos(res?.clientPos ?? []);
+			})
 			.catch(() => { if (!cancelled) setDetailError('Failed to load approval details.'); })
 			.finally(() => { if (!cancelled) setLoadingDetail(false); });
 		return () => { cancelled = true; };
@@ -529,6 +554,7 @@ function AllInvoicesRow({
 													invoiceFileUrl={vendor.invoice_file_url}
 													invoiceRemarks={vendor.invoice_remarks}
 													notes={vendor.notes}
+													clientPo={clientPos[0]}
 												/>
 												<ApprovalTrailPanel approvals={vendor.approvals} submittedAt={vendor.approval_submitted_at} />
 											</div>

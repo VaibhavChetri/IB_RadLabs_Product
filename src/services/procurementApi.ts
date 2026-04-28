@@ -120,6 +120,7 @@ export interface ClientPo {
 	poNumber: string;
 	totalAmount: string | null;
 	s3Url: string | null;
+	originalFilename?: string | null;
 }
 
 export interface PendingApprovalLead {
@@ -238,11 +239,14 @@ export class ProcurementApiService {
 
 	/**
 	 * GET /procurement/leads-tracker/:leadId/vendor-invoices/approval-status
-	 * Per-vendor approval details — used in accordion for All Invoices tab
+	 * Per-vendor approval details — used in accordion for All Invoices tab.
+	 * Backend also returns the lead's client POs at the envelope level (newest first)
+	 * so the UI can render a "View PO" link alongside each vendor's "View Invoice".
 	 */
 	static async getVendorInvoiceApprovalStatus(leadId: number): Promise<{
 		status: boolean;
 		data: VendorInvoiceApprovalStatus[];
+		clientPos?: ClientPo[];
 	}> {
 		return apiService.get(`${BASE}/leads-tracker/${leadId}/vendor-invoices/approval-status`) as any;
 	}

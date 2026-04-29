@@ -128,16 +128,12 @@ export class ZohoInvoiceApi {
 	}
 
 	/**
-	 * Import Zoho invoices for a date range
+	 * Import all invoices modified in Zoho since the last refresh.
 	 * POST /v1/api/billing/zoho/invoices/import
 	 */
-	static async importInvoices(dateStart: string, dateEnd: string): Promise<ImportZohoInvoicesResponse> {
-		const params = new URLSearchParams();
-		params.append('date_start', dateStart);
-		params.append('date_end', dateEnd);
-
+	static async importInvoices(): Promise<ImportZohoInvoicesResponse> {
 		return apiService.post(
-			`/billing/zoho/invoices/import?${params.toString()}`,
+			`/billing/zoho/invoices/import`,
 			{}
 		) as unknown as Promise<ImportZohoInvoicesResponse>;
 	}

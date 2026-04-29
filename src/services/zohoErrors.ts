@@ -8,6 +8,7 @@
 
 export type ZohoErrorKind =
 	| 'rate_limit'
+	| 'in_progress'
 	| 'upstream_reject'
 	| 'auth'
 	| 'upstream_down'
@@ -32,6 +33,8 @@ export function mapZohoError(status: number, message: string): MappedZohoError {
 	switch (status) {
 		case 429:
 			return { kind: 'rate_limit', message: raw, retryAfterSec: 60 };
+		case 409:
+			return { kind: 'in_progress', message: 'A refresh is already in progress. Please wait for it to finish.' };
 		case 400:
 			return { kind: stripBackendPrefix(raw) === raw ? 'validation' : 'upstream_reject', message: stripBackendPrefix(raw) };
 		case 401:

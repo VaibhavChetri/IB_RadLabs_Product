@@ -452,7 +452,7 @@ export const ZohoInvoiceList: React.FC = () => {
 								: 'Refresh from Zoho'}
 					</Button>
 					<p className='text-xs text-gray-500 max-w-xs text-right'>
-						Pulls all invoices modified in Zoho since the last refresh (covers new invoices and balance/payment updates).
+						Pulls all invoices modified in Zoho since the last refresh. Date filters above apply only to the list view.
 					</p>
 				</div>
 			</div>

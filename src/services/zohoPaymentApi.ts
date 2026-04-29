@@ -103,16 +103,12 @@ export class ZohoPaymentApi {
 	}
 
 	/**
-	 * Import Zoho customer payments for a date range
+	 * Import all customer payments modified in Zoho since the last refresh.
 	 * POST /v1/api/billing/zoho/customer-payments/import
 	 */
-	static async importCustomerPayments(dateStart: string, dateEnd: string): Promise<ImportZohoPaymentsResponse> {
-		const params = new URLSearchParams();
-		params.append('date_start', dateStart);
-		params.append('date_end', dateEnd);
-
+	static async importCustomerPayments(): Promise<ImportZohoPaymentsResponse> {
 		return apiService.post(
-			`/billing/zoho/customer-payments/import?${params.toString()}`,
+			`/billing/zoho/customer-payments/import`,
 			{}
 		) as unknown as Promise<ImportZohoPaymentsResponse>;
 	}

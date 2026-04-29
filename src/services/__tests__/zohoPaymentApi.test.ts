@@ -122,7 +122,7 @@ describe('ZohoPaymentApi', () => {
 	});
 
 	describe('importCustomerPayments', () => {
-		it('should call import API with date range', async () => {
+		it('should call import API and return response', async () => {
 			const mockResponse = {
 				statusCode: 200,
 				message: 'Import successful',
@@ -134,34 +134,33 @@ describe('ZohoPaymentApi', () => {
 
 			vi.mocked(apiService.post).mockResolvedValueOnce(mockResponse);
 
-			const result = await ZohoPaymentApi.importCustomerPayments('2026-01-01', '2026-03-31');
+			const result = await ZohoPaymentApi.importCustomerPayments();
 
 			expect(result.statusCode).toBe(200);
 			expect(result.data.imported).toBe(5);
 			expect(result.data.updated).toBe(2);
 		});
 
-		it('should pass date filters as query parameters', async () => {
+		it('should hit the import endpoint without date query parameters', async () => {
 			vi.mocked(apiService.post).mockResolvedValueOnce({
 				statusCode: 200,
 				message: 'success',
 				data: { imported: 0, updated: 0 },
 			});
 
-			await ZohoPaymentApi.importCustomerPayments('2026-01-01', '2026-03-31');
+			await ZohoPaymentApi.importCustomerPayments();
 
-			const callArgs = vi.mocked(apiService.post).mock.calls[0][0] as string;
-			expect(callArgs).toContain('date_start=2026-01-01');
-			expect(callArgs).toContain('date_end=2026-03-31');
+			const url = vi.mocked(apiService.post).mock.calls[0][0] as string;
+			expect(url).toBe('/billing/zoho/customer-payments/import');
+			expect(url).not.toContain('date_start');
+			expect(url).not.toContain('date_end');
 		});
 
 		it('should handle import errors', async () => {
 			const error = new Error('Import failed');
 			vi.mocked(apiService.post).mockRejectedValueOnce(error);
 
-			await expect(
-				ZohoPaymentApi.importCustomerPayments('2026-01-01', '2026-03-31')
-			).rejects.toThrow('Import failed');
+			await expect(ZohoPaymentApi.importCustomerPayments()).rejects.toThrow('Import failed');
 		});
 
 		it('should pass empty body to POST request', async () => {
@@ -171,7 +170,7 @@ describe('ZohoPaymentApi', () => {
 				data: { imported: 0, updated: 0 },
 			});
 
-			await ZohoPaymentApi.importCustomerPayments('2026-01-01', '2026-03-31');
+			await ZohoPaymentApi.importCustomerPayments();
 
 			const callArgs = vi.mocked(apiService.post).mock.calls[0];
 			expect(callArgs[1]).toEqual({});

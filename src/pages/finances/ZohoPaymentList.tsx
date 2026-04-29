@@ -76,7 +76,7 @@ export const ZohoPaymentList: React.FC = () => {
 	const [snackbar, setSnackbar] = useState({
 		open: false,
 		message: '',
-		type: 'success' as 'success' | 'error',
+		type: 'success' as 'success' | 'error' | 'info',
 	});
 	const [isImporting, setIsImporting] = useState(false);
 	const [refreshDisabledUntil, setRefreshDisabledUntil] = useState<number | null>(null);
@@ -153,21 +153,9 @@ export const ZohoPaymentList: React.FC = () => {
 
 	// Handle refresh from Zoho
 	const handleRefreshFromZoho = useCallback(async () => {
-		if (!filters.date_start || !filters.date_end) {
-			setSnackbar({
-				open: true,
-				message: 'Please set both Start Date and End Date filters before refreshing',
-				type: 'error',
-			});
-			return;
-		}
-
 		setIsImporting(true);
 		try {
-			const importResponse = await ZohoPaymentApi.importCustomerPayments(
-				filters.date_start,
-				filters.date_end
-			);
+			const importResponse = await ZohoPaymentApi.importCustomerPayments();
 			if (importResponse.statusCode === 200) {
 				const count = importResponse.data?.imported ?? 0;
 				setSnackbar({
@@ -179,7 +167,11 @@ export const ZohoPaymentList: React.FC = () => {
 			}
 		} catch (err: any) {
 			const mapped = mapAxiosZohoError(err);
-			setSnackbar({ open: true, message: mapped.message, type: 'error' });
+			setSnackbar({
+				open: true,
+				message: mapped.message,
+				type: mapped.kind === 'in_progress' ? 'info' : 'error',
+			});
 			if (mapped.kind === 'rate_limit') {
 				setRefreshDisabledUntil(Date.now() + (mapped.retryAfterSec ?? 60) * 1000);
 			} else if (mapped.kind === 'auth') {
@@ -287,19 +279,24 @@ export const ZohoPaymentList: React.FC = () => {
 					itemType='payments'
 					icon='💰'
 				/>
-				<Button
-					onClick={handleRefreshFromZoho}
-					disabled={isImporting || refreshCountdown > 0}
-					className='flex items-center gap-2'
-					variant='outline'
-				>
-					<RefreshCw className={`h-4 w-4 ${isImporting ? 'animate-spin' : ''}`} />
-					{isImporting
-						? 'Refreshing...'
-						: refreshCountdown > 0
-							? `Retry in ${refreshCountdown}s`
-							: 'Refresh from Zoho'}
-				</Button>
+				<div className='flex flex-col items-end gap-1'>
+					<Button
+						onClick={handleRefreshFromZoho}
+						disabled={isImporting || refreshCountdown > 0}
+						className='flex items-center gap-2'
+						variant='outline'
+					>
+						<RefreshCw className={`h-4 w-4 ${isImporting ? 'animate-spin' : ''}`} />
+						{isImporting
+							? 'Refreshing...'
+							: refreshCountdown > 0
+								? `Retry in ${refreshCountdown}s`
+								: 'Refresh from Zoho'}
+					</Button>
+					<p className='text-xs text-gray-500 max-w-xs text-right'>
+						Pulls all payments modified in Zoho since the last refresh. Date filters above apply only to the list view.
+					</p>
+				</div>
 			</div>
 
 			{/* Filters */}

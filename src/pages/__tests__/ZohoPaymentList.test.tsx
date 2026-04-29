@@ -185,22 +185,23 @@ describe('ZohoPaymentList Component', () => {
 		expect(customerInput.value).toBe('');
 	});
 
-	it('should show error when clicking Refresh without dates in filters', async () => {
+	it('should call import API even when no dates are set in filters', async () => {
 		const user = userEvent.setup();
+		const mockImportResponse = {
+			statusCode: 200,
+			message: 'Import successful',
+			data: { imported: 0, updated: 0 },
+		};
+		vi.mocked(ZohoPaymentApi.importCustomerPayments).mockResolvedValue(mockImportResponse);
+
 		render(<ZohoPaymentList />);
 
 		const refreshButton = screen.getByTestId('button-Refresh from Zoho');
-
 		await user.click(refreshButton);
 
 		await waitFor(() => {
-			expect(screen.getByTestId('snackbar')).toHaveTextContent(
-				'Please set both Start Date and End Date filters before refreshing'
-			);
+			expect(ZohoPaymentApi.importCustomerPayments).toHaveBeenCalled();
 		});
-
-		// Import API should not be called
-		expect(ZohoPaymentApi.importCustomerPayments).not.toHaveBeenCalled();
 	});
 
 	it('should call import then fetch on successful refresh after search', async () => {
@@ -239,7 +240,7 @@ describe('ZohoPaymentList Component', () => {
 
 		// Verify both import and fetch were called
 		await waitFor(() => {
-			expect(ZohoPaymentApi.importCustomerPayments).toHaveBeenCalledWith('2026-01-01', '2026-03-31');
+			expect(ZohoPaymentApi.importCustomerPayments).toHaveBeenCalled();
 			expect(ZohoPaymentApi.getCustomerPayments).toHaveBeenCalled();
 		});
 	});

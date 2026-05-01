@@ -30,6 +30,41 @@ export interface VendorInvoiceApproval extends TrailReopenFields {
 	rejectionReason: string | null;
 }
 
+// Per-vendor payment + budget snapshot computed fresh from the DB by the
+// approval-status endpoint. ap_context.amounts.total_paid is the
+// authoritative paid figure (advances + final). The top-level totalPaid
+// only counts the legacy proc_vendor_payments table — prefer ap_context.
+export interface ApContextAmounts {
+	committed: number;
+	header_invoice_amount: number;
+	already_billed_via_pdfs: number;
+	advances_paid: number;
+	final_paid: number;
+	total_paid: number;
+	pending_in_request: number;
+	net_remaining_after_request: number;
+}
+
+export type ApRiskSeverity = 'info' | 'warn' | 'high' | 'block';
+
+export interface ApContextRisk {
+	flag: string;
+	severity: ApRiskSeverity;
+	reason: string;
+	overrun_amount: number;
+	overrun_percent: number;
+}
+
+export interface ApContext {
+	vendor_invoice_id: number;
+	vendor_name: string;
+	procurement_vendor_id: number;
+	currency: string;
+	amounts: ApContextAmounts;
+	counts: { pdf_files: number; advances: number };
+	risk: ApContextRisk;
+}
+
 // Used by the approval-status endpoint (accordion in All Invoices tab)
 export interface VendorInvoiceApprovalStatus {
 	id: number;
@@ -37,6 +72,7 @@ export interface VendorInvoiceApprovalStatus {
 	invoice_amount: number | null;
 	invoice_status: string;
 	approval_status: 'draft' | 'pending_approval' | 'approved' | 'rejected';
+	payment_status?: 'unpaid' | 'partially_paid' | 'paid';
 	approval_submitted_at: string | null;
 	approved_at: string | null;
 	rejected_at: string | null;
@@ -47,7 +83,12 @@ export interface VendorInvoiceApprovalStatus {
 	contact_person: string | null;
 	contact_number: string | null;
 	notes: string | null;
+	totalPaid?: number | null;
+	balanceDue?: number | null;
+	daysSinceSubmitted?: number | null;
+	plannedNextStage?: { stage: string; approvers: unknown } | null;
 	approvals: VendorInvoiceApproval[];
+	ap_context?: ApContext | null;
 	reopened?: VendorReopenInfo;
 }
 

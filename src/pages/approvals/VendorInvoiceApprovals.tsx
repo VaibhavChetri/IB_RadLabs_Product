@@ -20,6 +20,8 @@ import {
 	PendingApprovalVendor,
 	PendingApprovalTrailEntry,
 	ClientPo,
+	ApContext,
+	ApRiskSeverity,
 } from '../../services/procurementApi';
 import type { RootState } from '../../store';
 import {
@@ -31,6 +33,7 @@ import {
 	Clock,
 	Search,
 	AlertCircle,
+	AlertTriangle,
 	FileText,
 	ExternalLink,
 	Download,
@@ -85,6 +88,101 @@ function ApprovalStatusBadge({ status }: { status: string }) {
 		<span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium', cfg.className)}>
 			{cfg.label}
 		</span>
+	);
+}
+
+// ─── Risk Badge (driven by ap_context.risk.severity) ──────────────────────────
+
+const RISK_CONFIG: Record<ApRiskSeverity, { label: string; className: string }> = {
+	info: { label: 'Within budget', className: 'bg-green-50 text-green-700 border-green-200' },
+	warn: { label: 'Caution', className: 'bg-yellow-50 text-yellow-800 border-yellow-200' },
+	high: { label: 'Review before approving', className: 'bg-orange-50 text-orange-800 border-orange-300' },
+	block: { label: 'Acknowledgement needed', className: 'bg-red-50 text-red-700 border-red-300' },
+};
+
+function RiskBadge({ severity }: { severity: ApRiskSeverity }) {
+	const cfg = RISK_CONFIG[severity];
+	const Icon = severity === 'info' ? CheckCircle2 : AlertTriangle;
+	return (
+		<span className={cn(
+			'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border',
+			cfg.className,
+		)}>
+			<Icon className="h-3 w-3" />
+			{cfg.label}
+		</span>
+	);
+}
+
+// ─── Payment & Budget Panel ───────────────────────────────────────────────────
+
+function MoneyRow({ label, value, emphasis }: { label: string; value: number | null | undefined; emphasis?: 'positive' | 'negative' | 'muted' }) {
+	const colorClass =
+		emphasis === 'positive' ? 'text-green-700'
+		: emphasis === 'negative' ? 'text-red-700'
+		: emphasis === 'muted' ? 'text-gray-500'
+		: 'text-gray-900';
+	return (
+		<div className="flex items-baseline justify-between text-sm">
+			<span className="text-gray-600">{label}</span>
+			<span className={cn('font-medium tabular-nums', colorClass)}>{formatAmount(value)}</span>
+		</div>
+	);
+}
+
+function PaymentBudgetPanel({ ctx }: { ctx: ApContext }) {
+	const { amounts, counts, risk } = ctx;
+	const committed = amounts.committed || 0;
+	const consumed = amounts.total_paid + amounts.pending_in_request;
+	const percentConsumed = committed > 0 ? Math.min(999, Math.round((consumed / committed) * 100)) : null;
+	const overBudget = amounts.net_remaining_after_request < 0;
+
+	return (
+		<div className="rounded-lg border border-gray-200 bg-gray-50/60 p-3 space-y-3">
+			<div className="flex items-center justify-between gap-3">
+				<div className="flex items-center gap-2">
+					<span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Payment & Budget</span>
+					{percentConsumed != null && (
+						<span className={cn(
+							'text-xs font-medium tabular-nums',
+							overBudget ? 'text-red-700' : percentConsumed >= 90 ? 'text-orange-700' : 'text-gray-600',
+						)}>
+							{percentConsumed}% of committed
+						</span>
+					)}
+				</div>
+				<RiskBadge severity={risk.severity} />
+			</div>
+
+			<div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1.5">
+				<MoneyRow label="Committed (projected)" value={amounts.committed} emphasis="muted" />
+				<MoneyRow label="Header invoice amount" value={amounts.header_invoice_amount} emphasis="muted" />
+				<MoneyRow label={`Advances paid${counts.advances ? ` (${counts.advances})` : ''}`} value={amounts.advances_paid} />
+				<MoneyRow label="Final paid" value={amounts.final_paid} />
+				<MoneyRow label="Total paid" value={amounts.total_paid} />
+				<MoneyRow label={`Already billed via PDFs${counts.pdf_files ? ` (${counts.pdf_files})` : ''}`} value={amounts.already_billed_via_pdfs} emphasis="muted" />
+				<MoneyRow label="Pending in this request" value={amounts.pending_in_request} />
+				<MoneyRow
+					label="Net remaining after request"
+					value={amounts.net_remaining_after_request}
+					emphasis={overBudget ? 'negative' : 'positive'}
+				/>
+			</div>
+
+			{risk.severity !== 'info' && (
+				<p className={cn(
+					'text-xs leading-snug rounded px-2.5 py-1.5 border',
+					risk.severity === 'block' ? 'bg-red-50 border-red-200 text-red-800'
+						: risk.severity === 'high' ? 'bg-orange-50 border-orange-200 text-orange-800'
+						: 'bg-yellow-50 border-yellow-200 text-yellow-800',
+				)}>
+					{risk.reason}
+					{risk.overrun_amount > 0 && (
+						<> {' '}<span className="font-semibold">Overrun: {formatAmount(risk.overrun_amount)} ({risk.overrun_percent}%)</span></>
+					)}
+				</p>
+			)}
+		</div>
 	);
 }
 
@@ -348,28 +446,48 @@ function ApproveRejectButtons({
 	onApprove,
 	onReject,
 	loading,
+	requireOverrunAck = false,
 }: {
 	onApprove: () => void;
 	onReject: () => void;
 	loading: boolean;
+	requireOverrunAck?: boolean;
 }) {
+	const [ackChecked, setAckChecked] = useState(false);
+	const approveDisabled = loading || (requireOverrunAck && !ackChecked);
 	return (
-		<div className="flex items-center gap-2 shrink-0">
-			<button
-				onClick={e => { e.stopPropagation(); onReject(); }}
-				disabled={loading}
-				className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-300 text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
-			>
-				<XCircle className="h-3.5 w-3.5" /> Reject
-			</button>
-			<button
-				onClick={e => { e.stopPropagation(); onApprove(); }}
-				disabled={loading}
-				className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50"
-			>
-				{loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-				Approve
-			</button>
+		<div className="flex flex-col items-end gap-2 shrink-0">
+			{requireOverrunAck && (
+				<label
+					className="flex items-center gap-2 text-xs text-red-700 select-none cursor-pointer"
+					onClick={e => e.stopPropagation()}
+				>
+					<input
+						type="checkbox"
+						checked={ackChecked}
+						onChange={e => setAckChecked(e.target.checked)}
+						className="h-3.5 w-3.5 rounded border-red-300 text-red-600 focus:ring-red-500"
+					/>
+					I acknowledge the budget overrun
+				</label>
+			)}
+			<div className="flex items-center gap-2">
+				<button
+					onClick={e => { e.stopPropagation(); onReject(); }}
+					disabled={loading}
+					className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-300 text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+				>
+					<XCircle className="h-3.5 w-3.5" /> Reject
+				</button>
+				<button
+					onClick={e => { e.stopPropagation(); onApprove(); }}
+					disabled={approveDisabled}
+					className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+				>
+					{loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+					Approve
+				</button>
+			</div>
 		</div>
 	);
 }
@@ -527,6 +645,8 @@ function AllInvoicesRow({
 												(a.approverId === currentAdminId || a.approverLoginIds?.includes(currentAdminId))
 											)
 											: null;
+										const apCtx = vendor.ap_context ?? null;
+										const requireAck = !!myPending && apCtx?.risk.severity === 'block';
 										return (
 											<div key={vendor.id} className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
 												<div className="flex items-start justify-between gap-4">
@@ -540,6 +660,7 @@ function AllInvoicesRow({
 													{myPending && (
 														<ApproveRejectButtons
 															loading={actionLoading}
+															requireOverrunAck={requireAck}
 															onApprove={() => handleApprove(vendor.id)}
 															onReject={() => setRejectModal({ vendorId: vendor.id, vendorName: vendor.vendor_name, amount: vendor.invoice_amount })}
 														/>
@@ -556,6 +677,7 @@ function AllInvoicesRow({
 													notes={vendor.notes}
 													clientPo={clientPos[0]}
 												/>
+												{apCtx && <PaymentBudgetPanel ctx={apCtx} />}
 												<ApprovalTrailPanel approvals={vendor.approvals} submittedAt={vendor.approval_submitted_at} />
 											</div>
 										);

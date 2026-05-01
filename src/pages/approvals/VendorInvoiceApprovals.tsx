@@ -114,6 +114,26 @@ function RiskBadge({ severity }: { severity: ApRiskSeverity }) {
 	);
 }
 
+const RISK_DOT_CLASS: Record<ApRiskSeverity, string> = {
+	info: 'bg-green-500',
+	warn: 'bg-yellow-500',
+	high: 'bg-orange-500',
+	block: 'bg-red-500',
+};
+
+function RiskDot({ severity, flag }: { severity: ApRiskSeverity | null | undefined; flag?: string | null }) {
+	if (!severity) return null;
+	const tooltipBase = RISK_CONFIG[severity]?.label ?? severity;
+	const tooltip = flag ? `${tooltipBase} (${flag})` : tooltipBase;
+	return (
+		<span
+			title={tooltip}
+			aria-label={tooltip}
+			className={cn('inline-block h-2 w-2 rounded-full shrink-0', RISK_DOT_CLASS[severity])}
+		/>
+	);
+}
+
 // ─── Payment & Budget Panel ───────────────────────────────────────────────────
 
 function MoneyRow({ label, value, emphasis }: { label: string; value: number | null | undefined; emphasis?: 'positive' | 'negative' | 'muted' }) {
@@ -603,7 +623,12 @@ function AllInvoicesRow({
 					)}
 				</td>
 				<td className="px-3 py-2.5 text-sm text-gray-900 text-right">{formatAmount(row.invoice_amount)}</td>
-				<td className="px-3 py-2.5"><ApprovalStatusBadge status={row.approval_status} /></td>
+				<td className="px-3 py-2.5">
+					<div className="flex items-center gap-1.5">
+						<RiskDot severity={row.risk_severity} flag={row.risk_flag} />
+						<ApprovalStatusBadge status={row.approval_status} />
+					</div>
+				</td>
 				<td className="px-3 py-2.5 text-sm text-gray-500">{formatDate(row.approval_submitted_at)}</td>
 				<td className="px-3 py-2.5 text-sm text-gray-500">
 					{row.approval_status === 'approved' ? formatDate(row.approved_at)
@@ -796,6 +821,8 @@ function PendingVendorCard({
 	};
 
 	const isActionable = vendor.myDecision === 'pending';
+	const apCtx = vendor.ap_context ?? null;
+	const requireAck = isActionable && apCtx?.risk.severity === 'block';
 
 	return (
 		<>
@@ -846,7 +873,10 @@ function PendingVendorCard({
 					<div className="flex items-center gap-3 min-w-0">
 						<ChevronRight className={cn('h-4 w-4 text-gray-400 shrink-0 transition-transform', open && 'rotate-90')} />
 						<div className="min-w-0">
-							<p className="text-sm font-semibold text-gray-900 truncate">{vendor.vendorName}</p>
+							<div className="flex items-center gap-2">
+								<RiskDot severity={apCtx?.risk.severity} flag={apCtx?.risk.flag} />
+								<p className="text-sm font-semibold text-gray-900 truncate">{vendor.vendorName}</p>
+							</div>
 							<div className="flex items-center gap-2 mt-0.5 flex-wrap">
 								<span className="text-sm text-gray-600">{formatAmount(vendor.invoiceAmount)}</span>
 								<ApprovalStatusBadge status={vendor.approvalStatus} />
@@ -877,6 +907,7 @@ function PendingVendorCard({
 						{isActionable && (
 							<ApproveRejectButtons
 								loading={actionLoading}
+								requireOverrunAck={requireAck}
 								onApprove={handleApprove}
 								onReject={() => setRejectModal(true)}
 							/>
@@ -907,6 +938,7 @@ function PendingVendorCard({
 							invoiceFileUrl={vendor.invoiceFileUrl}
 							invoiceRemarks={vendor.invoiceRemarks}
 						/>
+						{apCtx && <PaymentBudgetPanel ctx={apCtx} />}
 						<ApprovalTrailPanel
 							approvals={vendor.approvalTrail}
 							submittedAt={vendor.approvalSubmittedAt}

@@ -92,7 +92,11 @@ export interface VendorInvoiceApprovalStatus {
 	reopened?: VendorReopenInfo;
 }
 
-// Used by the dashboard endpoint (All Invoices tab — flat list)
+// Used by the dashboard endpoint (All Invoices tab — flat list).
+// risk_severity / risk_flag are a lightweight summary of the per-row
+// ap_context (the full ap_context only ships on /approval-status). Used
+// to render the at-a-glance risk dot on the table row without forcing
+// every list refresh to compute the full budget context.
 export interface VendorInvoiceDashboardItem {
 	vendorInvoiceId: number;
 	leadId: number;
@@ -106,6 +110,8 @@ export interface VendorInvoiceDashboardItem {
 	totalPaid: number | null;
 	approvals_total: number;
 	approvals_done: number;
+	risk_severity?: ApRiskSeverity | null;
+	risk_flag?: string | null;
 	client?: string;
 	clientName?: string;
 	leadName?: string;
@@ -155,6 +161,8 @@ export interface PendingApprovalVendor {
 	rejectedBy?: string | null;
 	// Present when the invoice looped back from a Stage 2 rejection (see VendorReopenInfo).
 	reopened?: VendorReopenInfo;
+	// Same shape as ap_context on /approval-status — full payment + budget snapshot.
+	ap_context?: ApContext | null;
 }
 
 export interface ClientPo {
@@ -238,6 +246,7 @@ function normalizePendingVendor(v: any): PendingApprovalVendor {
 		rejectionReason: v.rejectionReason ?? v.rejection_reason ?? null,
 		rejectedBy: v.rejectedBy ?? v.rejected_by ?? null,
 		reopened,
+		ap_context: v.ap_context ?? v.apContext ?? null,
 	};
 }
 

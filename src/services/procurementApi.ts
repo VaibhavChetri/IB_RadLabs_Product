@@ -20,14 +20,20 @@ export interface TrailReopenFields {
 }
 
 export interface VendorInvoiceApproval extends TrailReopenFields {
+	approvalRowId: number;
+	batchId?: number | null;
 	approverId: number;
 	approverLoginIds: number[];
 	approverName: string;
 	approverEmail: string;
 	approverRole: ApproverRole;
+	approvalStage?: number;
 	decision: 'pending' | 'approved' | 'rejected';
 	decidedAt: string | null;
 	rejectionReason: string | null;
+	isAdvance?: boolean;
+	advanceRequested?: number | null;
+	advanceApproved?: number | null;
 }
 
 // Per-vendor payment + budget snapshot computed fresh from the DB by the
@@ -61,13 +67,28 @@ export interface ApContext {
 	procurement_vendor_id: number;
 	currency: string;
 	amounts: ApContextAmounts;
-	counts: { pdf_files: number; advances: number };
+	counts: { pdf_files: number; advances: number; receipts?: number };
 	risk: ApContextRisk;
 }
 
 // Used by the approval-status endpoint (accordion in All Invoices tab)
+export interface VendorLedgerEntry {
+	id: number;
+	amount: number;
+	paid_on: string;
+	payment_mode: string | null;
+	reference_number: string | null;
+	receipt_file_url: string | null;
+	tax_receipt_url: string | null;
+	notes: string | null;
+	recorded_by: string | null;
+	approval_row_id: number | null;
+	_source: 'advance' | 'receipt';
+}
+
 export interface VendorInvoiceApprovalStatus {
 	id: number;
+	vendor_po_id?: number | null;
 	vendor_name: string;
 	invoice_amount: number | null;
 	invoice_status: string;
@@ -90,6 +111,7 @@ export interface VendorInvoiceApprovalStatus {
 	approvals: VendorInvoiceApproval[];
 	ap_context?: ApContext | null;
 	reopened?: VendorReopenInfo;
+	ledger: VendorLedgerEntry[];
 }
 
 // Used by the dashboard endpoint (All Invoices tab — flat list).
@@ -120,11 +142,16 @@ export interface VendorInvoiceDashboardItem {
 // ─── Pending My Approval — grouped by lead ────────────────────────────────────
 
 export interface PendingApprovalTrailEntry extends TrailReopenFields {
+	approvalRowId: number;
 	approverName: string;
 	approverRole: ApproverRole;
 	decision: 'pending' | 'approved' | 'rejected';
 	decidedAt: string | null;
 	rejectionReason: string | null;
+	// Advance fields — present when the approval was submitted as an advance request
+	isAdvance?: boolean;
+	advanceRequested?: number | null;
+	advanceApproved?: number | null;
 }
 
 // Top-level reopen block on a vendor. If isReopened is true, the vendor is in
@@ -163,6 +190,10 @@ export interface PendingApprovalVendor {
 	reopened?: VendorReopenInfo;
 	// Same shape as ap_context on /approval-status — full payment + budget snapshot.
 	ap_context?: ApContext | null;
+	// Stage 1 advance fields — advance_requested is set by procurement on submission;
+	// advance_approved is what Stage 1 (Shashwat) decides to actually release.
+	advance_requested?: number | null;
+	advance_approved?: number | null;
 }
 
 export interface ClientPo {
@@ -201,11 +232,89 @@ export interface PaginationMeta {
 export interface ApprovalDecisionPayload {
 	decision: 'approved' | 'rejected';
 	rejectionReason?: string;
+	advance_approved?: number | null;
+	approval_row_id?: number | null;
 }
 
 export interface ProxyState {
 	eligible: boolean;
 	active: boolean;
+}
+
+export interface AdvanceReceipt {
+	id: number;
+	amount: number;
+	paidOn: string;
+	fileUrl: string | null;
+	paymentMode?: string | null;
+	referenceNumber?: string | null;
+	notes?: string | null;
+}
+
+// Shared response shape for GET /vendor-invoices/advance-payments and /vendor-invoices/payments-pending
+export interface AdvancePaymentItem {
+	vendorInvoiceId: number;
+	approvalRowId: number;
+	leadId: number;
+	serialNumber: string | null;
+	client: string;
+	city: string | null;
+	leadStatus: string;
+	vendorName: string;
+	invoiceNumber: string | null;
+	invoiceAmount: number | null;
+	approvalStatus: 'draft' | 'pending_approval' | 'approved' | 'rejected';
+	paymentStatus: 'unpaid' | 'partially_paid' | 'paid' | null;
+	approvalSubmittedAt: string | null;
+	approvedAt: string | null;
+	rejectedAt: string | null;
+	// Amount columns (renamed from advanceRequested/advanceApproved)
+	amountRequested: number | null;
+	amountApproved: number | null;
+	approvalsTotal: number;
+	approvalsDone: number;
+	totalPaid: number | null;
+	daysSinceSubmitted: number | null;
+	// Receipt tracking
+	receiptUploaded: boolean;
+	receipt: AdvanceReceipt | null;
+	fullyPaid: boolean;
+	totalReceiptsAmount: number | null;
+	receiptCount: number | null;
+	isAdvance: boolean;
+}
+
+export type VendorPaymentType = 'advance' | 'milestone' | 'final' | 'refund';
+export type VendorPaymentMode = 'neft' | 'imps' | 'rtgs' | 'upi' | 'cheque' | 'cash' | 'other';
+
+export interface VendorPaymentPayload {
+	payment_type: VendorPaymentType;
+	amount: number;
+	vendor_invoice_id?: number;
+	paid_on?: string;
+	payment_mode?: VendorPaymentMode;
+	reference_number?: string;
+	receipt_file_url?: string;
+	receipt_screenshot_url?: string;
+	notes?: string;
+	currency?: string;
+}
+
+export interface VendorPaymentResponse {
+	id: number;
+	vendor_po_id: number;
+	vendor_invoice_id: number | null;
+	payment_type: VendorPaymentType;
+	amount: string;
+	paid_on: string;
+	payment_mode: string | null;
+	reference_number: string | null;
+	receipt_file_url: string | null;
+	receipt_screenshot_url: string | null;
+	currency: string;
+	notes: string | null;
+	recorded_by: string | null;
+	created_at: string;
 }
 
 // ─── Service ──────────────────────────────────────────────────────────────────
@@ -247,6 +356,8 @@ function normalizePendingVendor(v: any): PendingApprovalVendor {
 		rejectedBy: v.rejectedBy ?? v.rejected_by ?? null,
 		reopened,
 		ap_context: v.ap_context ?? v.apContext ?? null,
+		advance_requested: v.advance_requested ?? v.advanceRequested ?? null,
+		advance_approved: v.advance_approved ?? v.advanceApproved ?? null,
 	};
 }
 
@@ -264,10 +375,76 @@ function normalizeTrailEntry(e: any): PendingApprovalTrailEntry {
 		reopenedRejectedByAdminId: e.reopenedRejectedByAdminId ?? e.reopened_rejected_by_admin_id ?? null,
 		reopenedRejectedByName: e.reopenedRejectedByName ?? e.reopened_rejected_by_name ?? null,
 		approvalStage: e.approvalStage ?? e.approval_stage,
+		isAdvance: !!(e.isAdvance ?? e.is_advance),
+		advanceRequested: e.advanceRequested ?? e.advance_requested ?? null,
+		advanceApproved: e.advanceApproved ?? e.advance_approved ?? null,
 	};
 }
 
 export class ProcurementApiService {
+	/**
+	 * GET /procurement/vendor-invoices/payments-pending
+	 * Non-advance approved invoices awaiting payment receipt upload.
+	 * Same shape as advance-payments.
+	 */
+	static async getPaymentsPending(params: {
+		page?: number;
+		perPage?: number;
+		approvalStatus?: string;
+		search?: string;
+	} = {}): Promise<{
+		status: boolean;
+		data: AdvancePaymentItem[];
+		pagination: PaginationMeta;
+	}> {
+		const q = new URLSearchParams();
+		if (params.page) q.append('page', String(params.page));
+		if (params.perPage) q.append('perPage', String(params.perPage));
+		if (params.approvalStatus) q.append('approvalStatus', params.approvalStatus);
+		if (params.search) q.append('search', params.search);
+		const qs = q.toString();
+		return apiService.get(`${BASE}/vendor-invoices/payments-pending${qs ? `?${qs}` : ''}`) as any;
+	}
+
+	/**
+	 * GET /procurement/vendor-invoices/advance-payments
+	 * Advance-only invoice list — pre-filtered at DB level (is_advance = 1).
+	 */
+	static async getAdvancePayments(params: {
+		page?: number;
+		perPage?: number;
+		approvalStatus?: string;
+		search?: string;
+	} = {}): Promise<{
+		status: boolean;
+		data: AdvancePaymentItem[];
+		pagination: PaginationMeta;
+	}> {
+		const q = new URLSearchParams();
+		if (params.page) q.append('page', String(params.page));
+		if (params.perPage) q.append('perPage', String(params.perPage));
+		if (params.approvalStatus) q.append('approvalStatus', params.approvalStatus);
+		if (params.search) q.append('search', params.search);
+		const qs = q.toString();
+		return apiService.get(`${BASE}/vendor-invoices/advance-payments${qs ? `?${qs}` : ''}`) as any;
+	}
+
+	/**
+	 * GET /procurement/vendor-invoices/advance-requests
+	 * Grouped-by-lead advance requests — same shape as getMyPendingApprovals.
+	 */
+	static async getAdvanceRequests(params: { page?: number; perPage?: number } = {}): Promise<{
+		status: boolean;
+		data: PendingApprovalLead[];
+		pagination: PaginationMeta;
+	}> {
+		const q = new URLSearchParams();
+		if (params.page) q.append('page', String(params.page));
+		if (params.perPage) q.append('perPage', String(params.perPage));
+		const qs = q.toString();
+		return apiService.get(`${BASE}/vendor-invoices/advance-requests${qs ? `?${qs}` : ''}`) as any;
+	}
+
 	/**
 	 * GET /procurement/vendor-invoices/dashboard
 	 * Flat list of all vendor invoices across leads (All Invoices tab)
@@ -331,6 +508,18 @@ export class ProcurementApiService {
 		data: { enabled: boolean };
 	}> {
 		return apiService.post(`${BASE}/approval/proxy-mode`, { enabled }) as any;
+	}
+
+	/**
+	 * POST /procurement/vendor-invoices/:id/receipt
+	 * Upload payment receipt — multipart/form-data.
+	 * amount + paid_on are required; receipt_file, payment_mode, reference_number, notes optional.
+	 */
+	static async uploadAdvanceReceipt(
+		vendorInvoiceId: number,
+		formData: FormData
+	): Promise<{ status: boolean; data: AdvanceReceipt }> {
+		return apiService.postFormData(`${BASE}/vendor-invoices/${vendorInvoiceId}/receipt`, formData) as any;
 	}
 
 	/**

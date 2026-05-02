@@ -16,7 +16,8 @@
 		"test:coverage": "jest --coverage",
 		"test:watch": "jest --watch",
 		"analyze": "npm run build && npx vite-bundle-analyzer dist",
-		"size-check": "npm run build && npx bundlesize"
+		"size-check": "npm run build && npx bundlesize",
+		"deploy": "bash scripts/deploy.sh"
 	},
 	"keywords": [
 		"react",

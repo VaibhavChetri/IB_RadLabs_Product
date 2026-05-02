@@ -231,11 +231,15 @@ export class ApiService {
 		formData: FormData,
 		config?: AxiosRequestConfig
 	): Promise<ApiResponse<T>> {
+		// CRITICAL: the shared client has a default `Content-Type: application/json`
+		// header. For FormData we must clear it so axios generates
+		// `multipart/form-data; boundary=...` itself — without the boundary,
+		// multer can't parse the body and `req.files` ends up empty.
 		const response = await this.client.post(url, formData, {
 			...config,
 			headers: {
 				...config?.headers,
-				'Content-Type': 'multipart/form-data',
+				'Content-Type': undefined,
 			},
 		});
 		return response.data;
@@ -264,11 +268,12 @@ export class ApiService {
 		onProgress?: (progressEvent: any) => void,
 		config?: AxiosRequestConfig
 	): Promise<ApiResponse<T>> {
+		// Clear default Content-Type so axios sets the multipart boundary itself.
 		const response = await this.client.post(url, formData, {
 			...config,
 			headers: {
 				...config?.headers,
-				'Content-Type': 'multipart/form-data',
+				'Content-Type': undefined,
 			},
 			onUploadProgress: onProgress,
 		});

@@ -16,12 +16,15 @@ import {
 	VendorInvoiceDashboardItem,
 	VendorInvoiceApprovalStatus,
 	VendorInvoiceApproval,
+	VendorLedgerEntry,
 	PendingApprovalLead,
 	PendingApprovalVendor,
 	PendingApprovalTrailEntry,
 	ClientPo,
 	ApContext,
 	ApRiskSeverity,
+	VendorPaymentMode,
+	AdvancePaymentItem,
 } from '../../services/procurementApi';
 import type { RootState } from '../../store';
 import {
@@ -38,6 +41,9 @@ import {
 	ExternalLink,
 	Download,
 	RotateCcw,
+	Upload,
+	Receipt,
+	Paperclip,
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
@@ -178,7 +184,7 @@ function PaymentBudgetPanel({ ctx }: { ctx: ApContext }) {
 				<MoneyRow label="Committed (projected)" value={amounts.committed} emphasis="muted" />
 				<MoneyRow label="Header invoice amount" value={amounts.header_invoice_amount} emphasis="muted" />
 				<MoneyRow label={`Advances paid${counts.advances ? ` (${counts.advances})` : ''}`} value={amounts.advances_paid} />
-				<MoneyRow label="Final paid" value={amounts.final_paid} />
+				<MoneyRow label={`Final paid${counts.receipts ? ` (${counts.receipts})` : ''}`} value={amounts.final_paid} />
 				<MoneyRow label="Total paid" value={amounts.total_paid} />
 				<MoneyRow label={`Already billed via PDFs${counts.pdf_files ? ` (${counts.pdf_files})` : ''}`} value={amounts.already_billed_via_pdfs} emphasis="muted" />
 				<MoneyRow label="Pending in this request" value={amounts.pending_in_request} />
@@ -208,21 +214,34 @@ function PaymentBudgetPanel({ ctx }: { ctx: ApContext }) {
 
 // ─── Approval Trail (shared) ───────────────────────────────────────────────────
 
-function ApprovalDecisionIcon({ decision }: { decision: string }) {
-	if (decision === 'approved') return <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />;
-	if (decision === 'rejected') return <XCircle className="h-4 w-4 text-red-500 shrink-0" />;
-	return <Clock className="h-4 w-4 text-amber-400 shrink-0" />;
-}
-
 function ApprovalTrailPanel({
 	approvals,
 	submittedAt,
 	inProxyMode = false,
+	ledger = [],
 }: {
 	approvals: (VendorInvoiceApproval | PendingApprovalTrailEntry)[];
 	submittedAt: string | null;
 	inProxyMode?: boolean;
+	ledger?: VendorLedgerEntry[];
 }) {
+	// Group by batch_id so all batches are visible (newest first)
+	const batches: { batchId: number | null; rows: typeof approvals }[] = [];
+	for (const a of approvals) {
+		const bid = ('batchId' in a ? (a as any).batchId : null) ?? null;
+		const existing = batches.find((b) => b.batchId === bid);
+		if (existing) existing.rows.push(a);
+		else batches.push({ batchId: bid, rows: [a] });
+	}
+
+	// Build a quick lookup: approval_row_id → ledger entry (receipt rows have it set)
+	const ledgerByApprovalRow = new Map<number, VendorLedgerEntry>();
+	for (const lr of ledger) {
+		if (lr.approval_row_id != null) ledgerByApprovalRow.set(lr.approval_row_id, lr);
+	}
+
+	const stageLabel = (role: string) => role.replace('_', ' ');
+
 	return (
 		<div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
 			<div className="flex items-center justify-between mb-3">
@@ -235,65 +254,144 @@ function ApprovalTrailPanel({
 				<p className="text-xs text-gray-400">No approvals submitted yet.</p>
 			) : (
 				<div className="space-y-2">
-					{approvals.map((a, i) => {
-						// A row that was created by a Stage 2 loop-back is always Stage 1 pending,
-						// owned by the procurement approver. If we're also in proxy mode, reopen
-						// styling takes precedence — reopen is a sharper signal than "this pending
-						// is for someone on leave."
-						const isReopenedRow = 'reopenedFromStage2' in a && a.reopenedFromStage2 === true;
-						const isProxyTarget = !isReopenedRow && inProxyMode && a.decision === 'pending';
-						const highlighted = isReopenedRow || isProxyTarget;
+					{batches.map((batch, bi) => {
+						// Find the receipt linked to this batch (via any approval_row_id in the batch)
+						const matchedReceipt = batch.rows
+							.map((r) => ledgerByApprovalRow.get((r as any).approvalRowId))
+							.find((x): x is VendorLedgerEntry => !!x);
+
+						// Pull amounts/decisions for compact display — Stage 1 + Stage 2 share the same amount
+						const requested = batch.rows.find((r) => 'advanceRequested' in r && r.advanceRequested != null)?.advanceRequested ?? null;
+						const approved = batch.rows.find((r) => 'advanceApproved' in r && r.advanceApproved != null)?.advanceApproved ?? null;
+						// "Advance" batch: only when explicitly flagged at request time
+						const isAdvanceBatch = batch.rows.some((r) => 'isAdvance' in r && r.isAdvance);
+
+						const isReopenedBatch = batch.rows.some((a) => 'reopenedFromStage2' in a && a.reopenedFromStage2 === true);
+						const anyRejection = batch.rows.find((a) => a.decision === 'rejected' && 'rejectionReason' in a && a.rejectionReason);
+						const anyPending = batch.rows.some((a) => a.decision === 'pending');
+						const isProxyTarget = !isReopenedBatch && inProxyMode && anyPending;
+						const highlighted = isReopenedBatch || isProxyTarget;
+
 						return (
 							<div
-								key={i}
+								key={batch.batchId ?? bi}
 								className={cn(
-									'flex items-start gap-3 rounded-md px-3 py-2',
+									'rounded-md px-3 py-2.5 border',
 									highlighted
-										? 'bg-amber-50 border border-amber-200'
-										: 'bg-white border border-gray-100',
+										? 'bg-amber-50 border-amber-200'
+										: 'bg-white border-gray-100',
 								)}
 							>
-								<ApprovalDecisionIcon decision={a.decision} />
-								<div className="flex-1 min-w-0">
-									<div className="flex items-center gap-2 flex-wrap">
-										<p className="text-sm font-medium text-gray-800">{a.approverName}</p>
-										<span className="text-xs text-gray-400 capitalize">{a.approverRole.replace('_', ' ')}</span>
-										{isReopenedRow && (
-											<span className="text-[10px] font-semibold uppercase tracking-wide bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded">
-												Reopened
+								{(batches.length > 1 || isAdvanceBatch) && (
+									<div className="flex items-center gap-2 mb-1.5">
+										{batches.length > 1 && (
+											<span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
+												Request {batches.length - bi}
 											</span>
 										)}
-										{isProxyTarget && (
-											<span className="text-[10px] font-semibold uppercase tracking-wide bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded">
-												for {a.approverName}
+										{isAdvanceBatch && (
+											<span className="text-[10px] font-semibold uppercase tracking-wide bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
+												Advance
 											</span>
 										)}
 									</div>
-									<div className="flex items-center gap-2 mt-0.5">
-										<span className={cn(
-											'text-xs font-medium capitalize',
-											a.decision === 'approved' && 'text-green-600',
-											a.decision === 'rejected' && 'text-red-600',
-											a.decision === 'pending' && 'text-amber-600',
-										)}>
-											{a.decision}
-										</span>
-										{'decidedAt' in a && a.decidedAt && (
-											<span className="text-xs text-gray-400">{formatDate(a.decidedAt)}</span>
-										)}
+								)}
+
+								{/* 2x2 layout: approvers stacked left, amounts stacked right, receipts far right */}
+								<div className="flex items-start gap-4">
+									{/* Column 1 — Stage 1 / Stage 2 approvers, stacked */}
+									<div className="flex-1 min-w-0 space-y-1">
+										{batch.rows
+											.slice()
+											.sort((a, b) => ((a as any).approvalStage ?? 1) - ((b as any).approvalStage ?? 1))
+											.map((a, i) => (
+												<div key={i} className="flex items-center gap-1.5">
+													{a.decision === 'approved' && (
+														<CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
+													)}
+													{a.decision === 'rejected' && (
+														<XCircle className="h-3.5 w-3.5 text-red-500 shrink-0" />
+													)}
+													{a.decision === 'pending' && (
+														<Clock className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+													)}
+													<span className="text-sm font-medium text-gray-800">{a.approverName}</span>
+													<span className="text-[11px] text-gray-400 capitalize">({stageLabel(a.approverRole)})</span>
+												</div>
+											))}
 									</div>
-									{isReopenedRow && (
-										<p className="text-xs text-amber-800 mt-1">
-											previously rejected by {a.reopenedRejectedByName ?? 'finance'}
-											{a.reopenedReason && (
-												<span className="italic"> — "{a.reopenedReason}"</span>
+
+									{/* Column 2 — Requested / Approved amounts, stacked. Same numbers across stages so we show once */}
+									{(requested != null || approved != null) && (
+										<div className="text-xs space-y-1 shrink-0 text-right">
+											{requested != null && (
+												<div className="text-gray-500">
+													Requested: <span className="font-medium text-gray-800 tabular-nums">{formatAmount(requested)}</span>
+												</div>
 											)}
-										</p>
+											{approved != null && (
+												<div className="text-green-700">
+													Approved: <span className="font-medium tabular-nums">{formatAmount(approved)}</span>
+												</div>
+											)}
+										</div>
 									)}
-									{'rejectionReason' in a && a.rejectionReason && (
-										<p className="text-xs text-red-500 mt-1 italic">"{a.rejectionReason}"</p>
+
+									{/* Column 3 — Receipt links (only when payment was processed for this batch) */}
+									{matchedReceipt && (
+										<div className="flex flex-col gap-1 shrink-0 items-end">
+											{matchedReceipt.receipt_file_url && (
+												<a
+													href={matchedReceipt.receipt_file_url}
+													target="_blank"
+													rel="noopener noreferrer"
+													className="inline-flex items-center gap-1 text-[11px] text-indigo-600 hover:text-indigo-700 hover:underline"
+													title="Payment receipt"
+												>
+													<Paperclip className="h-3 w-3" />
+													Payment receipt
+												</a>
+											)}
+											{matchedReceipt.tax_receipt_url ? (
+												<a
+													href={matchedReceipt.tax_receipt_url}
+													target="_blank"
+													rel="noopener noreferrer"
+													className="inline-flex items-center gap-1 text-[11px] text-teal-600 hover:text-teal-700 hover:underline"
+													title="Tax receipt"
+												>
+													<CheckCircle2 className="h-3 w-3 text-teal-500" />
+													Tax receipt
+												</a>
+											) : (
+												<span className="text-[11px] text-gray-300 italic">No tax receipt</span>
+											)}
+										</div>
 									)}
 								</div>
+
+								{/* Decided-at footer */}
+								{batch.rows.some((r) => r.decidedAt) && (
+									<p className="text-[11px] text-gray-400 mt-2">
+										{formatDate(batch.rows.find((r) => r.decidedAt)!.decidedAt!)}
+									</p>
+								)}
+
+								{isReopenedBatch && (
+									<p className="text-xs text-amber-800 mt-1">
+										Reopened after rejection
+										{batch.rows.find((a) => 'reopenedReason' in a && a.reopenedReason) && (
+											<span className="italic">
+												{' — '}
+												"{batch.rows.find((a) => 'reopenedReason' in a)!['reopenedReason' as keyof typeof batch.rows[0]] as string}"
+											</span>
+										)}
+									</p>
+								)}
+
+								{anyRejection && 'rejectionReason' in anyRejection && anyRejection.rejectionReason && (
+									<p className="text-xs text-red-500 mt-1 italic">"{anyRejection.rejectionReason}"</p>
+								)}
 							</div>
 						);
 					})}
@@ -512,6 +610,247 @@ function ApproveRejectButtons({
 	);
 }
 
+// ─── Record Payment Modal ─────────────────────────────────────────────────────
+
+const PAYMENT_MODE_OPTIONS: { label: string; value: VendorPaymentMode }[] = [
+	{ label: 'NEFT', value: 'neft' },
+	{ label: 'IMPS', value: 'imps' },
+	{ label: 'RTGS', value: 'rtgs' },
+	{ label: 'UPI', value: 'upi' },
+	{ label: 'Cheque', value: 'cheque' },
+	{ label: 'Cash', value: 'cash' },
+	{ label: 'Other', value: 'other' },
+];
+
+function RecordPaymentModal({
+	vendorInvoiceId,
+	approvalRowId,
+	defaultAmount,
+	vendorName,
+	amountApproved,
+	initialTotalReceiptsAmount,
+	onSuccess,
+	onCancel,
+}: {
+	vendorInvoiceId: number;
+	approvalRowId: number;
+	defaultAmount: number | null;
+	vendorName: string;
+	amountApproved: number | null;
+	initialTotalReceiptsAmount: number | null;
+	onSuccess: () => void;
+	onCancel: () => void;
+}) {
+	const today = new Date().toISOString().split('T')[0];
+	const [amount, setAmount] = useState(defaultAmount != null ? String(defaultAmount) : '');
+	const [paidOn, setPaidOn] = useState(today);
+	const [paymentMode, setPaymentMode] = useState<VendorPaymentMode | ''>('');
+	const [referenceNumber, setReferenceNumber] = useState('');
+	const [notes, setNotes] = useState('');
+	const [receiptFile, setReceiptFile] = useState<File | null>(null);
+	const [submitting, setSubmitting] = useState(false);
+	const [error, setError] = useState('');
+	const [runningTotal, setRunningTotal] = useState<number | null>(initialTotalReceiptsAmount);
+	const [lastSaved, setLastSaved] = useState(false);
+
+	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setReceiptFile(e.target.files?.[0] ?? null);
+	};
+
+	const handleSubmit = async () => {
+		const parsedAmount = parseFloat(amount.replace(/,/g, ''));
+		if (isNaN(parsedAmount) || parsedAmount <= 0) {
+			setError('Enter a valid payment amount.');
+			return;
+		}
+		if (!paidOn) {
+			setError('Paid on date is required.');
+			return;
+		}
+		if (!receiptFile) {
+			setError('Receipt file is required — please attach a PDF or image.');
+			return;
+		}
+		setError('');
+		setSubmitting(true);
+		try {
+			const fd = new FormData();
+			fd.append('amount', String(parsedAmount));
+			fd.append('paid_on', paidOn);
+			fd.append('approval_row_id', String(approvalRowId));
+			if (paymentMode) fd.append('payment_mode', paymentMode);
+			if (referenceNumber.trim()) fd.append('reference_number', referenceNumber.trim());
+			if (notes.trim()) fd.append('notes', notes.trim());
+			if (receiptFile) fd.append('receipt_file', receiptFile);
+
+			await ProcurementApiService.uploadAdvanceReceipt(vendorInvoiceId, fd);
+			const newTotal = (runningTotal ?? 0) + parsedAmount;
+			setRunningTotal(newTotal);
+			setLastSaved(true);
+			onSuccess();
+			// Reset form for next partial payment
+			setAmount('');
+			setPaidOn(today);
+			setPaymentMode('');
+			setReferenceNumber('');
+			setNotes('');
+			setReceiptFile(null);
+		} catch (e: any) {
+			setError(e?.message || 'Failed to upload receipt.');
+		} finally {
+			setSubmitting(false);
+		}
+	};
+
+	const totalPct = amountApproved && amountApproved > 0 && runningTotal != null
+		? Math.min(100, Math.round((runningTotal / amountApproved) * 100))
+		: null;
+	const busy = submitting;
+
+	return (
+		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+			<div className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 p-6 space-y-4">
+				<div className="flex items-center gap-2">
+					<Receipt className="h-5 w-5 text-green-600" />
+					<h3 className="text-base font-semibold text-gray-900">Record Payment</h3>
+				</div>
+				<p className="text-sm text-gray-500">{vendorName}</p>
+
+				{/* Running total */}
+				{amountApproved != null && amountApproved > 0 && (
+					<div className={cn(
+						'rounded-lg border px-4 py-3 space-y-1.5',
+						totalPct != null && totalPct >= 100 ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'
+					)}>
+						<div className="flex items-center justify-between text-xs">
+							<span className="text-gray-600 font-medium">Total paid so far</span>
+							<span className={cn('font-semibold tabular-nums', totalPct != null && totalPct >= 100 ? 'text-green-700' : 'text-gray-800')}>
+								{formatAmount(runningTotal ?? 0)}
+								<span className="font-normal text-gray-400"> / {formatAmount(amountApproved)}</span>
+							</span>
+						</div>
+						{totalPct != null && (
+							<div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+								<div
+									className={cn('h-full rounded-full', totalPct >= 100 ? 'bg-green-500' : 'bg-blue-500')}
+									style={{ width: `${totalPct}%` }}
+								/>
+							</div>
+						)}
+						{lastSaved && totalPct != null && totalPct < 100 && (
+							<p className="text-xs text-blue-700">Payment saved. You can record another partial payment below.</p>
+						)}
+					</div>
+				)}
+
+				{/* Amount + Date */}
+				<div className="grid grid-cols-2 gap-3">
+					<div>
+						<label className="block text-xs font-medium text-gray-700 mb-1">
+							Amount (₹) <span className="text-red-500">*</span>
+						</label>
+						<input
+							type="number"
+							min={0}
+							value={amount}
+							onChange={e => setAmount(e.target.value)}
+							className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+							placeholder="e.g. 10000"
+						/>
+					</div>
+					<div>
+						<label className="block text-xs font-medium text-gray-700 mb-1">Paid On</label>
+						<input
+							type="date"
+							value={paidOn}
+							onChange={e => setPaidOn(e.target.value)}
+							className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+						/>
+					</div>
+				</div>
+
+				{/* Mode + Reference */}
+				<div className="grid grid-cols-2 gap-3">
+					<div>
+						<label className="block text-xs font-medium text-gray-700 mb-1">Payment Mode</label>
+						<select
+							value={paymentMode}
+							onChange={e => setPaymentMode(e.target.value as VendorPaymentMode | '')}
+							className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 bg-white"
+						>
+							<option value="">— Select —</option>
+							{PAYMENT_MODE_OPTIONS.map(o => (
+								<option key={o.value} value={o.value}>{o.label}</option>
+							))}
+						</select>
+					</div>
+					<div>
+						<label className="block text-xs font-medium text-gray-700 mb-1">UTR / Reference No.</label>
+						<input
+							type="text"
+							value={referenceNumber}
+							onChange={e => setReferenceNumber(e.target.value)}
+							className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+							placeholder="e.g. TXN123456"
+						/>
+					</div>
+				</div>
+
+				{/* Receipt upload */}
+				<div>
+					<label className="block text-xs font-medium text-gray-700 mb-1">Receipt (PDF / Image) <span className="text-red-500">*</span></label>
+					<label className={cn(
+						'flex items-center gap-2 w-full border-2 border-dashed rounded-lg px-4 py-3 cursor-pointer transition-colors',
+						receiptFile ? 'border-green-400 bg-green-50' : 'border-gray-300 hover:border-gray-400'
+					)}>
+						<Upload className="h-4 w-4 text-gray-400 shrink-0" />
+						<span className="text-sm text-gray-600 truncate">
+							{receiptFile ? receiptFile.name : 'Click to upload receipt'}
+						</span>
+						<input
+							type="file"
+							accept=".pdf,.jpg,.jpeg,.png,.webp"
+							className="hidden"
+							onChange={handleFileChange}
+						/>
+					</label>
+				</div>
+
+				{/* Notes */}
+				<div>
+					<label className="block text-xs font-medium text-gray-700 mb-1">Notes (optional)</label>
+					<textarea
+						rows={2}
+						value={notes}
+						onChange={e => setNotes(e.target.value)}
+						className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-400"
+						placeholder="Any additional notes…"
+					/>
+				</div>
+
+				{error && (
+					<p className="text-xs text-red-600 flex items-center gap-1.5">
+						<AlertCircle className="h-3.5 w-3.5 shrink-0" /> {error}
+					</p>
+				)}
+
+				<div className="flex justify-end gap-3 pt-1">
+					<Button variant="outline" size="md" onClick={onCancel} disabled={busy}>Close</Button>
+					<Button
+						variant="primary" size="md" onClick={handleSubmit} disabled={busy}
+						className="bg-green-600 hover:bg-green-700 border-green-600"
+					>
+						{busy
+							? <><Loader2 className="h-4 w-4 animate-spin mr-1" />Saving…</>
+							: <><Receipt className="h-4 w-4 mr-1" />Record Payment</>
+						}
+					</Button>
+				</div>
+			</div>
+		</div>
+	);
+}
+
 // ─── ALL INVOICES TAB — flat table with lazy-fetch accordion ─────────────────
 
 function AllInvoicesRow({
@@ -519,11 +858,13 @@ function AllInvoicesRow({
 	currentAdminId,
 	serialNo,
 	onActionDone,
+	onReceiptUploaded,
 }: {
 	row: VendorInvoiceDashboardItem;
 	currentAdminId: number | null;
 	serialNo: number;
 	onActionDone: () => void;
+	onReceiptUploaded?: (vendorInvoiceId: number) => void;
 }) {
 	const [open, setOpen] = useState(false);
 	const [approvalData, setApprovalData] = useState<VendorInvoiceApprovalStatus[] | null>(null);
@@ -533,6 +874,7 @@ function AllInvoicesRow({
 	const [actionLoading, setActionLoading] = useState(false);
 	const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 	const [rejectModal, setRejectModal] = useState<{ vendorId: number; vendorName: string; amount: number | null } | null>(null);
+	const [paymentModal, setPaymentModal] = useState<{ vendorInvoiceId: number; approvalRowId: number; advanceApproved: number | null; vendorName: string; totalReceiptsAmount: number | null } | null>(null);
 	const toastRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	const showToast = (type: 'success' | 'error', msg: string) => {
@@ -591,6 +933,23 @@ function AllInvoicesRow({
 					loading={actionLoading}
 					onCancel={() => setRejectModal(null)}
 					onConfirm={reason => handleReject(rejectModal.vendorId, reason)}
+				/>
+			)}
+			{paymentModal && (
+				<RecordPaymentModal
+					vendorInvoiceId={paymentModal.vendorInvoiceId}
+					approvalRowId={paymentModal.approvalRowId}
+					defaultAmount={paymentModal.advanceApproved}
+					vendorName={paymentModal.vendorName}
+					amountApproved={paymentModal.advanceApproved}
+					initialTotalReceiptsAmount={paymentModal.totalReceiptsAmount}
+					onCancel={() => setPaymentModal(null)}
+					onSuccess={() => {
+						setPaymentModal(null);
+						setApprovalData(null);
+						onActionDone();
+						onReceiptUploaded?.(row.vendorInvoiceId);
+					}}
 				/>
 			)}
 
@@ -682,14 +1041,16 @@ function AllInvoicesRow({
 															<ApprovalStatusBadge status={vendor.approval_status} />
 														</div>
 													</div>
-													{myPending && (
-														<ApproveRejectButtons
-															loading={actionLoading}
-															requireOverrunAck={requireAck}
-															onApprove={() => handleApprove(vendor.id)}
-															onReject={() => setRejectModal({ vendorId: vendor.id, vendorName: vendor.vendor_name, amount: vendor.invoice_amount })}
-														/>
-													)}
+													<div className="flex items-center gap-2">
+														{myPending && (
+															<ApproveRejectButtons
+																loading={actionLoading}
+																requireOverrunAck={requireAck}
+																onApprove={() => handleApprove(vendor.id)}
+																onReject={() => setRejectModal({ vendorId: vendor.id, vendorName: vendor.vendor_name, amount: vendor.invoice_amount })}
+															/>
+														)}
+													</div>
 												</div>
 												<InvoiceDetailsGrid
 													invoiceNumber={vendor.invoice_number}
@@ -703,7 +1064,11 @@ function AllInvoicesRow({
 													clientPo={clientPos[0]}
 												/>
 												{apCtx && <PaymentBudgetPanel ctx={apCtx} />}
-												<ApprovalTrailPanel approvals={vendor.approvals} submittedAt={vendor.approval_submitted_at} />
+												<ApprovalTrailPanel
+													approvals={vendor.approvals}
+													submittedAt={vendor.approval_submitted_at}
+													ledger={vendor.ledger ?? []}
+												/>
 											</div>
 										);
 									})}
@@ -728,13 +1093,14 @@ const APPROVAL_STATUS_OPTIONS = [
 ];
 
 function AllInvoicesTable({
-	rows, loading, currentAdminId, serialOffset, onActionDone,
+	rows, loading, currentAdminId, serialOffset, onActionDone, onReceiptUploaded,
 }: {
 	rows: VendorInvoiceDashboardItem[];
 	loading: boolean;
 	currentAdminId: number | null;
 	serialOffset: number;
 	onActionDone: () => void;
+	onReceiptUploaded?: (vendorInvoiceId: number) => void;
 }) {
 	if (loading) return <div className="flex items-center justify-center py-16 text-gray-500 gap-2"><Loader2 className="h-6 w-6 animate-spin" /> Loading…</div>;
 	if (rows.length === 0) return <div className="py-16 text-center text-gray-400 text-sm">No invoices found.</div>;
@@ -764,6 +1130,7 @@ function AllInvoicesTable({
 							currentAdminId={currentAdminId}
 							serialNo={serialOffset + idx + 1}
 							onActionDone={onActionDone}
+							onReceiptUploaded={onReceiptUploaded}
 						/>
 					))}
 				</tbody>
@@ -785,10 +1152,24 @@ function PendingVendorCard({
 	onActionDone: () => void;
 	inProxyMode?: boolean;
 }) {
+	// Find the pending advance trail entry — used for requested amount label
+	const advanceEntry = vendor.approvalTrail.find(e => e.isAdvance && e.decision === 'pending');
+	// Fallback: stage 1 approved amount (in case stage 2 advance_requested wasn't propagated)
+	const stage1ApprovedEntry = vendor.approvalTrail.find(e => e.isAdvance && e.decision === 'approved' && e.approvalStage === 1);
+	// Stage 1 (Shashwat) sets the approved amount; Stage 2 (Asha) just confirms it
+	const myPendingEntry = vendor.approvalTrail.find(e => e.decision === 'pending');
+	const isStage1 = myPendingEntry?.approvalStage === 1;
+
 	const [open, setOpen] = useState(false);
 	const [actionLoading, setActionLoading] = useState(false);
 	const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
 	const [rejectModal, setRejectModal] = useState(false);
+	const [advanceApproved, setAdvanceApproved] = useState<string>(
+		vendor.advance_requested != null ? String(vendor.advance_requested)
+		: myPendingEntry?.advanceRequested != null ? String(myPendingEntry.advanceRequested)
+		: advanceEntry?.advanceRequested != null ? String(advanceEntry.advanceRequested)
+		: ''
+	);
 	const toastRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	const showToast = (type: 'success' | 'error', msg: string) => {
@@ -798,9 +1179,18 @@ function PendingVendorCard({
 	};
 
 	const handleApprove = async () => {
+		const payload: Parameters<typeof ProcurementApiService.submitApprovalDecision>[2] = { decision: 'approved', approval_row_id: vendor.approvalRowId };
+		if (isStage1) {
+			const parsed = parseFloat(advanceApproved.replace(/,/g, ''));
+			if (isNaN(parsed) || parsed <= 0) {
+				showToast('error', 'Enter a valid amount before approving.');
+				return;
+			}
+			payload.advance_approved = parsed;
+		}
 		setActionLoading(true);
 		try {
-			await ProcurementApiService.submitApprovalDecision(leadId, vendor.vendorInvoiceId, { decision: 'approved' });
+			await ProcurementApiService.submitApprovalDecision(leadId, vendor.vendorInvoiceId, payload);
 			showToast('success', 'Invoice approved successfully');
 			onActionDone();
 		} catch (e: any) {
@@ -811,7 +1201,7 @@ function PendingVendorCard({
 	const handleReject = async (reason: string) => {
 		setActionLoading(true);
 		try {
-			await ProcurementApiService.submitApprovalDecision(leadId, vendor.vendorInvoiceId, { decision: 'rejected', rejectionReason: reason });
+			await ProcurementApiService.submitApprovalDecision(leadId, vendor.vendorInvoiceId, { decision: 'rejected', rejectionReason: reason, approval_row_id: vendor.approvalRowId });
 			showToast('success', 'Invoice rejected. The team has been notified.');
 			setRejectModal(false);
 			onActionDone();
@@ -879,6 +1269,11 @@ function PendingVendorCard({
 							</div>
 							<div className="flex items-center gap-2 mt-0.5 flex-wrap">
 								<span className="text-sm text-gray-600">{formatAmount(vendor.invoiceAmount)}</span>
+								{vendor.advance_requested != null && (
+									<span className="text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full">
+										Requested: {formatAmount(vendor.advance_requested)}
+									</span>
+								)}
 								<ApprovalStatusBadge status={vendor.approvalStatus} />
 								{vendor.approvalsTotal > 0 && (
 									<span className={cn(
@@ -903,6 +1298,82 @@ function PendingVendorCard({
 							>
 								<FileText className="h-3.5 w-3.5" /> Invoice
 							</a>
+						)}
+						{isActionable && !isStage1 && (
+							<div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs" onClick={e => e.stopPropagation()}>
+								<div className="flex flex-col items-center">
+									<span className="text-[10px] font-semibold uppercase tracking-wide text-blue-500">Advance</span>
+									<span className="font-semibold text-blue-800 tabular-nums">{formatAmount(stage1ApprovedEntry?.advanceApproved ?? advanceEntry?.advanceApproved ?? advanceEntry?.advanceRequested)}</span>
+								</div>
+								{apCtx && (
+									<>
+										<div className="w-px h-6 bg-blue-200" />
+										<div className="flex flex-col items-center">
+											<span className="text-[10px] font-semibold uppercase tracking-wide text-blue-500">Already Paid</span>
+											<span className="font-semibold text-gray-700 tabular-nums">{formatAmount(apCtx.amounts.total_paid)}</span>
+										</div>
+										<div className="w-px h-6 bg-blue-200" />
+										<div className="flex flex-col items-center">
+											<span className="text-[10px] font-semibold uppercase tracking-wide text-blue-500">Pending</span>
+											<span className="font-semibold text-amber-700 tabular-nums">{formatAmount(apCtx.amounts.pending_in_request)}</span>
+										</div>
+									</>
+								)}
+							</div>
+						)}
+						{isActionable && isStage1 && (
+							<div
+								className="flex flex-col items-end gap-0.5 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2"
+								onClick={e => e.stopPropagation()}
+							>
+								<div className="flex items-center gap-1.5">
+									<span className="text-[10px] font-semibold uppercase tracking-wide text-amber-700">Amount approved</span>
+									{advanceEntry && (
+										<span className="text-[10px] text-amber-600">
+											(requested: {formatAmount(advanceEntry.advanceRequested)})
+										</span>
+									)}
+								</div>
+								{isStage1 ? (() => {
+									const invalid = advanceApproved !== '' && (isNaN(parseFloat(advanceApproved)) || parseFloat(advanceApproved) <= 0);
+									const placeholder = advanceEntry?.advanceRequested ?? vendor.invoiceAmount ?? '';
+									return (
+										<div className={cn(
+											'flex items-center rounded-md overflow-hidden focus-within:ring-1 bg-white',
+											invalid
+												? 'border border-red-400 focus-within:ring-red-400'
+												: 'border border-amber-300 focus-within:ring-amber-500 focus-within:border-amber-500'
+										)}>
+											<span className="px-2 text-gray-500 text-xs select-none">₹</span>
+											<input
+												type="number"
+												min={0}
+												value={advanceApproved}
+												onChange={e => setAdvanceApproved(e.target.value)}
+												className="w-28 py-1 pr-2 text-xs text-gray-900 focus:outline-none bg-transparent"
+												placeholder={String(placeholder)}
+											/>
+										</div>
+									);
+								})() : (
+									<span className="text-sm font-semibold text-gray-900 tabular-nums">
+										{formatAmount(vendor.advance_approved ?? advanceApproved)}
+									</span>
+								)}
+								{isStage1 && (() => {
+									const enteredVal = parseFloat(advanceApproved.replace(/,/g, ''));
+									const base = vendor.invoiceAmount;
+									if (base && base > 0 && !isNaN(enteredVal) && enteredVal > 0) {
+										const pct = ((enteredVal / base) * 100).toFixed(1);
+										return (
+											<span className="text-[10px] text-amber-600">
+												{pct}% of invoice ({formatAmount(base)})
+											</span>
+										);
+									}
+									return <span className="text-[10px] text-amber-600">Amount you'll approve</span>;
+								})()}
+							</div>
 						)}
 						{isActionable && (
 							<ApproveRejectButtons
@@ -1123,7 +1594,173 @@ function PendingApprovalList({
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-type Tab = 'all' | 'pending';
+// ─── Advance Payments Table ───────────────────────────────────────────────────
+
+function AdvancePaymentsTable({
+	rows,
+	loading,
+	onReceiptUploaded,
+	serialOffset,
+	showAdvanceBadge = false,
+}: {
+	rows: AdvancePaymentItem[];
+	loading: boolean;
+	onReceiptUploaded: (vendorInvoiceId: number) => void;
+	serialOffset: number;
+	showAdvanceBadge?: boolean;
+}) {
+	const [paymentModal, setPaymentModal] = useState<{
+		vendorInvoiceId: number;
+		approvalRowId: number;
+		amountApproved: number | null;
+		vendorName: string;
+		totalReceiptsAmount: number | null;
+	} | null>(null);
+	const [toast, setToast] = useState<{ msg: string } | null>(null);
+	const toastRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	const showToast = (msg: string) => {
+		setToast({ msg });
+		if (toastRef.current) clearTimeout(toastRef.current);
+		toastRef.current = setTimeout(() => setToast(null), 4000);
+	};
+
+	// IMPORTANT: do NOT early-return here when `loading` is true. The parent
+	// re-fetches on window focus, and the native file picker briefly steals focus.
+	// If we unmount the table during the refetch, the open `paymentModal` state
+	// gets wiped — the user sees the modal disappear and the upload never fires.
+	// Show the spinner inline instead so the modal stays mounted.
+
+	return (
+		<>
+			{paymentModal && (
+				<RecordPaymentModal
+					vendorInvoiceId={paymentModal.vendorInvoiceId}
+					approvalRowId={paymentModal.approvalRowId}
+					defaultAmount={paymentModal.amountApproved}
+					vendorName={paymentModal.vendorName}
+					amountApproved={paymentModal.amountApproved}
+					initialTotalReceiptsAmount={paymentModal.totalReceiptsAmount}
+					onCancel={() => setPaymentModal(null)}
+					onSuccess={() => {
+						setPaymentModal(null);
+						showToast('Payment recorded successfully.');
+						onReceiptUploaded(paymentModal.vendorInvoiceId);
+					}}
+				/>
+			)}
+			{toast && (
+				<div className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm mb-3 bg-green-50 border border-green-200 text-green-800">
+					<CheckCircle2 className="h-4 w-4 shrink-0" /> {toast.msg}
+				</div>
+			)}
+			<div className="overflow-x-auto">
+				<table className="w-full border-collapse text-sm">
+					<thead>
+						<tr className="bg-gray-50 border-b border-gray-200">
+							<th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500 w-10">#</th>
+							<th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500">Lead</th>
+							<th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500">Client</th>
+							<th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500">Vendor</th>
+							<th className="px-3 py-2.5 text-right text-xs font-semibold text-gray-500">Requested</th>
+							<th className="px-3 py-2.5 text-right text-xs font-semibold text-gray-500">Approved</th>
+							<th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500">Progress</th>
+							<th className="px-3 py-2.5 text-left text-xs font-semibold text-gray-500">Approved On</th>
+							<th className="px-3 py-2.5" />
+						</tr>
+					</thead>
+					<tbody>
+						{loading && rows.length === 0 && (
+							<tr><td colSpan={9} className="py-16 text-center text-gray-500"><span className="inline-flex items-center gap-2"><Loader2 className="h-5 w-5 animate-spin" /> Loading…</span></td></tr>
+						)}
+						{!loading && rows.length === 0 && (
+							<tr><td colSpan={9} className="py-16 text-center text-gray-400 text-sm">No pending payment receipts.</td></tr>
+						)}
+						{rows.map((row, idx) => {
+							const pct = row.amountApproved && row.amountApproved > 0 && row.totalReceiptsAmount != null
+								? Math.min(100, Math.round((row.totalReceiptsAmount / row.amountApproved) * 100))
+								: null;
+							return (
+								<tr key={row.vendorInvoiceId} className="border-b border-gray-100 hover:bg-gray-50">
+									<td className="px-3 py-3 text-sm text-gray-500">{serialOffset + idx + 1}</td>
+									<td className="px-3 py-3 text-sm text-gray-600">
+										<p>{row.leadId}</p>
+										{row.city && <p className="text-xs text-gray-400">{row.city}</p>}
+									</td>
+									<td className="px-3 py-3 text-sm text-gray-900 font-medium">
+										<p>{row.client}</p>
+										{showAdvanceBadge && (
+											<span className="text-[10px] font-semibold uppercase tracking-wide bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
+												Advance
+											</span>
+										)}
+									</td>
+									<td className="px-3 py-3 text-sm text-gray-800">{row.vendorName}</td>
+									<td className="px-3 py-3 text-sm text-gray-500 text-right tabular-nums">{formatAmount(row.amountRequested)}</td>
+									<td className="px-3 py-3 text-sm font-semibold text-green-700 text-right tabular-nums">{formatAmount(row.amountApproved)}</td>
+									<td className="px-3 py-3 min-w-[160px]">
+										{row.amountApproved != null && row.amountApproved > 0 ? (
+											<div className="space-y-1">
+												<div className="flex items-center justify-between text-xs">
+													<span className="tabular-nums text-gray-700">
+														{formatAmount(row.totalReceiptsAmount ?? 0)}
+														<span className="text-gray-400"> / {formatAmount(row.amountApproved)}</span>
+													</span>
+													{pct != null && (
+														<span className={cn('font-medium ml-1', pct >= 100 ? 'text-green-600' : 'text-gray-500')}>
+															{pct}%
+														</span>
+													)}
+												</div>
+												<div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+													<div
+														className={cn('h-full rounded-full', pct != null && pct >= 100 ? 'bg-green-500' : 'bg-blue-500')}
+														style={{ width: `${pct ?? 0}%` }}
+													/>
+												</div>
+												{row.receiptCount != null && row.receiptCount > 0 && (
+													<p className="text-[10px] text-gray-400">{row.receiptCount} receipt{row.receiptCount > 1 ? 's' : ''}</p>
+												)}
+											</div>
+										) : <span className="text-xs text-gray-400">—</span>}
+									</td>
+									<td className="px-3 py-3 text-sm text-gray-500">{formatDate(row.approvedAt)}</td>
+									<td className="px-3 py-3 text-right">
+										{row.approvalStatus === 'approved' && !row.fullyPaid ? (
+											<button
+												onClick={() => setPaymentModal({
+													vendorInvoiceId: row.vendorInvoiceId,
+													approvalRowId: row.approvalRowId,
+													amountApproved: row.amountApproved,
+													vendorName: row.vendorName,
+													totalReceiptsAmount: row.totalReceiptsAmount,
+												})}
+												className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-green-50 border border-green-300 text-green-700 hover:bg-green-100 transition-colors whitespace-nowrap"
+											>
+												<Upload className="h-3.5 w-3.5" /> Upload Receipt
+											</button>
+										) : row.receipt?.fileUrl ? (
+											<a
+												href={row.receipt.fileUrl}
+												target="_blank"
+												rel="noreferrer"
+												className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 transition-colors whitespace-nowrap"
+											>
+												<FileText className="h-3.5 w-3.5" /> View Receipt
+											</a>
+										) : null}
+									</td>
+								</tr>
+							);
+						})}
+					</tbody>
+				</table>
+			</div>
+		</>
+	);
+}
+
+type Tab = 'all' | 'pending' | 'advances' | 'payments';
 
 const VendorInvoiceApprovals: React.FC = () => {
 	const user = useSelector((s: RootState) => s.auth.user);
@@ -1140,6 +1777,7 @@ const VendorInvoiceApprovals: React.FC = () => {
 	const [allTotalPages, setAllTotalPages] = useState(1);
 	const [search, setSearch] = useState('');
 	const [approvalStatusFilter, setApprovalStatusFilter] = useState('');
+	const [pmtAdvanceOnly, setPmtAdvanceOnly] = useState(false);
 
 	// Pending My Approval tab
 	const [pendingLeads, setPendingLeads] = useState<PendingApprovalLead[]>([]);
@@ -1148,6 +1786,22 @@ const VendorInvoiceApprovals: React.FC = () => {
 	const [pendingPerPage] = useState(20);
 	const [pendingTotal, setPendingTotal] = useState(0);
 	const [pendingTotalPages, setPendingTotalPages] = useState(1);
+
+	// Advance Requests tab — all pending advance requests grouped by lead.
+	const [advRows, setAdvRows] = useState<PendingApprovalLead[]>([]);
+	const [advLoading, setAdvLoading] = useState(false);
+	const [advPage, setAdvPage] = useState(1);
+	const [advPerPage] = useState(50);
+	const [advTotal, setAdvTotal] = useState(0);
+	const [advTotalPages, setAdvTotalPages] = useState(1);
+
+	// Payments Pending tab — non-advance invoices awaiting payment confirmation.
+	const [pmtRows, setPmtRows] = useState<AdvancePaymentItem[]>([]);
+	const [pmtLoading, setPmtLoading] = useState(false);
+	const [pmtPage, setPmtPage] = useState(1);
+	const [pmtPerPage] = useState(50);
+	const [pmtTotal, setPmtTotal] = useState(0);
+	const [pmtTotalPages, setPmtTotalPages] = useState(1);
 
 	// Proxy Mode — visible only to proxy-eligible users (Swati, Priyanka, …)
 	const [proxyActive, setProxyActive] = useState(false);
@@ -1177,17 +1831,33 @@ const VendorInvoiceApprovals: React.FC = () => {
 		} catch { setPendingLeads([]); } finally { setPendingLoading(false); }
 	}, [pendingPerPage]);
 
+	const fetchAdvances = useCallback(async (page: number) => {
+		setAdvLoading(true);
+		try {
+			const res = await ProcurementApiService.getAdvanceRequests({ page, perPage: advPerPage });
+			setAdvRows(res?.data ?? []);
+			if (res?.pagination) { setAdvTotal(res.pagination.total); setAdvTotalPages(res.pagination.pages); }
+		} catch { setAdvRows([]); } finally { setAdvLoading(false); }
+	}, [advPerPage]);
+
+	const fetchPaymentsPending = useCallback(async (page: number) => {
+		setPmtLoading(true);
+		try {
+			const res = await ProcurementApiService.getPaymentsPending({ page, perPage: pmtPerPage });
+			setPmtRows(res?.data ?? []);
+			if (res?.pagination) { setPmtTotal(res.pagination.total); setPmtTotalPages(res.pagination.pages); }
+		} catch { setPmtRows([]); } finally { setPmtLoading(false); }
+	}, [pmtPerPage]);
+
 	const handleProxyToggle = useCallback(async (next: boolean) => {
 		setProxyFlipping(true);
 		try {
 			const res = await ProcurementApiService.setProxyMode(next);
 			const applied = res?.data?.enabled ?? next;
 			setProxyActive(applied);
-			// Refetch so the list expands/contracts to match the new mode.
 			setPendingPage(1);
 			await fetchPending(1);
 		} catch {
-			// Leave toggle in its previous state on failure.
 		} finally {
 			setProxyFlipping(false);
 		}
@@ -1195,11 +1865,24 @@ const VendorInvoiceApprovals: React.FC = () => {
 
 	useEffect(() => { fetchAll(allPage); }, [fetchAll, allPage]);
 	useEffect(() => { fetchPending(pendingPage); }, [fetchPending, pendingPage]);
+	useEffect(() => { fetchAdvances(advPage); }, [fetchAdvances, advPage]);
+	useEffect(() => { fetchPaymentsPending(pmtPage); }, [fetchPaymentsPending, pmtPage]);
 
-	// Count total actionable vendors across all leads for the badge
+	useEffect(() => {
+		const onFocus = () => {
+			void fetchAll(allPage);
+			void fetchPending(pendingPage);
+			void fetchAdvances(advPage);
+			void fetchPaymentsPending(pmtPage);
+		};
+		window.addEventListener('focus', onFocus);
+		return () => window.removeEventListener('focus', onFocus);
+	}, [fetchAll, fetchPending, fetchAdvances, fetchPaymentsPending, allPage, pendingPage, advPage, pmtPage]);
+
 	const pendingActionCount = pendingLeads.reduce(
 		(sum, lead) => sum + lead.vendors.filter(v => v.myDecision === 'pending').length, 0
 	);
+
 
 	return (
 		<div className="space-y-5">
@@ -1208,8 +1891,8 @@ const VendorInvoiceApprovals: React.FC = () => {
 					<PageHeader
 						title="Vendor Invoice Approvals"
 						locationName="Approvals"
-						totalItems={activeTab === 'all' ? allTotal : pendingTotal}
-						itemType={activeTab === 'all' ? 'invoices' : 'leads'}
+						totalItems={activeTab === 'all' ? allTotal : activeTab === 'pending' ? pendingTotal : activeTab === 'advances' ? advTotal : pmtTotal}
+						itemType={activeTab === 'pending' ? 'leads' : 'invoices'}
 					/>
 					{proxyActive && (
 						<p className="mt-1 text-xs text-amber-700 font-medium">
@@ -1236,6 +1919,8 @@ const VendorInvoiceApprovals: React.FC = () => {
 				{([
 					{ key: 'all', label: 'All Invoices' },
 					{ key: 'pending', label: 'Pending My Approval', count: pendingActionCount },
+					{ key: 'advances', label: 'Advance Requests', count: advTotal || undefined },
+					{ key: 'payments', label: 'Payment Receipts', count: pmtTotal || undefined },
 				] as { key: Tab; label: string; count?: number }[]).map(tab => (
 					<button
 						key={tab.key}
@@ -1247,7 +1932,10 @@ const VendorInvoiceApprovals: React.FC = () => {
 					>
 						{tab.label}
 						{tab.count != null && tab.count > 0 && (
-							<span className="ml-2 px-1.5 py-0.5 rounded-full text-xs bg-amber-100 text-amber-700 font-semibold">
+							<span className={cn(
+								'ml-2 px-1.5 py-0.5 rounded-full text-xs font-semibold',
+								(tab.key === 'advances' || tab.key === 'payments') ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+							)}>
 								{tab.count}
 							</span>
 						)}
@@ -1300,7 +1988,7 @@ const VendorInvoiceApprovals: React.FC = () => {
 						leads={pendingLeads}
 						loading={pendingLoading}
 						serialOffset={(pendingPage - 1) * pendingPerPage}
-						onActionDone={() => fetchPending(pendingPage)}
+						onActionDone={() => { fetchPending(pendingPage); fetchPaymentsPending(pmtPage); }}
 						inProxyMode={proxyActive}
 					/>
 					{pendingTotalPages > 1 && (
@@ -1308,6 +1996,67 @@ const VendorInvoiceApprovals: React.FC = () => {
 							currentPage={pendingPage} totalPages={pendingTotalPages}
 							totalItems={pendingTotal} itemsPerPage={pendingPerPage}
 							onPageChange={setPendingPage} onItemsPerPageChange={() => {}}
+						/>
+					)}
+				</>
+			)}
+
+			{/* Advance Requests Tab — grouped by lead, accordion with approve/reject */}
+			{activeTab === 'advances' && (
+				<>
+					<PendingApprovalList
+						leads={advRows}
+						loading={advLoading}
+						serialOffset={(advPage - 1) * advPerPage}
+						onActionDone={() => fetchAdvances(advPage)}
+						inProxyMode={false}
+					/>
+					{advTotalPages > 1 && (
+						<Pagination
+							currentPage={advPage} totalPages={advTotalPages}
+							totalItems={advTotal} itemsPerPage={advPerPage}
+							onPageChange={setAdvPage} onItemsPerPageChange={() => {}}
+						/>
+					)}
+				</>
+			)}
+
+			{/* Payment Receipts Tab */}
+			{activeTab === 'payments' && (
+				<>
+					<div className="flex items-center gap-3 mb-3">
+						<button
+							onClick={() => setPmtAdvanceOnly(v => !v)}
+							className={cn(
+								'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors',
+								pmtAdvanceOnly
+									? 'bg-blue-600 border-blue-600 text-white'
+									: 'bg-white border-gray-300 text-gray-600 hover:border-blue-400 hover:text-blue-600'
+							)}
+						>
+							<span className={cn('w-2 h-2 rounded-full', pmtAdvanceOnly ? 'bg-white' : 'bg-blue-400')} />
+							Advance Only
+						</button>
+						{pmtAdvanceOnly && (
+							<span className="text-xs text-gray-500">
+								Showing {pmtRows.filter(r => r.isAdvance).length} advance receipt{pmtRows.filter(r => r.isAdvance).length !== 1 ? 's' : ''}
+							</span>
+						)}
+					</div>
+					<div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden p-0">
+						<AdvancePaymentsTable
+							rows={pmtAdvanceOnly ? pmtRows.filter(r => r.isAdvance) : pmtRows}
+							loading={pmtLoading}
+							serialOffset={(pmtPage - 1) * pmtPerPage}
+							showAdvanceBadge={pmtAdvanceOnly}
+							onReceiptUploaded={() => { fetchPaymentsPending(pmtPage); fetchPending(pendingPage); }}
+						/>
+					</div>
+					{pmtTotalPages > 1 && (
+						<Pagination
+							currentPage={pmtPage} totalPages={pmtTotalPages}
+							totalItems={pmtTotal} itemsPerPage={pmtPerPage}
+							onPageChange={setPmtPage} onItemsPerPageChange={() => {}}
 						/>
 					)}
 				</>

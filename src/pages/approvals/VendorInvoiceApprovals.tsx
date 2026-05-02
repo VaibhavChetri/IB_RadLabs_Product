@@ -1179,7 +1179,7 @@ function PendingVendorCard({
 	};
 
 	const handleApprove = async () => {
-		const payload: Parameters<typeof ProcurementApiService.submitApprovalDecision>[2] = { decision: 'approved', approval_row_id: vendor.approvalRowId };
+		const payload: Parameters<typeof ProcurementApiService.submitApprovalDecision>[2] = { decision: 'approved', approval_row_id: myPendingEntry?.approvalRowId ?? null };
 		if (isStage1) {
 			const parsed = parseFloat(advanceApproved.replace(/,/g, ''));
 			if (isNaN(parsed) || parsed <= 0) {
@@ -1201,7 +1201,7 @@ function PendingVendorCard({
 	const handleReject = async (reason: string) => {
 		setActionLoading(true);
 		try {
-			await ProcurementApiService.submitApprovalDecision(leadId, vendor.vendorInvoiceId, { decision: 'rejected', rejectionReason: reason, approval_row_id: vendor.approvalRowId });
+			await ProcurementApiService.submitApprovalDecision(leadId, vendor.vendorInvoiceId, { decision: 'rejected', rejectionReason: reason, approval_row_id: myPendingEntry?.approvalRowId ?? null });
 			showToast('success', 'Invoice rejected. The team has been notified.');
 			setRejectModal(false);
 			onActionDone();

@@ -158,25 +158,12 @@ function MoneyRow({ label, value, emphasis }: { label: string; value: number | n
 
 function PaymentBudgetPanel({ ctx }: { ctx: ApContext }) {
 	const { amounts, counts, risk } = ctx;
-	const committed = amounts.committed || 0;
-	const consumed = amounts.total_paid + amounts.pending_in_request;
-	const percentConsumed = committed > 0 ? Math.min(999, Math.round((consumed / committed) * 100)) : null;
 	const overBudget = amounts.net_remaining_after_request < 0;
 
 	return (
 		<div className="rounded-lg border border-gray-200 bg-gray-50/60 p-3 space-y-3">
 			<div className="flex items-center justify-between gap-3">
-				<div className="flex items-center gap-2">
-					<span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Payment & Budget</span>
-					{percentConsumed != null && (
-						<span className={cn(
-							'text-xs font-medium tabular-nums',
-							overBudget ? 'text-red-700' : percentConsumed >= 90 ? 'text-orange-700' : 'text-gray-600',
-						)}>
-							{percentConsumed}% of committed
-						</span>
-					)}
-				</div>
+				<span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Payment & Budget</span>
 				<RiskBadge severity={risk.severity} />
 			</div>
 

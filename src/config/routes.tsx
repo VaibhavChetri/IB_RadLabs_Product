@@ -103,6 +103,12 @@ import { RegularizationRequests } from '../pages/hr/attendance/RegularizationReq
 // Billing - Invoice
 import InvoiceList from '../pages/billing/InvoiceList';
 import BillingDetails from '../pages/billing/BillingDetails';
+// Billing - Smart Follow-Up Tracker (Module 1)
+import FollowUpTracker from '../pages/billing/follow-up-tracker/FollowUpTracker';
+// Billing - Customer Intelligence (Module 2)
+import CustomerIntelligence from '../pages/billing/customer-intelligence/CustomerIntelligence';
+// Billing - Client Health
+import ClientHealth from '../pages/billing/client-health/ClientHealth';
 // 3D Builder
 import { ThreeDBuilder } from '../pages/3d-builder/ThreeDBuilder';
 // Approvals
@@ -224,6 +230,12 @@ export const routes: RouteConfig[] = [
 	// Billing - Invoice
 	{ path: '/billing/invoice', component: InvoiceList },
 	{ path: '/billing/details', component: BillingDetails },
+	// Billing - Smart Follow-Up Tracker (Module 1, mock data)
+	{ path: '/billing/follow-up-tracker', component: FollowUpTracker },
+	// Billing - Customer Intelligence (Module 2)
+	{ path: '/billing/customer-intelligence', component: CustomerIntelligence },
+	// Billing - Client Health
+	{ path: '/billing/client-health', component: ClientHealth },
 	// 3D Builder
 	{ path: '/dashboard/3d-builder', component: ThreeDBuilder },
 	// Approvals

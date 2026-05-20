@@ -39,6 +39,7 @@ import {
 	Award,
 	Calendar,
 	ShieldCheck,
+	Inbox,
 	// ArrowLeft, // Deprecated - Received section commented out
 } from 'lucide-react';
 
@@ -763,6 +764,24 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 				name: 'Billing Details',
 				icon: FileText,
 				href: '/billing/details',
+			},
+			{
+				id: 'follow-up-tracker',
+				name: 'Follow-Up Tracker',
+				icon: Inbox,
+				href: '/billing/follow-up-tracker',
+			},
+			{
+				id: 'customer-intelligence',
+				name: 'Customer Intelligence',
+				icon: Users,
+				href: '/billing/customer-intelligence',
+			},
+			{
+				id: 'client-health',
+				name: 'Client Health',
+				icon: Activity,
+				href: '/billing/client-health',
 			},
 		],
 	},

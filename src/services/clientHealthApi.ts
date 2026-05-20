@@ -91,7 +91,7 @@ export class ClientHealthApi {
 
 		const qs = query.toString();
 		const url = `/customers/health${qs ? `?${qs}` : ''}`;
-		const res = await apiService.get<ClientHealthResponse>(url);
-		return res.data;
+		// Backend returns unwrapped { customers, meta } — not the standard ApiResponse envelope
+		return apiService.get(url) as unknown as Promise<ClientHealthResponse>;
 	}
 }

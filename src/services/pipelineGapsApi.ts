@@ -37,7 +37,7 @@ export interface PipelineGapsResponse {
 
 export class PipelineGapsApi {
 	static async list(): Promise<PipelineGapsResponse> {
-		const res = await apiService.get<PipelineGapsResponse>('/reports/pipeline-gaps');
-		return res.data;
+		// Backend returns unwrapped { fy_summary, customers, summary } — not the standard ApiResponse envelope
+		return apiService.get('/reports/pipeline-gaps') as unknown as Promise<PipelineGapsResponse>;
 	}
 }

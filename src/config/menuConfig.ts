@@ -783,6 +783,30 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 				icon: Activity,
 				href: '/billing/client-health',
 			},
+			{
+				id: 'overdue-behaviour',
+				name: 'Overdue + Behaviour',
+				icon: TrendingUp,
+				href: '/billing/overdue-behaviour',
+			},
+			{
+				id: 'pipeline-gaps',
+				name: 'Pipeline Blindspot',
+				icon: Eye,
+				href: '/billing/pipeline-gaps',
+			},
+			{
+				id: 'broken-commitments',
+				name: 'Broken Commitments',
+				icon: AlertCircle,
+				href: '/billing/broken-commitments',
+			},
+			{
+				id: 'ceo-overview',
+				name: 'CEO Overview',
+				icon: BarChart3,
+				href: '/billing/ceo-overview',
+			},
 		],
 	},
 	{

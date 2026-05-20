@@ -109,6 +109,11 @@ import FollowUpTracker from '../pages/billing/follow-up-tracker/FollowUpTracker'
 import CustomerIntelligence from '../pages/billing/customer-intelligence/CustomerIntelligence';
 // Billing - Client Health
 import ClientHealth from '../pages/billing/client-health/ClientHealth';
+// Billing - CEO dashboard views
+import OverdueBehaviourMap from '../pages/billing/overdue-behaviour/OverdueBehaviourMap';
+import PipelineGaps from '../pages/billing/pipeline-gaps/PipelineGaps';
+import BrokenCommitments from '../pages/billing/broken-commitments/BrokenCommitments';
+import CeoOverview from '../pages/billing/ceo-overview/CeoOverview';
 // 3D Builder
 import { ThreeDBuilder } from '../pages/3d-builder/ThreeDBuilder';
 // Approvals
@@ -236,6 +241,11 @@ export const routes: RouteConfig[] = [
 	{ path: '/billing/customer-intelligence', component: CustomerIntelligence },
 	// Billing - Client Health
 	{ path: '/billing/client-health', component: ClientHealth },
+	// Billing - CEO dashboard views
+	{ path: '/billing/overdue-behaviour', component: OverdueBehaviourMap },
+	{ path: '/billing/pipeline-gaps', component: PipelineGaps },
+	{ path: '/billing/broken-commitments', component: BrokenCommitments },
+	{ path: '/billing/ceo-overview', component: CeoOverview },
 	// 3D Builder
 	{ path: '/dashboard/3d-builder', component: ThreeDBuilder },
 	// Approvals

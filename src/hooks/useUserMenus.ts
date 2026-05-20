@@ -99,6 +99,32 @@ export const useUserMenus = (): UseUserMenusReturn => {
 		};
 	}
 
+	// LOCAL-ONLY: grant access to Billing → Follow-Up Tracker (Module 1) and
+	// Customer Intelligence (Module 2) for any authenticated user so the new
+	// screens are visible during integration. We only inject the new children;
+	// the original invoice access/children gating on invoice-list and
+	// billing-details is preserved.
+	// Remove this block once the backend adds 'follow-up-tracker' +
+	// 'customer-intelligence' to menu_permissions.
+	if (isAuthenticated) {
+		const existingInvoice = normalizedPermissions['invoice'];
+		const existingChildren =
+			(existingInvoice?.children as Record<string, MenuPermission> | undefined) || {};
+		normalizedPermissions['invoice'] = {
+			access: existingInvoice?.access ?? true,
+			children: {
+				...existingChildren,
+				'follow-up-tracker':     { access: true, children: {} },
+				'customer-intelligence': { access: true, children: {} },
+				'client-health':         { access: true, children: {} },
+				'overdue-behaviour':     { access: true, children: {} },
+				'pipeline-gaps':         { access: true, children: {} },
+				'broken-commitments':    { access: true, children: {} },
+				'ceo-overview':          { access: true, children: {} },
+			},
+		};
+	}
+
 
 	// Update accessible menu IDs when permissions change
 	useEffect(() => {

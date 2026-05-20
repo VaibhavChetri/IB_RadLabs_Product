@@ -296,10 +296,10 @@ export const ZohoInvoiceList: React.FC = () => {
 		...facets.placesOfSupply.map(p => ({ label: p, value: p })),
 	];
 
-	// Compute selected total
+	// Compute selected balance total
 	const selectedTotal = invoices
 		.filter(inv => selectedIds.has(inv.id))
-		.reduce((sum, inv) => sum + parseFloat(String(inv.total || 0)), 0);
+		.reduce((sum, inv) => sum + parseFloat(String(inv.balance || 0)), 0);
 
 	// Table columns
 	const columns: TableColumn<ZohoInvoice>[] = [
@@ -560,10 +560,20 @@ export const ZohoInvoiceList: React.FC = () => {
 			{/* Summary Cards */}
 			<div className='flex justify-between items-center gap-4'>
 				<div className='text-sm text-gray-500'>
-					Total (filtered):
+					Balance (filtered)
+					{pagination.totalCount > 0 && (
+						<span className='text-gray-400'>
+							{' '}
+							· {pagination.totalCount} invoice{pagination.totalCount === 1 ? '' : 's'}
+						</span>
+					)}
+					:
 					<span className='ml-2 font-semibold text-gray-900'>
 						₹ {summary.totalInvoiceAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
 					</span>
+					{pagination.totalPages > 1 && (
+						<span className='ml-1 text-gray-400'>(all pages)</span>
+					)}
 				</div>
 				{selectedIds.size > 0 && (
 					<div className='text-sm text-primary-600'>

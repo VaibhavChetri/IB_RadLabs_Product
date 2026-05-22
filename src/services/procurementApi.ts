@@ -210,6 +210,13 @@ export interface PendingApprovalLead {
 	clientPos: ClientPo[];
 	vendors: PendingApprovalVendor[];
 	rejectedVendors: PendingApprovalVendor[];
+	/** Client invoice amount or GMV — basis for profit. */
+	dealValue?: number | null;
+	/** Sum of vendor invoice obligations on this lead. */
+	totalVendorCost?: number | null;
+	/** dealValue − totalVendorCost (same formula as procurement lead tracker margin). */
+	profit?: number | null;
+	profitPct?: number | null;
 }
 
 // ─── Shared ───────────────────────────────────────────────────────────────────
@@ -492,6 +499,10 @@ export class ProcurementApiService {
 		if (res?.data && Array.isArray(res.data)) {
 			res.data = res.data.map((lead: any) => ({
 				...lead,
+				dealValue: lead.dealValue ?? lead.deal_value ?? null,
+				totalVendorCost: lead.totalVendorCost ?? lead.total_vendor_cost ?? null,
+				profit: lead.profit ?? null,
+				profitPct: lead.profitPct ?? lead.profit_pct ?? null,
 				vendors: (lead.vendors ?? []).map(normalizePendingVendor),
 				rejectedVendors: (lead.rejectedVendors ?? lead.rejected_vendors ?? []).map(normalizePendingVendor),
 			}));

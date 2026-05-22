@@ -79,27 +79,37 @@ function formatAmount(value: number | string | null | undefined): string {
 function ProfitBadge({
 	profit,
 	profitPct,
+	revenueSource,
 	compact = false,
 }: {
 	profit: number | null | undefined;
 	profitPct?: number | null;
+	revenueSource?: 'client_quotation' | null;
 	compact?: boolean;
 }) {
 	if (profit == null || Number.isNaN(Number(profit))) return null;
 	const n = Number(profit);
+	const noQuote = revenueSource !== 'client_quotation';
 	const positive = n > 0;
 	const negative = n < 0;
-	const color = positive
-		? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-		: negative
-			? 'bg-red-50 text-red-800 border-red-200'
-			: 'bg-gray-50 text-gray-700 border-gray-200';
-	const label = negative ? 'Loss' : positive ? 'Profit' : 'Break-even';
-	const displayAmount = formatAmount(Math.abs(n));
+	const color = noQuote
+		? 'bg-gray-50 text-gray-600 border-gray-200'
+		: positive
+			? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+			: negative
+				? 'bg-red-50 text-red-800 border-red-200'
+				: 'bg-gray-50 text-gray-700 border-gray-200';
+	const label = noQuote ? 'No approved quote' : negative ? 'Loss' : positive ? 'Profit' : 'Break-even';
+	const displayAmount = noQuote ? '' : formatAmount(Math.abs(n));
 	const pct =
-		profitPct != null && !Number.isNaN(Number(profitPct))
+		!noQuote && profitPct != null && !Number.isNaN(Number(profitPct))
 			? ` (${Math.abs(Number(profitPct)).toFixed(1)}%)`
 			: '';
+	const title = noQuote
+		? 'Approve a client quotation on this lead to show profit vs vendor cost'
+		: negative
+			? 'Loss: approved client quotation total is less than sum of vendor invoices on this lead'
+			: 'Profit: approved client quotation total minus total vendor invoices on this lead';
 	return (
 		<span
 			className={cn(
@@ -107,13 +117,9 @@ function ProfitBadge({
 				compact ? 'text-[10px] px-2 py-0.5' : 'text-xs px-2.5 py-1',
 				color,
 			)}
-			title={
-				negative
-					? 'Lead loss: total vendor cost exceeds client invoice or GMV'
-					: 'Lead profit: client invoice or GMV minus total vendor cost'
-			}
+			title={title}
 		>
-			{label} {displayAmount}
+			{label}{displayAmount ? ` ${displayAmount}` : ''}
 			{pct}
 		</span>
 	);
@@ -1178,6 +1184,7 @@ function PendingVendorCard({
 	inProxyMode = false,
 	leadProfit,
 	leadProfitPct,
+	leadRevenueSource,
 }: {
 	vendor: PendingApprovalVendor;
 	leadId: number;
@@ -1185,6 +1192,7 @@ function PendingVendorCard({
 	inProxyMode?: boolean;
 	leadProfit?: number | null;
 	leadProfitPct?: number | null;
+	leadRevenueSource?: 'client_quotation' | null;
 }) {
 	// Find the pending advance trail entry — used for requested amount label
 	const advanceEntry = vendor.approvalTrail.find(e => e.isAdvance && e.decision === 'pending');
@@ -1303,7 +1311,7 @@ function PendingVendorCard({
 							</div>
 							<div className="flex items-center gap-2 mt-0.5 flex-wrap">
 								<span className="text-sm text-gray-600">{formatAmount(vendor.invoiceAmount)}</span>
-								<ProfitBadge profit={leadProfit} profitPct={leadProfitPct} compact />
+								<ProfitBadge profit={leadProfit} profitPct={leadProfitPct} revenueSource={leadRevenueSource} compact />
 								{vendor.advance_requested != null && (
 									<span className="text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full">
 										Requested: {formatAmount(vendor.advance_requested)}
@@ -1540,11 +1548,13 @@ function PendingLeadCard({
 						</div>
 						<p className="text-base font-semibold text-gray-900 mt-0.5">{lead.client}</p>
 						{lead.city && <p className="text-xs text-gray-500 mt-0.5">{lead.city}</p>}
-						{lead.profit != null && (
-							<div className="mt-1.5">
-								<ProfitBadge profit={lead.profit} profitPct={lead.profitPct} />
-							</div>
-						)}
+						<div className="mt-1.5">
+							<ProfitBadge
+								profit={lead.profit}
+								profitPct={lead.profitPct}
+								revenueSource={lead.revenueSource}
+							/>
+						</div>
 					</div>
 				</div>
 				<div className="flex items-center gap-3 shrink-0" onClick={e => e.stopPropagation()}>
@@ -1583,6 +1593,7 @@ function PendingLeadCard({
 							inProxyMode={inProxyMode}
 							leadProfit={lead.profit}
 							leadProfitPct={lead.profitPct}
+							leadRevenueSource={lead.revenueSource}
 						/>
 					))}
 

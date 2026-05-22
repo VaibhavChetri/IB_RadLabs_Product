@@ -122,6 +122,9 @@ Desktop.ini
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test
 
+# Lint output — produced by `npm run lint` per package.json scripts
+eslint-results.json
+
 # yarn v2
 .yarn/cache
 .yarn/unplugged

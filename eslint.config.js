@@ -97,6 +97,9 @@ export default [
 			'vite.config.ts',
 			'postcss.config.js',
 			'test-api.js',
+			// Reference design package — source-of-truth TSX kept for handoff
+			// review; the live copies live under src/ where lint applies.
+			'handoff/**',
 		],
 	},
 ];

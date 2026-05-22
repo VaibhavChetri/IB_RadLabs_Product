@@ -26,3 +26,12 @@ export type { FloatingInputProps } from './FloatingInput';
 export type { FloatingDropdownProps, DropdownOption } from './FloatingDropdown';
 export type { MultiSelectDropdownProps, MultiSelectOption } from './MultiSelectDropdown';
 export type { SnackbarProps } from './Snackbar';
+
+// Billing-module primitives (handoff redesign — see handoff/BILLING_REDESIGN_PLAN.md)
+export { Pill, type PillTone } from './Pill';
+export { AgeDot } from './AgeDot';
+export { Sparkline } from './Sparkline';
+export { MicroBars } from './MicroBars';
+export { ImpactBar } from './ImpactBar';
+export { KPIInline } from './KPIInline';
+export { Timeline, type TimelineEvent } from './Timeline';

@@ -114,6 +114,8 @@ export const useUserMenus = (): UseUserMenusReturn => {
 			access: existingInvoice?.access ?? true,
 			children: {
 				...existingChildren,
+				'pulse':                 { access: true, children: {} },
+				'clients-ledger':        { access: true, children: {} },
 				'follow-up-tracker':     { access: true, children: {} },
 				'customer-intelligence': { access: true, children: {} },
 				'client-health':         { access: true, children: {} },

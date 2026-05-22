@@ -40,6 +40,7 @@ import {
 	Calendar,
 	ShieldCheck,
 	Inbox,
+	Zap,
 	// ArrowLeft, // Deprecated - Received section commented out
 } from 'lucide-react';
 
@@ -766,6 +767,19 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 				href: '/billing/details',
 			},
 			{
+				// Billing redesign alpha — handoff/BILLING_REDESIGN_PLAN.md
+				id: 'pulse',
+				name: 'Pulse (new)',
+				icon: Zap,
+				href: '/billing/pulse',
+			},
+			{
+				id: 'clients-ledger',
+				name: 'Clients (new)',
+				icon: Users,
+				href: '/billing/clients',
+			},
+			{
 				id: 'follow-up-tracker',
 				name: 'Follow-Up Tracker',
 				icon: Inbox,
@@ -777,36 +791,44 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 				icon: Users,
 				href: '/billing/customer-intelligence',
 			},
+			// Legacy menu items — kept here (commented) for reference + easy
+			// rollback. Their hrefs are now ledger-filter / pulse shortcuts so
+			// the URLs still work via Navigate redirects in routes.tsx, but
+			// they don't render in the sidebar. Pulse + Clients (new) cover
+			// every entry below. Re-enable any line if a user explicitly
+			// asks for the standalone view back.
+			/*
 			{
 				id: 'client-health',
 				name: 'Client Health',
 				icon: Activity,
-				href: '/billing/client-health',
+				href: '/billing/clients',
 			},
 			{
 				id: 'overdue-behaviour',
 				name: 'Overdue + Behaviour',
 				icon: TrendingUp,
-				href: '/billing/overdue-behaviour',
+				href: '/billing/clients?filter=disputing',
 			},
 			{
 				id: 'pipeline-gaps',
 				name: 'Pipeline Blindspot',
 				icon: Eye,
-				href: '/billing/pipeline-gaps',
+				href: '/billing/clients?filter=untracked',
 			},
 			{
 				id: 'broken-commitments',
 				name: 'Broken Commitments',
 				icon: AlertCircle,
-				href: '/billing/broken-commitments',
+				href: '/billing/clients?filter=broken',
 			},
 			{
 				id: 'ceo-overview',
 				name: 'CEO Overview',
 				icon: BarChart3,
-				href: '/billing/ceo-overview',
+				href: '/billing/pulse',
 			},
+			*/
 		],
 	},
 	{

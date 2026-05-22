@@ -1,0 +1,87 @@
+/* ─── APPEND to src/index.css ──────────────────────────────────────────
+   Adds: Instrument Serif font, .billing-module sub-theme tokens, and
+   utility classes for editorial numerals + ledger tabular numbers.
+   Non-destructive: nothing under :root changes; tokens are scoped under
+   .billing-module so only /billing/* routes are affected.
+   ──────────────────────────────────────────────────────────────────── */
+
+/* 1. Load Instrument Serif alongside existing Public Sans + Barlow. */
+/* Update the existing @import in src/index.css to include 'Instrument Serif':
+   @import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700;800&family=Barlow:wght@300;400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap');
+*/
+
+/* 2. Billing module sub-theme. Wrap routes with <div className="billing-module">. */
+.billing-module {
+	/* Surfaces — warm paper instead of pure white */
+	--billing-bg: oklch(98% 0.005 80);
+	--billing-bg-sunken: oklch(96% 0.006 80);
+	--billing-bg-card: oklch(100% 0 0);
+	--billing-bg-tinted: oklch(97% 0.008 80);
+
+	/* Ink — warm near-black scale (replaces #1c252e family inside billing) */
+	--billing-ink: oklch(18% 0.010 60);
+	--billing-ink-2: oklch(35% 0.010 60);
+	--billing-ink-3: oklch(52% 0.010 60);
+	--billing-ink-4: oklch(70% 0.008 60);
+	--billing-ink-5: oklch(82% 0.006 60);
+
+	/* Rules */
+	--billing-rule: oklch(89% 0.006 80);
+	--billing-rule-strong: oklch(80% 0.010 80);
+	--billing-rule-ink: oklch(20% 0.010 60);
+
+	/* Signals — distinct from global error/warning/success so billing reads
+	   more editorial-finance, less alert-banner */
+	--billing-risk: oklch(52% 0.18 25);
+	--billing-risk-bg: oklch(96% 0.025 25);
+	--billing-risk-rule: oklch(85% 0.06 25);
+	--billing-warn: oklch(62% 0.13 65);
+	--billing-warn-bg: oklch(96% 0.04 75);
+	--billing-warn-rule: oklch(85% 0.08 70);
+	--billing-good: oklch(48% 0.10 155);
+	--billing-good-bg: oklch(96% 0.025 155);
+	--billing-good-rule: oklch(85% 0.05 155);
+	--billing-accent: oklch(55% 0.13 70);
+
+	background: var(--billing-bg);
+	color: var(--billing-ink);
+	font-family: 'Public Sans', sans-serif;
+	-webkit-font-smoothing: antialiased;
+}
+
+/* 3. Editorial numerals — hero figures on Pulse + ClientDetail. */
+.billing-module .editorial-num {
+	font-family: 'Instrument Serif', 'Times New Roman', serif;
+	font-feature-settings: 'liga';
+	font-variant-numeric: tabular-nums;
+	font-weight: 400;
+	letter-spacing: -0.005em;
+}
+
+/* 4. Ledger numerals — tabular figures on table rows. */
+.billing-module .ledger-num {
+	font-variant-numeric: tabular-nums;
+	font-feature-settings: 'tnum';
+}
+
+/* 5. Editorial italic flourish (for "by *composite risk*" etc.) */
+.billing-module .editorial-em {
+	font-family: 'Instrument Serif', serif;
+	font-style: italic;
+	font-weight: 400;
+}
+
+/* 6. Kicker — 10px uppercase label that sits above numbers. */
+.billing-module .kicker {
+	font-size: 10px;
+	font-weight: 500;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--billing-ink-3);
+}
+
+/* 7. Hairline rules — replace tailwind borders on dense surfaces. */
+.billing-module .rule-top { border-top: 1px solid var(--billing-rule); }
+.billing-module .rule-bottom { border-bottom: 1px solid var(--billing-rule); }
+.billing-module .rule-top-ink { border-top: 1px solid var(--billing-rule-ink); }
+.billing-module .rule-bottom-ink { border-bottom: 1px solid var(--billing-rule-ink); }

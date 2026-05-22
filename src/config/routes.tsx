@@ -1,4 +1,5 @@
 import React from 'react';
+import { Navigate } from 'react-router-dom';
 import { Dashboard } from '../pages/Dashboard';
 import { MenuManagement } from '../pages/MenuManagement';
 import { OpsDashboard } from '../pages/OpsDashboard';
@@ -107,13 +108,41 @@ import BillingDetails from '../pages/billing/BillingDetails';
 import FollowUpTracker from '../pages/billing/follow-up-tracker/FollowUpTracker';
 // Billing - Customer Intelligence (Module 2)
 import CustomerIntelligence from '../pages/billing/customer-intelligence/CustomerIntelligence';
-// Billing - Client Health
-import ClientHealth from '../pages/billing/client-health/ClientHealth';
-// Billing - CEO dashboard views
-import OverdueBehaviourMap from '../pages/billing/overdue-behaviour/OverdueBehaviourMap';
-import PipelineGaps from '../pages/billing/pipeline-gaps/PipelineGaps';
-import BrokenCommitments from '../pages/billing/broken-commitments/BrokenCommitments';
-import CeoOverview from '../pages/billing/ceo-overview/CeoOverview';
+// Billing redesign (handoff/) — Pulse, Clients Ledger, and Client Detail
+// all wrapped in BillingLayout so the .billing-module sub-theme tokens apply.
+// The 5 legacy billing pages (client-health, overdue-behaviour, pipeline-gaps,
+// broken-commitments, ceo-overview) are no longer rendered — their old URLs
+// redirect to the new ledger filters below so existing bookmarks keep working.
+// The page files remain in src/pages/billing/ until Phase 4 of the migration
+// (delete after 2 weeks of low traffic on the legacy paths).
+import BillingLayout from '../pages/billing/BillingLayout';
+import Pulse from '../pages/billing/pulse/Pulse';
+import ClientsLedger from '../pages/billing/clients/ClientsLedger';
+import ClientDetail from '../pages/billing/clients/ClientDetail';
+const PulseRoute: React.FC = () => (
+	<BillingLayout>
+		<Pulse />
+	</BillingLayout>
+);
+const ClientsLedgerRoute: React.FC = () => (
+	<BillingLayout>
+		<ClientsLedger />
+	</BillingLayout>
+);
+const ClientDetailRoute: React.FC = () => (
+	<BillingLayout>
+		<ClientDetail />
+	</BillingLayout>
+);
+/** Factory: produces a tiny FC that performs a route-replacing redirect.
+ *  Used to retire the 5 legacy billing report routes — bookmarks still work,
+ *  users land on the equivalent ledger filter or new home page. */
+const redirectTo = (target: string): React.FC => () => <Navigate to={target} replace />;
+const RedirectBrokenCommitments = redirectTo('/billing/clients?filter=broken');
+const RedirectCeoOverview       = redirectTo('/billing/pulse');
+const RedirectClientHealth      = redirectTo('/billing/clients');
+const RedirectOverdueBehaviour  = redirectTo('/billing/clients?filter=disputing');
+const RedirectPipelineGaps      = redirectTo('/billing/clients?filter=untracked');
 // 3D Builder
 import { ThreeDBuilder } from '../pages/3d-builder/ThreeDBuilder';
 // Approvals
@@ -239,13 +268,19 @@ export const routes: RouteConfig[] = [
 	{ path: '/billing/follow-up-tracker', component: FollowUpTracker },
 	// Billing - Customer Intelligence (Module 2)
 	{ path: '/billing/customer-intelligence', component: CustomerIntelligence },
-	// Billing - Client Health
-	{ path: '/billing/client-health', component: ClientHealth },
-	// Billing - CEO dashboard views
-	{ path: '/billing/overdue-behaviour', component: OverdueBehaviourMap },
-	{ path: '/billing/pipeline-gaps', component: PipelineGaps },
-	{ path: '/billing/broken-commitments', component: BrokenCommitments },
-	{ path: '/billing/ceo-overview', component: CeoOverview },
+	// Billing redesign (handoff/) — new client-first IA. Pulse home + unified
+	// ledger replace the 5 old report pages. Bookmarks to the legacy URLs
+	// below redirect to the equivalent ledger filter / new home.
+	{ path: '/billing/pulse', component: PulseRoute },
+	{ path: '/billing/clients', component: ClientsLedgerRoute },
+	{ path: '/billing/clients/:customerId', component: ClientDetailRoute },
+	// Legacy bookmark redirects (Phase 3) — TSX files remain in repo until
+	// Phase 4 cleanup after 2 weeks of low traffic.
+	{ path: '/billing/client-health', component: RedirectClientHealth },
+	{ path: '/billing/overdue-behaviour', component: RedirectOverdueBehaviour },
+	{ path: '/billing/pipeline-gaps', component: RedirectPipelineGaps },
+	{ path: '/billing/broken-commitments', component: RedirectBrokenCommitments },
+	{ path: '/billing/ceo-overview', component: RedirectCeoOverview },
 	// 3D Builder
 	{ path: '/dashboard/3d-builder', component: ThreeDBuilder },
 	// Approvals

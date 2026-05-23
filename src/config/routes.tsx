@@ -155,6 +155,12 @@ import AmazonInvoiceUpload from '../pages/finances/AmazonInvoiceUpload';
 import { ZohoPaymentList } from '../pages/finances/ZohoPaymentList';
 // Finances - Zoho Invoices
 import { ZohoInvoiceList } from '../pages/finances/ZohoInvoiceList';
+// Finances - Zoho Bills (AP)
+import { ZohoBillList } from '../pages/finances/ZohoBillList';
+// Finances - Zoho Vendor Payments
+import { ZohoVendorPaymentList } from '../pages/finances/ZohoVendorPaymentList';
+// Finances - Zoho Expenses
+import { ZohoExpenseList } from '../pages/finances/ZohoExpenseList';
 
 export interface RouteConfig {
 	path: string;
@@ -293,4 +299,10 @@ export const routes: RouteConfig[] = [
 	{ path: '/finances/zoho-payment-received', component: ZohoPaymentList },
 	// Finances - Zoho Invoices
 	{ path: '/finances/zoho-invoices', component: ZohoInvoiceList },
+	// Finances - Zoho Bills (AP)
+	{ path: '/finances/zoho-bills', component: ZohoBillList },
+	// Finances - Zoho Vendor Payments
+	{ path: '/finances/zoho-vendor-payments', component: ZohoVendorPaymentList },
+	// Finances - Zoho Expenses
+	{ path: '/finances/zoho-expenses', component: ZohoExpenseList },
 ];

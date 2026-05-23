@@ -33,6 +33,10 @@ export interface TableProps<T = Record<string, unknown>> {
 	sortBy?: string;
 	sortOrder?: 'asc' | 'desc';
 	onSort?: (key: string, order: 'asc' | 'desc') => void;
+	/** Fires when a row is clicked. The event target check filters out clicks
+	 *  that landed on interactive elements inside the row (links, buttons, etc.)
+	 *  so the per-row deep-link icon doesn't open the drawer. */
+	onRowClick?: (record: T, index: number) => void;
 	className?: string;
 }
 
@@ -47,6 +51,7 @@ export const Table = <T extends Record<string, unknown>>({
 	sortBy,
 	sortOrder,
 	onSort,
+	onRowClick,
 	className,
 }: TableProps<T>) => {
 	const sizeClasses = {
@@ -145,10 +150,19 @@ export const Table = <T extends Record<string, unknown>>({
 							data.map((record, index) => (
 								<tr
 									key={index}
+									onClick={(e) => {
+										if (!onRowClick) return;
+										// Ignore clicks on links/buttons inside the row so per-row actions
+										// (Open in Zoho, etc.) work without also opening the drawer.
+										const target = e.target as HTMLElement;
+										if (target.closest('a,button,input,select')) return;
+										onRowClick(record, index);
+									}}
 									className={cn(
 										'border-b border-gray-200 transition-colors',
 										striped && index % 2 === 1 && 'bg-gray-50',
-										hoverable && 'hover:bg-gray-50'
+										hoverable && 'hover:bg-gray-50',
+										onRowClick && 'cursor-pointer'
 									)}
 								>
 									{columns.map(column => {

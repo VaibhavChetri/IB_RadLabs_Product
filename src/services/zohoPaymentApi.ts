@@ -46,6 +46,9 @@ export interface ZohoPayment {
 	custom_fields_json: string;
 	created_at: string;
 	updated_at: string;
+	// Derived (computed by backend at read time — Zoho source data is unchanged):
+	// 1 = payment_mode is "Cash" but account_name is a bank/digital/credit-card account.
+	mode_account_mismatch?: number;
 }
 
 export interface ZohoPaymentFilters {
@@ -53,6 +56,7 @@ export interface ZohoPaymentFilters {
 	date_end?: string; // YYYY-MM-DD
 	customer_name?: string;
 	payment_mode?: string;
+	mismatch_only?: 'true' | 'false' | '';
 	page?: number;
 	limit?: number;
 }
@@ -64,12 +68,19 @@ export interface ZohoPaymentPagination {
 	totalPages: number;
 }
 
+export interface ZohoPaymentSummary {
+	total_payments: number;
+	total_amount: number | string;
+	mismatch_count: number | string;
+}
+
 export interface GetZohoPaymentsResponse {
 	status: boolean;
 	statusCode: number;
 	message: string;
 	data: ZohoPayment[];
 	pagination: ZohoPaymentPagination;
+	summary?: ZohoPaymentSummary;
 }
 
 export interface ImportZohoPaymentsResponse {
@@ -94,6 +105,7 @@ export class ZohoPaymentApi {
 		if (filters.date_end) params.append('date_end', filters.date_end);
 		if (filters.customer_name) params.append('customer_name', filters.customer_name);
 		if (filters.payment_mode) params.append('payment_mode', filters.payment_mode);
+		if (filters.mismatch_only === 'true') params.append('mismatch_only', 'true');
 		if (filters.page) params.append('page', filters.page.toString());
 		if (filters.limit) params.append('limit', filters.limit.toString());
 

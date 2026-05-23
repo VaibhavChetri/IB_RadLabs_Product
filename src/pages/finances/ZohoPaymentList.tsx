@@ -67,6 +67,11 @@ export const ZohoPaymentList: React.FC = () => {
 	const initialFilters = useRef(getStoredFilters());
 	const [filters, setFilters] = useState<ZohoPaymentFilters>(initialFilters.current);
 
+	const [summary, setSummary] = useState<{ total_payments: number; mismatch_count: number }>({
+		total_payments: 0,
+		mismatch_count: 0,
+	});
+
 	const [pagination, setPagination] = useState<PaginationData>({
 		totalCount: 0,
 		pageSize: 50,
@@ -111,6 +116,12 @@ export const ZohoPaymentList: React.FC = () => {
 					currentPage: response.pagination.page,
 					totalPages: response.pagination.totalPages,
 				});
+				if (response.summary) {
+					setSummary({
+						total_payments: Number(response.summary.total_payments) || 0,
+						mismatch_count: Number(response.summary.mismatch_count) || 0,
+					});
+				}
 			}
 		} catch (err: any) {
 			const errorMsg =
@@ -266,7 +277,19 @@ export const ZohoPaymentList: React.FC = () => {
 		{
 			key: 'payment_mode',
 			title: 'Mode',
-			dataIndex: 'payment_mode',
+			render: (_, record: ZohoPayment) => (
+				<span className='inline-flex items-center gap-1'>
+					{record.payment_mode}
+					{record.mode_account_mismatch ? (
+						<span
+							title='Payment mode is "Cash" but account is a bank/digital account. Source value in Zoho is unchanged — review and fix at source.'
+							className='inline-flex items-center justify-center w-4 h-4 rounded-full bg-warning-100 text-warning-700 text-[10px] font-bold cursor-help'
+						>
+							!
+						</span>
+					) : null}
+				</span>
+			),
 		},
 	];
 
@@ -338,6 +361,44 @@ export const ZohoPaymentList: React.FC = () => {
 					</Button>
 				</div>
 			</Card>
+
+			{/* Data-quality banner */}
+			{summary.mismatch_count > 0 && (
+				<Card className='border-l-4 border-warning-500 bg-warning-50'>
+					<div className='flex items-start gap-3 py-2'>
+						<span className='inline-flex items-center justify-center w-7 h-7 rounded-full bg-warning-100 text-warning-700 text-base font-bold flex-shrink-0'>
+							!
+						</span>
+						<div className='flex-1'>
+							<div className='font-semibold text-warning-900'>
+								{summary.mismatch_count} of {summary.total_payments} payments have a Mode/Account mismatch
+							</div>
+							<div className='text-sm text-warning-800 mt-1'>
+								Payment mode is recorded as <strong>Cash</strong>, but the receiving account is a bank/digital
+								account. Source data in Zoho is unchanged. Review and fix at source — the flag will clear
+								automatically on the next refresh.
+							</div>
+							<div className='mt-2'>
+								<Button
+									variant='outline'
+									onClick={() => {
+										const updated = {
+											...filters,
+											mismatch_only: (filters.mismatch_only === 'true' ? '' : 'true') as 'true' | '',
+											page: 1,
+										};
+										setFilters(updated);
+										saveFilters(updated);
+										fetchPayments(updated);
+									}}
+								>
+									{filters.mismatch_only === 'true' ? 'Show all payments' : 'Show only mismatched'}
+								</Button>
+							</div>
+						</div>
+					</div>
+				</Card>
+			)}
 
 			{/* Payments Table */}
 			<Card>

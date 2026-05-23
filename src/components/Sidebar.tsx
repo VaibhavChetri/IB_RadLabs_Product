@@ -39,14 +39,41 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
 	const isMenuExpanded = (menuName: string) => expandedMenus.includes(menuName);
 
+	// Collect every href registered in the visible menu tree once per render.
+	// Used by isActiveRoute for "longest prefix wins" — without this, a parent
+	// like /finances/amazon-invoice also matches when the URL is the more
+	// specific /finances/amazon-invoice/upload (sibling page, not a sub-route).
+	const allMenuHrefs = React.useMemo(() => {
+		const out: string[] = [];
+		const walk = (items: MenuItem[]) => {
+			items.forEach((m) => {
+				if (m.href) out.push(m.href);
+				if (m.children) walk(m.children);
+			});
+		};
+		walk(menus);
+		return out;
+	}, [menus]);
+
 	const isActiveRoute = (href?: string) => {
 		if (!href) return false;
 		if (href === '/hr/holidays') {
 			return location.pathname === href;
 		}
-		// For dynamic routes, check if current path starts with the href
-		// e.g., /transit-plan/master-plan/edit matches /transit-plan/master-plan/edit/123
-		return location.pathname === href || location.pathname.startsWith(href + '/');
+		// Exact match always wins.
+		if (location.pathname === href) return true;
+		// Prefix match only if no other registered menu href is a longer match.
+		// e.g. for /finances/amazon-invoice/upload, only the longer /upload href
+		// wins — the shorter /amazon-invoice href is suppressed.
+		if (!location.pathname.startsWith(href + '/')) return false;
+		const moreSpecific = allMenuHrefs.some(
+			(h) =>
+				h !== href &&
+				h.length > href.length &&
+				h.startsWith(href + '/') &&
+				(location.pathname === h || location.pathname.startsWith(h + '/'))
+		);
+		return !moreSpecific;
 	};
 
 	const hasActiveChild = (item: MenuItem): boolean => {

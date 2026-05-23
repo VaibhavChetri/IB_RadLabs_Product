@@ -125,6 +125,52 @@ export const useUserMenus = (): UseUserMenusReturn => {
 				'ceo-overview':          { access: true, children: {} },
 			},
 		};
+
+		// LOCAL-ONLY: grant Zoho screens for any authenticated user so Finance can
+		// verify the new data. Preserves whatever existing finances children the user
+		// already has (e.g. amazon-invoice). Now grouped under Inflow (AR) / Outflow
+		// (AP) parents — both grouping parents AND their children need to be granted
+		// because filterMenusByPermissions walks the tree top-down.
+		// Remove this once the backend adds these IDs to menu_permissions.
+		const existingFinances = normalizedPermissions['finances'];
+		const existingFinancesChildren =
+			(existingFinances?.children as Record<string, MenuPermission> | undefined) || {};
+
+		// Re-grant amazon-invoice's children so the parent renders as a proper
+		// expandable folder. Preserve any existing grant if backend had it.
+		const existingAmazon = existingFinancesChildren['amazon-invoice'];
+		const amazonChildren =
+			(existingAmazon?.children as Record<string, MenuPermission> | undefined) || {};
+
+		normalizedPermissions['finances'] = {
+			access: existingFinances?.access ?? true,
+			children: {
+				...existingFinancesChildren,
+				'amazon-invoice': {
+					access: existingAmazon?.access ?? true,
+					children: {
+						...amazonChildren,
+						'amazon-invoice-listing': { access: true, children: {} },
+						'amazon-invoice-upload':  { access: true, children: {} },
+					},
+				},
+				'zoho-inflow': {
+					access: true,
+					children: {
+						'zoho-invoices':         { access: true, children: {} },
+						'zoho-payment-received': { access: true, children: {} },
+					},
+				},
+				'zoho-outflow': {
+					access: true,
+					children: {
+						'zoho-bills':           { access: true, children: {} },
+						'zoho-vendor-payments': { access: true, children: {} },
+						'zoho-expenses':        { access: true, children: {} },
+					},
+				},
+			},
+		};
 	}
 
 

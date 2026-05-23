@@ -41,6 +41,9 @@ import {
 	ShieldCheck,
 	Inbox,
 	Zap,
+	Wallet,
+	ArrowDownCircle,
+	ArrowUpCircle,
 	// ArrowLeft, // Deprecated - Received section commented out
 } from 'lucide-react';
 
@@ -294,16 +297,48 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 				],
 			},
 			{
-				id: 'zoho-payment-received',
-				name: 'Zoho Payment Received',
-				icon: Receipt,
-				href: '/finances/zoho-payment-received',
+				id: 'zoho-inflow',
+				name: 'Zoho Inflow (AR)',
+				icon: ArrowDownCircle,
+				children: [
+					{
+						id: 'zoho-invoices',
+						name: 'Invoices',
+						icon: FileText,
+						href: '/finances/zoho-invoices',
+					},
+					{
+						id: 'zoho-payment-received',
+						name: 'Payments Received',
+						icon: Receipt,
+						href: '/finances/zoho-payment-received',
+					},
+				],
 			},
 			{
-				id: 'zoho-invoices',
-				name: 'Zoho Invoices',
-				icon: Receipt,
-				href: '/finances/zoho-invoices',
+				id: 'zoho-outflow',
+				name: 'Zoho Outflow (AP)',
+				icon: ArrowUpCircle,
+				children: [
+					{
+						id: 'zoho-bills',
+						name: 'Bills',
+						icon: FileText,
+						href: '/finances/zoho-bills',
+					},
+					{
+						id: 'zoho-vendor-payments',
+						name: 'Payments Made',
+						icon: Wallet,
+						href: '/finances/zoho-vendor-payments',
+					},
+					{
+						id: 'zoho-expenses',
+						name: 'Expenses',
+						icon: Receipt,
+						href: '/finances/zoho-expenses',
+					},
+				],
 			},
 		],
 	},

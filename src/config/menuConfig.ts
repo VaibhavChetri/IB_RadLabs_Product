@@ -270,6 +270,12 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 				icon: BarChart3,
 				href: '/p-and-l/graphs',
 			},
+			{
+				id: 'pl-location-variance',
+				name: 'Location Variance',
+				icon: BarChart3,
+				href: '/p-and-l/location-variance',
+			},
 		],
 	},
 	{

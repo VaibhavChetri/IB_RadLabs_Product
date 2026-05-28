@@ -51,6 +51,7 @@ import InventoryListing from '../pages/kam/InventoryListing';
 // P&L Review
 import { PLSummary } from '../pages/pl-review/PLSummary';
 import { PLGraphs } from '../pages/pl-review/PLGraphs';
+import { LocationVariance } from '../pages/pl-review/LocationVariance';
 // Revenue - Monthly Estimate
 import { MonthlyEstimateAdd } from '../pages/revenue/monthly-estimate/MonthlyEstimateAdd';
 import { MonthlyEstimateList } from '../pages/revenue/monthly-estimate/MonthlyEstimateList';
@@ -216,6 +217,7 @@ export const routes: RouteConfig[] = [
 	{ path: '/ops-admin/users/:userId', component: EditUser },
 	{ path: '/p-and-l/summary', component: PLSummary },
 	{ path: '/p-and-l/graphs', component: PLGraphs },
+	{ path: '/p-and-l/location-variance', component: LocationVariance },
 	{ path: '/revenue/monthly-estimate/add', component: MonthlyEstimateAdd },
 	{ path: '/revenue/monthly-estimate/list', component: MonthlyEstimateList },
 	{ path: '/revenue/monthly-estimate/edit', component: MonthlyEstimateEdit },

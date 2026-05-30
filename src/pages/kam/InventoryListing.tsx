@@ -1,7 +1,28 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { Pencil, Download } from 'lucide-react';
+import { Pencil, Download, Info } from 'lucide-react';
+
+// Small header label with an info icon carrying a plain-language explanation.
+// Hover the ⓘ to read what the column means (native browser tooltip).
+// The `label` doubles as the plain-text title used for CSV export / the column
+// show-hide dropdown (see plainTitle below).
+const HeaderInfo: React.FC<{ label: string; tip: string }> = ({ label, tip }) => (
+	<span className='inline-flex items-center gap-1' data-col-label={label}>
+		{label}
+		<span title={tip} className='cursor-help' aria-label={tip}>
+			<Info className='h-3.5 w-3.5 text-indigo-400' />
+		</span>
+	</span>
+);
+
+// title can now be a ReactNode (a HeaderInfo). For places that need a plain
+// string (export header, column-visibility dropdown), pull the label back out.
+const plainTitle = (title: React.ReactNode): string => {
+	if (typeof title === 'string') return title;
+	const props = (title as React.ReactElement<{ label?: string }> | undefined)?.props;
+	return typeof props?.label === 'string' ? props.label : '';
+};
 import { RootState } from '../../store';
 import {
 	FloatingInput,
@@ -122,9 +143,14 @@ const InventoryListing: React.FC = () => {
 			{
 				// ── Additive: per-SKU price from the client's active SKU map ──
 				key: 'price',
-				title: 'Price (₹)',
+				title: (
+					<HeaderInfo
+						label='Price (₹)'
+						tip='The agreed rate per item for this SKU, from the client’s price list. Fixed-billing clients have no per-item price (they pay a flat monthly amount).'
+					/>
+				),
 				sortable: true,
-				width: '100px',
+				width: '110px',
 				headerClassName: 'bg-indigo-50 text-indigo-700',
 				render: (_: unknown, row: InventoryValueRow) => {
 					const p = row.price == null ? null : Number(row.price);
@@ -138,15 +164,34 @@ const InventoryListing: React.FC = () => {
 			{
 				// ── Additive: derived revenue = returned × price ──
 				key: 'derived_revenue',
-				title: 'Derived Revenue (₹)',
+				title: (
+					<HeaderInfo
+						label='Derived Revenue (₹)'
+						tip='Our calculated revenue for this SKU = items returned × price. It’s what the client owes based on operations, before invoicing. Blank for fixed-billing clients (they pay a flat monthly amount instead).'
+					/>
+				),
 				sortable: true,
-				width: '150px',
+				width: '160px',
 				headerClassName: 'bg-indigo-50 text-indigo-700',
 				render: (_: unknown, row: InventoryValueRow) => {
+					const billingTypeId = row.billingTypeId == null ? null : Number(row.billingTypeId);
 					const price = row.price == null ? null : Number(row.price);
 					const r = row.derived_revenue == null ? null : Number(row.derived_revenue);
-					// Distinguish "no price configured" from genuine zero revenue:
-					// if there's no active SKU price, the 0 is a data-entry gap, not real ₹0.
+
+					// Fixed billing (mode 3): per-SKU revenue doesn't apply — they pay a
+					// flat monthly amount, so a 0 price here is correct, not a gap.
+					if (billingTypeId === 3) {
+						return (
+							<span
+								className='block text-right text-xs italic text-gray-500'
+								title='This client is on fixed (flat monthly) billing, so per-item revenue isn’t calculated here.'
+							>
+								Fixed billing
+							</span>
+						);
+					}
+
+					// Per-unit modes with no rate configured: the 0 is a data-entry gap.
 					const noPrice = price == null || !Number.isFinite(price) || price === 0;
 					if (noPrice) {
 						return (
@@ -338,7 +383,7 @@ const InventoryListing: React.FC = () => {
 				.filter(col => col.key !== 'actions')
 				.map(col => ({
 					key: col.key,
-					title: col.title,
+					title: plainTitle(col.title),
 				}));
 
 			// Transform data for export
@@ -376,7 +421,7 @@ const InventoryListing: React.FC = () => {
 			allColumns
 				.filter(col => col.key !== 'serial')
 				.map(col => ({
-					label: col.title,
+					label: plainTitle(col.title),
 					value: col.key,
 				})),
 		[allColumns]

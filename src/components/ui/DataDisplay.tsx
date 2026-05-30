@@ -10,7 +10,8 @@ import { cn } from '../../utils/cn';
 // Table Component
 export interface TableColumn<T = Record<string, unknown>> {
 	key: string;
-	title: string;
+	// ReactNode (not just string) so headers can include an info icon / tooltip.
+	title: React.ReactNode;
 	dataIndex?: keyof T;
 	render?: (value: unknown, record: T, index: number) => React.ReactNode;
 	sortable?: boolean;

@@ -9,10 +9,18 @@
  */
 
 import React, { useMemo, useState } from 'react';
+import { Info } from 'lucide-react';
 import type { SummaryLocation, ZohoLinkage } from '../types';
 import { formatINR, formatINRDelta, formatPct, formatMonthLabel } from '../../../utils/currencyFormatter';
 
 type SortKey = 'name' | 'city' | 'latest_delta_pct' | 'latest_delta';
+
+// Inline info icon for a column header — hover for a plain-language explanation.
+const InfoTip: React.FC<{ tip: string }> = ({ tip }) => (
+	<span title={tip} aria-label={tip} className='cursor-help ml-1 inline-flex align-middle'>
+		<Info className='h-3 w-3 text-indigo-400' />
+	</span>
+);
 
 // ── Additive "Revenue Intelligence" columns ────────────────────────────────
 // New columns surface the analyzer's derived-vs-billed gap and the Zoho linkage
@@ -164,15 +172,19 @@ export const LocationVarianceTable: React.FC<LocationVarianceTableProps> = ({
 						{/* ── Additive: Revenue Intelligence group (derived/billed gap + Zoho linkage) ── */}
 						<th className='px-4 py-3 text-right font-medium bg-indigo-50 text-indigo-700 border-l border-indigo-100'>
 							Derived
+							<InfoTip tip='Revenue our system calculates from operations (units returned × agreed price) for the latest month. What the client owes based on usage, before invoicing.' />
 						</th>
 						<th className='px-4 py-3 text-right font-medium bg-indigo-50 text-indigo-700'>
 							Billed
+							<InfoTip tip='Revenue actually invoiced in Zoho for the latest month. Blank when we can’t reliably match this client to a Zoho customer (see the Zoho column).' />
 						</th>
 						<th className='px-4 py-3 text-right font-medium bg-indigo-50 text-indigo-700'>
 							Gap
+							<InfoTip tip='Derived minus Billed. A non-zero gap means our calculated revenue and what was invoiced disagree — worth checking for under- or over-billing.' />
 						</th>
 						<th className='px-4 py-3 text-center font-medium bg-indigo-50 text-indigo-700 border-r border-indigo-100'>
 							Zoho
+							<InfoTip tip='How reliably we matched this client to a Zoho customer: Strict = matched by ID (reliable); Fuzzy = matched by name (approximate); Ambiguous = name matches several customers (billed hidden); None = no match found.' />
 						</th>
 						<th className='px-4 py-3 text-center font-medium'>Flag</th>
 					</tr>

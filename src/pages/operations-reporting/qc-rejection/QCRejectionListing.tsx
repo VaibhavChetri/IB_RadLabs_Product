@@ -11,12 +11,22 @@ import {
 } from '../../../components/ui';
 import { Table } from '../../../components/ui/DataDisplay';
 import { TableSkeleton } from '../../../components/ui/Skeleton';
-import { Plus } from 'lucide-react';
+import { Plus, Info } from 'lucide-react';
 import { useQCRejectionData } from '../../../features/qc-rejection/hooks/useQCRejectionData';
 import { InventoryApiService } from '../../../services/inventoryApi';
 import { QCRejectionService, type QCRejectionWoWRow } from '../../../services/transitPlanApi';
 import { RootState } from '../../../store';
 import type { TableColumn } from '../../../components/ui/DataDisplay';
+
+// Header label + info icon with a plain-language tooltip (native browser tooltip).
+const HeaderInfo: React.FC<{ label: string; tip: string }> = ({ label, tip }) => (
+	<span className='inline-flex items-center gap-1'>
+		{label}
+		<span title={tip} className='cursor-help' aria-label={tip}>
+			<Info className='h-3.5 w-3.5 text-indigo-400' />
+		</span>
+	</span>
+);
 
 export const QCRejectionListing: React.FC = () => {
 	const navigate = useNavigate();
@@ -230,7 +240,12 @@ export const QCRejectionListing: React.FC = () => {
 				// plus the delta. Same value repeats across a client's rows (it is a
 				// per-client metric), which makes client-level trends scannable.
 				key: 'wow',
-				title: 'WoW (Client)',
+				title: (
+					<HeaderInfo
+						label='WoW (Client)'
+						tip='Week over Week: this client’s total QC rejections this week vs last week (the 7 days ending on the selected date vs the 7 before). ▲ red = getting worse, ▼ green = improving.'
+					/>
+				),
 				sortable: false,
 				align: 'center',
 				headerClassName: 'bg-indigo-50 text-indigo-700',

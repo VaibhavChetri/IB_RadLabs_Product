@@ -10,8 +10,27 @@ import {
 	useClientWisePLData,
 	useEscalationData,
 } from '../hooks/usePLTabData';
+import { Info } from 'lucide-react';
 import { Table, TableColumn } from '../../../components/ui/DataDisplay';
 import { MultiSelectDropdown, FloatingDropdown } from '../../../components/ui';
+
+// Header label + info icon with a plain-language tooltip. `label` doubles as the
+// plain-text title used by the column show-hide dropdown (see plainTitle).
+const HeaderInfo: React.FC<{ label: string; tip: string }> = ({ label, tip }) => (
+	<span className='inline-flex items-center gap-1'>
+		{label}
+		<span title={tip} className='cursor-help' aria-label={tip}>
+			<Info className='h-3.5 w-3.5 text-indigo-400' />
+		</span>
+	</span>
+);
+
+// title is a ReactNode; pull a plain string back out for the dropdown options.
+const plainTitle = (title: React.ReactNode): string => {
+	if (typeof title === 'string') return title;
+	const props = (title as React.ReactElement<{ label?: string }> | undefined)?.props;
+	return typeof props?.label === 'string' ? props.label : '';
+};
 
 interface PLTabContentProps {
 	cityId?: number;
@@ -161,7 +180,12 @@ export const ExpenditureTab: React.FC<PLTabContentProps> = ({
 				// Placed right after Projection so it's visible up front without
 				// scrolling past the weekly columns.
 				key: 'budget_used_pct',
-				title: 'Budget Used',
+				title: (
+					<HeaderInfo
+						label='Budget Used'
+						tip='How much of the month’s planned budget has been spent so far = actual spend ÷ projection. Green = under budget, amber = close (90–105%), red = over budget.'
+					/>
+				),
 				align: 'right',
 				sortable: false,
 				headerClassName: 'bg-indigo-50 text-indigo-700',
@@ -892,7 +916,7 @@ export const ClientWisePLTab: React.FC<PLTabContentProps> = ({
 			columns
 				.filter(col => col.key !== 'slNo') // Always keep SL column visible
 				.map(col => ({
-					label: col.title,
+					label: plainTitle(col.title),
 					value: col.key,
 				})),
 		[columns]

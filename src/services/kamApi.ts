@@ -34,6 +34,8 @@ export interface InventoryValueRow extends Record<string, unknown> {
 	// Nullable when the client has no active SKU price mapping.
 	price?: number | string | null;
 	derived_revenue?: number | string | null;
+	// Billing mode (3 = Fixed → per-SKU price is intentionally 0; flat monthly billing).
+	billingTypeId?: number | string | null;
 	created_at: string;
 }
 

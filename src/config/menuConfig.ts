@@ -259,6 +259,12 @@ export const ALL_MENU_ITEMS: MenuItem[] = [
 		icon: BarChart3,
 		children: [
 			{
+				id: 'city-kpi',
+				name: 'My City KPIs',
+				icon: BarChart3,
+				href: '/my-city/kpi',
+			},
+			{
 				id: 'pl-summary',
 				name: 'P&L Summary',
 				icon: FileText,

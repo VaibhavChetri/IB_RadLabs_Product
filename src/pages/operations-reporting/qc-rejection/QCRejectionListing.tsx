@@ -14,6 +14,7 @@ import { TableSkeleton } from '../../../components/ui/Skeleton';
 import { Plus } from 'lucide-react';
 import { useQCRejectionData } from '../../../features/qc-rejection/hooks/useQCRejectionData';
 import { InventoryApiService } from '../../../services/inventoryApi';
+import { QCRejectionService, type QCRejectionWoWRow } from '../../../services/transitPlanApi';
 import { RootState } from '../../../store';
 import type { TableColumn } from '../../../components/ui/DataDisplay';
 
@@ -93,6 +94,38 @@ export const QCRejectionListing: React.FC = () => {
 			});
 		}
 	}, [listingError]);
+
+	// ── Additive: per-client week-over-week QC rejection map ──
+	// Fetched separately from the new endpoint, keyed by clientId, so the listing
+	// can show each client's this-week-vs-last-week trend without changing the
+	// single-date listing query. Failures here never block the existing table.
+	const [wowByClient, setWowByClient] = useState<Record<number, QCRejectionWoWRow>>({});
+	useEffect(() => {
+		let cancelled = false;
+		const loadWoW = async () => {
+			if (!transitDate || !user?.city_id) return;
+			try {
+				const resp = await QCRejectionService.getQCRejectionsWeekOverWeek({
+					anchor_date: transitDate, // anchor the 2-week window on the selected date
+					city_id: user.city_id,
+					client_id: selectedClientId ? parseInt(selectedClientId, 10) : undefined,
+				});
+				if (cancelled) return;
+				const map: Record<number, QCRejectionWoWRow> = {};
+				(resp?.data || []).forEach(row => {
+					map[row.clientId] = row;
+				});
+				setWowByClient(map);
+			} catch {
+				// Non-fatal: leave the WoW column blank if this lookup fails.
+				if (!cancelled) setWowByClient({});
+			}
+		};
+		loadWoW();
+		return () => {
+			cancelled = true;
+		};
+	}, [transitDate, selectedClientId, user?.city_id]);
 
 	const handleAdd = () => {
 		navigate('/operations-reporting/qc-rejection/add');
@@ -189,6 +222,38 @@ export const QCRejectionListing: React.FC = () => {
 				),
 			},
 			{
+				// ── Additive: this client's week-over-week rejection trend ──
+				// Shows this-week vs last-week total rejected for the row's client,
+				// plus the delta. Same value repeats across a client's rows (it is a
+				// per-client metric), which makes client-level trends scannable.
+				key: 'wow',
+				title: 'WoW (Client)',
+				sortable: false,
+				align: 'center',
+				headerClassName: 'bg-indigo-50 text-indigo-700',
+				render: (_value: unknown, row: Record<string, unknown>) => {
+					const clientId = Number(row.clientId);
+					const wow = Number.isFinite(clientId) ? wowByClient[clientId] : undefined;
+					if (!wow) {
+						return <div className='text-gray-400 text-center'>—</div>;
+					}
+					const up = wow.delta > 0; // more rejections this week = worse
+					const flat = wow.delta === 0;
+					const cls = flat ? 'text-gray-500' : up ? 'text-red-600' : 'text-green-600';
+					const arrow = flat ? '→' : up ? '▲' : '▼';
+					const pct = wow.deltaPct == null ? '' : ` (${wow.deltaPct > 0 ? '+' : ''}${wow.deltaPct}%)`;
+					return (
+						<div
+							className={`text-center font-medium ${cls}`}
+							title={`This week: ${wow.thisWeekRejected} · Last week: ${wow.lastWeekRejected}`}
+						>
+							{wow.thisWeekRejected} vs {wow.lastWeekRejected} {arrow}
+							{pct}
+						</div>
+					);
+				},
+			},
+			{
 				key: 'updatedByName',
 				title: 'Updated By',
 				sortable: true,
@@ -198,7 +263,7 @@ export const QCRejectionListing: React.FC = () => {
 				),
 			},
 		],
-		[]
+		[wowByClient]
 	);
 
 	const tableData = (listingData?.data || []) as unknown as Record<string, unknown>[];

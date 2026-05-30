@@ -87,6 +87,30 @@ const formatExpenditureValue = (
 };
 
 /**
+ * ADDITIVE helper: "budget used" = total actual / projection (budget) as a %.
+ * Returns the pct plus a status tint so a city head can see at a glance whether
+ * they are under, near, or over budget. Existing columns are unaffected.
+ */
+const toNum = (v: number | string | null | undefined): number | null => {
+	if (v === null || v === undefined || v === '') return null;
+	const n = typeof v === 'string' ? parseFloat(v.replace(/,/g, '')) : v;
+	return Number.isFinite(n) ? n : null;
+};
+
+const budgetUsedCell = (
+	projected: number | string | null | undefined,
+	actual: number | string | null | undefined
+): { text: string; cls: string } => {
+	const p = toNum(projected);
+	const a = toNum(actual);
+	if (p === null || p === 0 || a === null) return { text: '-', cls: 'text-gray-400' };
+	const pct = (a / p) * 100;
+	// <=90% under budget (green), 90–105% near (amber), >105% over (red)
+	const cls = pct > 105 ? 'text-red-600 font-semibold' : pct >= 90 ? 'text-amber-600' : 'text-green-600';
+	return { text: `${pct.toFixed(0)}%`, cls };
+};
+
+/**
  * Expenditure Tab Content
  */
 export const ExpenditureTab: React.FC<PLTabContentProps> = ({
@@ -245,6 +269,21 @@ export const ExpenditureTab: React.FC<PLTabContentProps> = ({
 				align: 'right',
 				sortable: true,
 				render: (_value, record) => (record.total_delta_with_percentage as string) || '-',
+			},
+			{
+				// ── Additive: Budget Used % (total actual ÷ projection). ──
+				key: 'budget_used_pct',
+				title: 'Budget Used',
+				align: 'right',
+				sortable: false,
+				headerClassName: 'bg-indigo-50 text-indigo-700',
+				render: (_value, record) => {
+					const { text, cls } = budgetUsedCell(
+						record.projected_value as number | string | null | undefined,
+						record.total_actual_value as number | string | null | undefined
+					);
+					return <span className={`block text-right bg-indigo-50/40 px-2 py-1 rounded ${cls}`}>{text}</span>;
+				},
 			},
 		],
 		[]

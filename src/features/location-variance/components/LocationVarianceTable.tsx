@@ -9,10 +9,47 @@
  */
 
 import React, { useMemo, useState } from 'react';
-import type { SummaryLocation } from '../types';
+import type { SummaryLocation, ZohoLinkage } from '../types';
 import { formatINR, formatINRDelta, formatPct, formatMonthLabel } from '../../../utils/currencyFormatter';
 
 type SortKey = 'name' | 'city' | 'latest_delta_pct' | 'latest_delta';
+
+// ── Additive "Revenue Intelligence" columns ────────────────────────────────
+// New columns surface the analyzer's derived-vs-billed gap and the Zoho linkage
+// quality. They are appended alongside the existing columns — nothing existing
+// is removed. Grouped under a tinted header so it's clear what's new.
+
+const ZOHO_LINKAGE_BADGE: Record<ZohoLinkage, { label: string; cls: string; title: string }> = {
+	strict_customer_id: {
+		label: 'Strict',
+		cls: 'bg-green-100 text-green-800',
+		title: 'Matched to a single Zoho customer by customer_id — billed figure is reliable.',
+	},
+	fuzzy_customer_name: {
+		label: 'Fuzzy',
+		cls: 'bg-yellow-100 text-yellow-800',
+		title: 'Matched by customer name (stored zoho_customer_id did not resolve). Billed figure is approximate.',
+	},
+	ambiguous: {
+		label: 'Ambiguous',
+		cls: 'bg-red-100 text-red-800',
+		title: 'Name matches multiple Zoho customers — billed figure is hidden to avoid a misleading total. Set this location’s zoho_customer_id.',
+	},
+	none: {
+		label: 'None',
+		cls: 'bg-gray-100 text-gray-500',
+		title: 'No Zoho invoices matched this location by id or name — billed figure is unavailable.',
+	},
+};
+
+// Latest-month derived/billed for a location, plus the gap (derived − billed).
+const latestMonthRevenue = (loc: SummaryLocation, latestMonth: string) => {
+	const m = loc.monthly.find((mm) => mm.month === latestMonth);
+	const derived = m?.derived_revenue ?? null;
+	const billed = m?.billed_revenue ?? null;
+	const gap = derived != null && billed != null ? derived - billed : null;
+	return { derived, billed, gap };
+};
 
 interface LocationVarianceTableProps {
 	locations: SummaryLocation[];
@@ -124,6 +161,19 @@ export const LocationVarianceTable: React.FC<LocationVarianceTableProps> = ({
 						>
 							Δ % {sortKey === 'latest_delta_pct' && (sortDir === 'asc' ? '▲' : '▼')}
 						</th>
+						{/* ── Additive: Revenue Intelligence group (derived/billed gap + Zoho linkage) ── */}
+						<th className='px-4 py-3 text-right font-medium bg-indigo-50 text-indigo-700 border-l border-indigo-100'>
+							Derived
+						</th>
+						<th className='px-4 py-3 text-right font-medium bg-indigo-50 text-indigo-700'>
+							Billed
+						</th>
+						<th className='px-4 py-3 text-right font-medium bg-indigo-50 text-indigo-700'>
+							Gap
+						</th>
+						<th className='px-4 py-3 text-center font-medium bg-indigo-50 text-indigo-700 border-r border-indigo-100'>
+							Zoho
+						</th>
 						<th className='px-4 py-3 text-center font-medium'>Flag</th>
 					</tr>
 				</thead>
@@ -165,6 +215,39 @@ export const LocationVarianceTable: React.FC<LocationVarianceTableProps> = ({
 								<td className={`px-4 py-3 text-right font-mono text-xs ${deltaCls}`}>
 									{formatPct(loc.latest_delta_pct)}
 								</td>
+								{/* ── Additive: Revenue Intelligence cells ── */}
+								{(() => {
+									const { derived, billed, gap } = latestMonthRevenue(loc, latestMonth);
+									const gapCls = gap == null
+										? 'text-gray-400'
+										: Math.abs(gap) < 1
+											? 'text-gray-500'
+											: gap > 0
+												? 'text-amber-600'
+												: 'text-blue-600';
+									const badge = ZOHO_LINKAGE_BADGE[loc.zoho_linkage] || ZOHO_LINKAGE_BADGE.none;
+									return (
+										<>
+											<td className='px-4 py-3 text-right font-mono text-xs text-gray-700 bg-indigo-50/40 border-l border-indigo-100'>
+												{formatINR(derived, { compact: true })}
+											</td>
+											<td className='px-4 py-3 text-right font-mono text-xs text-gray-700 bg-indigo-50/40'>
+												{formatINR(billed, { compact: true })}
+											</td>
+											<td className={`px-4 py-3 text-right font-mono text-xs bg-indigo-50/40 ${gapCls}`}>
+												{formatINRDelta(gap, { compact: true })}
+											</td>
+											<td className='px-4 py-3 text-center bg-indigo-50/40 border-r border-indigo-100'>
+												<span
+													className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${badge.cls}`}
+													title={badge.title}
+												>
+													{badge.label}
+												</span>
+											</td>
+										</>
+									);
+								})()}
 								<td className='px-4 py-3 text-center'>
 									{loc.outlier && (
 										<span className='inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800'>

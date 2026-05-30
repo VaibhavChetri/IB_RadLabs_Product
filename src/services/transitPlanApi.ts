@@ -830,6 +830,23 @@ export interface GetQCRejectionsResponse {
 	data: QCRejection[];
 }
 
+// ADDITIVE: per-client week-over-week QC rejection comparison
+export interface QCRejectionWoWRow {
+	clientId: number;
+	clientName: string;
+	cityId: number;
+	thisWeekRejected: number;
+	lastWeekRejected: number;
+	delta: number;
+	deltaPct: number | null; // null when last week had zero rejections
+}
+
+export interface QCRejectionWoWResponse {
+	status: string;
+	status_code: number;
+	data: QCRejectionWoWRow[];
+}
+
 // QC Run Interfaces (for Add page)
 export interface QCRun {
 	id: number;
@@ -892,6 +909,26 @@ export class QCRejectionService {
 		return api.get(
 			`/transit-plan/getQCRejections?${searchParams.toString()}`
 		) as unknown as Promise<GetQCRejectionsResponse>;
+	}
+
+	/**
+	 * ADDITIVE: per-client week-over-week QC rejection comparison.
+	 * Backed by the new /transit-plan/getQCRejectionsWeekOverWeek endpoint.
+	 * Does not replace getQCRejections (the single-date listing).
+	 */
+	static async getQCRejectionsWeekOverWeek(params: {
+		anchor_date?: string;
+		city_id?: number;
+		client_id?: number;
+	}): Promise<QCRejectionWoWResponse> {
+		const searchParams = new URLSearchParams();
+		if (params.anchor_date) searchParams.set('anchor_date', params.anchor_date);
+		if (params.city_id) searchParams.set('city_id', params.city_id.toString());
+		if (params.client_id) searchParams.set('client_id', params.client_id.toString());
+		const qs = searchParams.toString();
+		return api.get(
+			`/transit-plan/getQCRejectionsWeekOverWeek${qs ? `?${qs}` : ''}`
+		) as unknown as Promise<QCRejectionWoWResponse>;
 	}
 
 	/**

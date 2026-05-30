@@ -30,6 +30,10 @@ export interface InventoryValueRow extends Record<string, unknown> {
 	returned: number | null;
 	closing: number | null;
 	has_entered: string;
+	// Additive (backend now returns these): per-SKU price + derived revenue (returned × price).
+	// Nullable when the client has no active SKU price mapping.
+	price?: number | string | null;
+	derived_revenue?: number | string | null;
 	created_at: string;
 }
 

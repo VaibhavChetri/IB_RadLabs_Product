@@ -120,6 +120,38 @@ const InventoryListing: React.FC = () => {
 			{ key: 'returned', title: 'Returned', sortable: true, width: '100px' },
 			{ key: 'closing', title: 'Closing', sortable: true, width: '100px' },
 			{
+				// ── Additive: per-SKU price from the client's active SKU map ──
+				key: 'price',
+				title: 'Price (₹)',
+				sortable: true,
+				width: '100px',
+				headerClassName: 'bg-indigo-50 text-indigo-700',
+				render: (_: unknown, row: InventoryValueRow) => {
+					const p = row.price == null ? null : Number(row.price);
+					return (
+						<span className='block text-right text-gray-700'>
+							{p == null || !Number.isFinite(p) ? '—' : p.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+						</span>
+					);
+				},
+			},
+			{
+				// ── Additive: derived revenue = returned × price ──
+				key: 'derived_revenue',
+				title: 'Derived Revenue (₹)',
+				sortable: true,
+				width: '150px',
+				headerClassName: 'bg-indigo-50 text-indigo-700',
+				render: (_: unknown, row: InventoryValueRow) => {
+					const r = row.derived_revenue == null ? null : Number(row.derived_revenue);
+					return (
+						<span className='block text-right font-medium text-indigo-700'>
+							{r == null || !Number.isFinite(r) ? '—' : r.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+						</span>
+					);
+				},
+			},
+			{
 				key: 'has_entered',
 				title: 'Status',
 				sortable: true,

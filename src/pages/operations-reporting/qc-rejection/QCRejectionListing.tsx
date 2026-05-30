@@ -46,11 +46,12 @@ export const QCRejectionListing: React.FC = () => {
 	// Load clients by city
 	useEffect(() => {
 		const loadClients = async () => {
-			if (!user?.city_id) return;
-
+			// Don't gate on city_id: founders have none, and the backend returns
+			// all clients for them regardless of the location_id passed. Pass 0 as
+			// a harmless placeholder when there's no city.
 			setLoadingClients(true);
 			try {
-				const response = await InventoryApiService.getClientByCity(user.city_id);
+				const response = await InventoryApiService.getClientByCity(user?.city_id ?? 0);
 				if (response.status_code === 200 && response.result) {
 					const clientList = response.result.map(client => ({
 						value: client.clientId.toString(),
@@ -103,11 +104,13 @@ export const QCRejectionListing: React.FC = () => {
 	useEffect(() => {
 		let cancelled = false;
 		const loadWoW = async () => {
-			if (!transitDate || !user?.city_id) return;
+			// Only a date is required. city_id is optional: founders (no city) get
+			// all-cities WoW from the backend; other users get their own city.
+			if (!transitDate) return;
 			try {
 				const resp = await QCRejectionService.getQCRejectionsWeekOverWeek({
 					anchor_date: transitDate, // anchor the 2-week window on the selected date
-					city_id: user.city_id,
+					city_id: user?.city_id || undefined, // omit for founders → backend returns all cities
 					client_id: selectedClientId ? parseInt(selectedClientId, 10) : undefined,
 				});
 				if (cancelled) return;

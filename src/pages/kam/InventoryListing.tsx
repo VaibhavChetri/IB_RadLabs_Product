@@ -143,7 +143,21 @@ const InventoryListing: React.FC = () => {
 				width: '150px',
 				headerClassName: 'bg-indigo-50 text-indigo-700',
 				render: (_: unknown, row: InventoryValueRow) => {
+					const price = row.price == null ? null : Number(row.price);
 					const r = row.derived_revenue == null ? null : Number(row.derived_revenue);
+					// Distinguish "no price configured" from genuine zero revenue:
+					// if there's no active SKU price, the 0 is a data-entry gap, not real ₹0.
+					const noPrice = price == null || !Number.isFinite(price) || price === 0;
+					if (noPrice) {
+						return (
+							<span
+								className='block text-right text-xs italic text-amber-600'
+								title='No price set in this client’s SKU mapping — derived revenue cannot be computed. Set the rate in Ops Admin.'
+							>
+								No price set
+							</span>
+						);
+					}
 					return (
 						<span className='block text-right font-medium text-indigo-700'>
 							{r == null || !Number.isFinite(r) ? '—' : r.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
@@ -184,20 +198,20 @@ const InventoryListing: React.FC = () => {
 		}
 	}, [allColumns, visibleColumns.length]);
 
-	// Load clients dropdown
+	// Load clients dropdown.
+	// Don't gate on city_id: founders have none, and the backend returns all
+	// clients for them regardless of the location_id passed (0 = harmless placeholder).
 	useEffect(() => {
-		if (user?.city_id) {
-			InventoryApiService.getClientByCity(user.city_id).then(res => {
-				const clients = res.result || [];
-				setClients([
-					{ label: 'All Clients', value: '' },
-					...clients.map((c: { clientName: string; clientId: number }) => ({
-						label: c.clientName,
-						value: String(c.clientId),
-					})),
-				]);
-			});
-		}
+		InventoryApiService.getClientByCity(user?.city_id ?? 0).then(res => {
+			const clients = res.result || [];
+			setClients([
+				{ label: 'All Clients', value: '' },
+				...clients.map((c: { clientName: string; clientId: number }) => ({
+					label: c.clientName,
+					value: String(c.clientId),
+				})),
+			]);
+		});
 	}, [user?.city_id]);
 
 	const fetchData = useCallback(

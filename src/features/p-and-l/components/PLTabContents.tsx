@@ -157,6 +157,23 @@ export const ExpenditureTab: React.FC<PLTabContentProps> = ({
 					formatExpenditureValue(record.projected_value as number | string | null | undefined),
 			},
 			{
+				// ── Additive: Budget Used % (total actual ÷ projection). ──
+				// Placed right after Projection so it's visible up front without
+				// scrolling past the weekly columns.
+				key: 'budget_used_pct',
+				title: 'Budget Used',
+				align: 'right',
+				sortable: false,
+				headerClassName: 'bg-indigo-50 text-indigo-700',
+				render: (_value, record) => {
+					const { text, cls } = budgetUsedCell(
+						record.projected_value as number | string | null | undefined,
+						record.total_actual_value as number | string | null | undefined
+					);
+					return <span className={`block text-right bg-indigo-50/40 px-2 py-1 rounded ${cls}`}>{text}</span>;
+				},
+			},
+			{
 				key: 'week1_actual_value',
 				title: 'W1',
 				align: 'right',
@@ -269,21 +286,6 @@ export const ExpenditureTab: React.FC<PLTabContentProps> = ({
 				align: 'right',
 				sortable: true,
 				render: (_value, record) => (record.total_delta_with_percentage as string) || '-',
-			},
-			{
-				// ── Additive: Budget Used % (total actual ÷ projection). ──
-				key: 'budget_used_pct',
-				title: 'Budget Used',
-				align: 'right',
-				sortable: false,
-				headerClassName: 'bg-indigo-50 text-indigo-700',
-				render: (_value, record) => {
-					const { text, cls } = budgetUsedCell(
-						record.projected_value as number | string | null | undefined,
-						record.total_actual_value as number | string | null | undefined
-					);
-					return <span className={`block text-right bg-indigo-50/40 px-2 py-1 rounded ${cls}`}>{text}</span>;
-				},
 			},
 		],
 		[]

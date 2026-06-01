@@ -117,7 +117,9 @@ Desktop.ini
 # dotenv environment variables file
 .env
 .env.test
-.env.production
+# NOTE: .env.production is intentionally committed for the no-backend demo
+# deploy (Vercel). It contains only mock-mode toggles, no secrets.
+# .env.production
 
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test

@@ -7,6 +7,7 @@ import React, { useCallback, useRef, useState } from 'react';
 import { PageHeader } from '../../components/ui';
 import { Upload, X, FileText, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { isMockApiEnabled } from '../../mocks/mockAdapter';
 
 const UPLOAD_URL =
 	import.meta.env.VITE_AMAZON_INVOICE_UPLOAD_URL || 'http://127.0.0.1:8000/invoices/upload';
@@ -71,6 +72,19 @@ const AmazonInvoiceUpload: React.FC = () => {
 		setUploading(true);
 		setResult(null);
 		try {
+			// LOCAL DEMO: the upload endpoint lives on a separate host and can't be
+			// intercepted by the axios mock adapter, so simulate a successful upload.
+			if (isMockApiEnabled()) {
+				await new Promise(r => setTimeout(r, 700));
+				setResult({
+					success: true,
+					message: `${files.length} file${files.length === 1 ? '' : 's'} uploaded and queued for parsing.`,
+				});
+				setFiles([]);
+				setUploading(false);
+				return;
+			}
+
 			const formData = new FormData();
 			files.forEach(entry => formData.append('files', entry.file));
 

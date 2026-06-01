@@ -11,6 +11,7 @@ import axios, {
 	InternalAxiosRequestConfig,
 } from 'axios';
 import TokenManager from '../utils/tokenManager';
+import { mockAdapter, isMockApiEnabled } from '../mocks/mockAdapter';
 
 // Environment variables
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3099/v1/api';
@@ -40,6 +41,15 @@ const apiClient: AxiosInstance = axios.create({
 		'Content-Type': 'application/json',
 	},
 });
+
+// LOCAL DEMO: when VITE_USE_MOCK_API=true, swap the network transport for the
+// mock adapter so every request returns realistic fake data and no backend is
+// needed. See src/mocks/. Disable by setting VITE_USE_MOCK_API=false in .env.
+if (isMockApiEnabled()) {
+	apiClient.defaults.adapter = mockAdapter;
+	// eslint-disable-next-line no-console
+	console.info('[api] Mock API enabled — all requests served from src/mocks (no backend).');
+}
 
 // Request interceptor
 apiClient.interceptors.request.use(

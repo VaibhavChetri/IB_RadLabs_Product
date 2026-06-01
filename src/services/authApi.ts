@@ -6,6 +6,7 @@
 import { apiService, ApiResponse } from './api';
 import TokenManager from '../utils/tokenManager';
 import { MenuPermission } from '../types/menu';
+import { buildMockLoginResponse, isMockAuthEnabled } from '../mocks/mockLogin';
 
 // Types
 export interface LoginCredentials {
@@ -69,11 +70,14 @@ export class AuthApiService {
 	 */
 	static async login(credentials: LoginCredentials): Promise<ApiResponse<LoginResponse>> {
 		try {
-			// Make real API call
-			const response = await apiService.postUrlEncoded('/oauth/access_token', {
-				username: credentials.username,
-				password: credentials.password,
-			});
+			// LOCAL DEV: when VITE_USE_MOCK_AUTH=true, skip the backend and accept
+			// any credentials with a fully-granted mock user. See src/mocks/mockLogin.ts.
+			const response = isMockAuthEnabled()
+				? buildMockLoginResponse(credentials.username)
+				: await apiService.postUrlEncoded('/oauth/access_token', {
+						username: credentials.username,
+						password: credentials.password,
+					});
 
 			// Store tokens if login is successful
 			if (response.status_code === 200 && response.data && response.data.access_token) {

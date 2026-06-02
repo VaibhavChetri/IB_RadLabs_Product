@@ -80,7 +80,9 @@ const ESCALATION_TYPES: { id: number; name: string }[] = [
 
 const RESOLUTION_STATUSES = ['Open', 'In Progress', 'Resolved'] as const;
 
-const SHIFT_TIMES = ['Morning (6 AM - 2 PM)', 'Evening (2 PM - 10 PM)', 'Night (10 PM - 6 AM)'];
+// Short labels — the listing renders these inside a fixed-width pill with a
+// sun/moon icon; long time-ranges overflow into the Supervisor column.
+const SHIFT_TIMES = ['Morning', 'Evening', 'Night'];
 const OPS_STATUSES = ['Available', 'Functional', 'Shortage', 'Non-Functional'];
 
 /** Resolve a city by id (falls back to the first city). */
